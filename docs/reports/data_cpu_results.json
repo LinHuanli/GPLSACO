@@ -1,0 +1,110 @@
+{
+  "scope": "main data split and CPU FACO operations; CUDA solver and E1-E4 pending",
+  "data": {
+    "status": "passed",
+    "source_files_fully_audited": 16,
+    "records_fully_parsed_in_build": 128416,
+    "point_groups": 128416,
+    "no_label_split_replay_all_groups": true,
+    "index_raw_offset_roundtrips": {
+      "500": {
+        "development": 128,
+        "validation": 256,
+        "test": 128,
+        "train": 128
+      },
+      "1000": {
+        "development": 128,
+        "validation": 256,
+        "test": 128,
+        "train": 128
+      }
+    },
+    "database_sha256": "1b91deb6ab9a1ce2953973c0dad4537d2af3b90f807225f07e0fc5b3f577595c",
+    "source_inventory_sha256": "f978542020be6cfa9927f79b61ddea9096843e35fd738d1bc6ba6f3a1a94e18e",
+    "group_audit": {
+      "counts": {
+        "500": {
+          "groups": {
+            "development": 128,
+            "validation": 256,
+            "test": 128,
+            "train": 63744
+          },
+          "validation_supplement_from_training": 128
+        },
+        "1000": {
+          "groups": {
+            "development": 128,
+            "validation": 256,
+            "test": 128,
+            "train": 63648
+          },
+          "validation_supplement_from_training": 224
+        }
+      },
+      "exposure_conflicts": [],
+      "duplicate_point_groups": 0,
+      "duplicate_records_excluded": 0,
+      "source_role_overlaps": [],
+      "parentage_limitation": "rotation_scaling_subsampling_parent_metadata_unavailable"
+    },
+    "performance_unblinding": false,
+    "parentage_limitation": "rotation_scaling_subsampling_parent_metadata_unavailable",
+    "published_manifest_sha256": "c61ac17079e018f4e32f4f072c12181e4e0fe225dc72da43b3bb7b13fd59d2ca"
+  },
+  "cpu_native_differential": {
+    "construction_can_restore_changed_edges": true,
+    "construction_ls_cases": 480,
+    "construction_transitions": 3470,
+    "default_reset_extension_checked": true,
+    "exhaustive_relocations_n3_to7": 236004,
+    "exhaustive_reversals_n3_to7": 276318,
+    "ls_finite_evaluation_limit_cases": 1440,
+    "ls_move_evaluations": 3790981,
+    "ls_reactivations": 308419,
+    "maximum_absolute_cost_recompute_error": 1.8047785488306545e-12,
+    "mne_final_edge_count_difference_observed": true,
+    "native_zero_weight_single_candidate_returns_current": true,
+    "pheromone_update_sequences": 256,
+    "positive_weight_selection_comparisons": 12800,
+    "scope": "CPU operation-level reference; full CUDA Engine not tested",
+    "status": "passed",
+    "stratified_roulette_probability_checks": 30000,
+    "trail_limit_comparisons": 36
+  },
+  "cpu_sanitizers": {
+    "address": "passed",
+    "undefined_behavior": "passed",
+    "leak_detection": true,
+    "same_results_as_release": true,
+    "build_type": "RelWithDebInfo",
+    "compiler": "/usr/bin/g++-15"
+  },
+  "logs": {
+    "artifacts/environment/pytest-core-data.log": {
+      "sha256": "5cfd6779d8189467feeaaeaa3bc4c5d57955b3ba293f5b491e4fcb9e01ec6769",
+      "result": "31 passed in 1.68s"
+    },
+    "artifacts/environment/ctest-core-semantics.log": {
+      "sha256": "5ed853f1806a50821c6b07b148eacd92e84693762b95ca8c98029850ada4ed38",
+      "result": "100% tests passed, 0 tests failed"
+    },
+    "artifacts/environment/ctest-cpu-sanitize.log": {
+      "sha256": "713cc2200a5480942956cfc19c5aadeb5b3dea4afb7c2ec4659236edbbd16283",
+      "result": "100% tests passed, 0 tests failed"
+    }
+  },
+  "external_source_fingerprints_unchanged": 33,
+  "inputs": {
+    "provenance/splits.v1.json": "c61ac17079e018f4e32f4f072c12181e4e0fe225dc72da43b3bb7b13fd59d2ca",
+    "configs/data_split_v1.json": "24de0a8e99561975d23ee728028d4f5f1aaaf9a54384edbe748592ae84e21177",
+    "provenance/sources.lock.json": "a3b7ab9fbfcbef6c95a0ca674115d952a12a68d0e7a0dbf8d80bf59ba75c3113",
+    "cpp/include/gp_faco/faco_cpu.hpp": "742886f847a42b494f9d700df45be4ce4e427abc38b1f5dd05296f434b0ee46a",
+    "cpp/src/faco_cpu.cpp": "ec8675e2d9091e4236c5ccf5a499d914713eb76e367c583b036e6868dcceafef",
+    "tests/cpp/test_native_semantics.cpp": "194dcce6e79239b5938162619937134323c0c1c5baeeacc18db36dba94e19121",
+    "python/gp_faco/dataset_index.py": "02ea9f00d526efb6120d5cb95493540274738e82bcfa00fa8481c029eeff680e",
+    "scripts/build_main_dataset.py": "a07463afc3fc2ebea1adc373b737494e2523c1529bfa0adabfffc229dd0c73b9",
+    "scripts/verify_main_dataset.py": "1d7b321f9fe6bca2a04cebd639c49d30d7702e7ca56f91f84b6b2e18a98616ef"
+  }
+}

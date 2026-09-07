@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name": "main_uniform_500_1000_v1",
+  "scales": [500, 1000],
+  "split_seed": 20260908,
+  "development_groups_per_scale": 128,
+  "validation_groups_per_scale": 256,
+  "test_policy": "all_unique_original_uniform_test_groups",
+  "selection_uses_labels": false,
+  "grouping": "exact_fp64_point_set_invariant_to_node_permutation",
+  "unknown_parentage": "rotation_scaling_subsampling_parent_metadata_unavailable",
+  "development_anchors": [
+    {"path": "train_dataset/tsp/tsp_500/tsp500_uniform_16k_1.txt", "row": 0},
+    {"path": "train_dataset/tsp/tsp_1k/tsp1000_uniform_8k_1.txt", "row": 0}
+  ]
+}
