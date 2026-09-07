@@ -1,0 +1,28 @@
+{
+  "recorded_at": "2026-09-07T17:00:34.318327+00:00",
+  "python": "3.12.13",
+  "platform": "Linux-7.0.11-arch1-1-x86_64-with-glibc2.43",
+  "compiler": "g++-15 (GCC) 15.2.1 20260506",
+  "cuda_compiler": [
+    "Cuda compilation tools, release 13.3, V13.3.33",
+    "Build cuda_13.3.r13.3/compiler.37862127_0"
+  ],
+  "cmake": "cmake version 4.3.3",
+  "gpu": {
+    "name": "NVIDIA RTX A5000",
+    "compute_capability_major": 8,
+    "compute_capability_minor": 6,
+    "total_memory_bytes": 25282805760
+  },
+  "gpu_driver_record": "GPU-056fae3f-b504-efe0-2d9d-b1186860e643, NVIDIA RTX A5000, 1, 0, 610.43.02",
+  "cmake_build_type": "Release",
+  "cxx_standard": 17,
+  "cuda_standard": 17,
+  "cuda_architecture": "86",
+  "gp_fma_contraction": false,
+  "native_flags_additions": [
+    "-mavx2",
+    "support objects: -include cstdint"
+  ],
+  "python_lock_sha256": "e9b05ec49c645d4f19644dfa678e7ece8998d2b8a94b4906d93bab569b89d5d3"
+}

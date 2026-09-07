@@ -1,0 +1,21 @@
+{
+  "ir_version": 1,
+  "numeric_spec_id": 1,
+  "feature_spec_id": 1,
+  "opcodes": {"PUSH_FEATURE": 0, "PUSH_CONSTANT": 1, "ADD": 2, "SUB": 3, "MUL": 4, "MIN": 5, "MAX": 6, "ABS": 7, "AQ": 8},
+  "features": ["elapsed", "stagnation", "return_rate", "ls_work", "restart", "mne_level", "ref_gap", "ref_diff", "region_excess", "archive_disagreement", "pheromone_strength", "region_dispersion"],
+  "feature_input_range": [0, 1],
+  "intermediate_clip": [-8, 8],
+  "constant_range": [-2, 2],
+  "constant_encoding": "uint32 FP32 IEEE-754 bits",
+  "max_depth": 5,
+  "max_nodes": 63,
+  "max_stack": 6,
+  "aq_cuda": "left * rsqrtf(1 + right * right)",
+  "fma_contraction": false,
+  "action_count": 32,
+  "score_tie_absolute_tolerance": 0.000001,
+  "action_tie_rule": "smallest legal ID within tolerance of actual legal maximum",
+  "diagnostic_score_atol": 0.000002,
+  "diagnostic_score_rtol": 0.000002
+}

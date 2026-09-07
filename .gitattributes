@@ -1,0 +1,4 @@
+# Markdown 的两个尾随空格表示显式换行；研究原方案按原文保存。
+*.md whitespace=-blank-at-eol
+# unified diff 的空白上下文行属于补丁格式。
+*.patch -whitespace

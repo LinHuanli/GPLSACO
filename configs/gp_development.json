@@ -1,0 +1,23 @@
+{
+  "status": "development_proposal_not_frozen_or_trained",
+  "population": 128,
+  "generations": 50,
+  "initial_depth_min": 1,
+  "initial_depth_max": 3,
+  "max_depth": 5,
+  "max_nodes": 63,
+  "tournament_size": 4,
+  "elites": 4,
+  "crossover_probability": 0.8,
+  "subtree_mutation_probability": 0.2,
+  "variation_semantics": "deap_varAnd",
+  "all_fitness_recomputed_each_generation": true,
+  "train_scales": [500, 1000],
+  "panel_instances_per_scale": 16,
+  "solver_seeds_per_instance": 2,
+  "evolution_seeds": [1103, 2207, 3313, 4409, 5519],
+  "budgets_seconds": null,
+  "gpu_model": null,
+  "batch_shape": null,
+  "formal_freeze_requires": "G0-G4 and full Engine validation"
+}

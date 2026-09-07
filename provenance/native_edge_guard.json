@@ -1,0 +1,9 @@
+{
+  "name": "FACO-Native-EdgeGuard",
+  "base": "Adaptive-Tuning snapshot pinned by sources.lock.json",
+  "scope": "initialization three_opt_nn identity-edge rejection only",
+  "not_unmodified_native": true,
+  "original_sha256": "7491733cf95c06c168330eef32ce2aa923d88ad2f5971e8154d6d3999ec3c417",
+  "modified_sha256": "122d2bfc50235ac9b45e0ac10897183d93ecbd18d26bda08d2ae9eb585de7524",
+  "patch_sha256": "920e8014c9f4e86750f6017c85b0ebf688f50802279fdb3bcf0d4d620e13a9a6"
+}

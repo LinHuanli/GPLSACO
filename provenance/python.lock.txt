@@ -1,0 +1,13 @@
+cffi==2.1.1
+deap==1.4.4
+iniconfig==2.3.0
+moocore==0.3.2
+numpy==2.5.3
+packaging==26.3
+platformdirs==4.11.7
+pluggy==1.6.0
+pybind11==3.1.0
+pycparser==3.0
+Pygments==2.21.0
+pytest==9.1.1
+ruff==0.16.6

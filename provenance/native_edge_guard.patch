@@ -1,0 +1,27 @@
+--- a/src/local_search.cpp
++++ b/src/local_search.cpp
+@@ -666,6 +666,24 @@
+                                         + instance.get_distance(e3.first, e3.second);
+ 
+ 
++
++                        // GPLSACO 适配：相同无向边集合不是结构改进。
++                        // 连续距离下三项浮点加法重排可能产生虚假的正 gain；
++                        // 此处只排除恒等边集合，不增加阈值或改变合法移动排序。
++                        const auto canonical_edge = [](uint32_t a, uint32_t b) {
++                            return std::make_pair(std::min(a, b), std::max(a, b));
++                        };
++                        std::array<std::pair<uint32_t,uint32_t>,3> removed{{
++                            canonical_edge(at_x, at_x_1), canonical_edge(at_y, at_y_1),
++                            canonical_edge(at_z, at_z_1)}};
++                        std::array<std::pair<uint32_t,uint32_t>,3> added{{
++                            canonical_edge(e1.first, e1.second),
++                            canonical_edge(e2.first, e2.second),
++                            canonical_edge(e3.first, e3.second)}};
++                        std::sort(removed.begin(), removed.end());
++                        std::sort(added.begin(), added.end());
++                        if (removed == added) continue;
++
+                         if (cost < curr) {
+                             found_improvement = true;
+ 
