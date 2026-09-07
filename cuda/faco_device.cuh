@@ -9,6 +9,7 @@ namespace gp_faco::cuda_detail {
 struct MatrixDistance {
     const double* values;
     Node n;
+    __device__ MatrixDistance for_ant(Node) const { return *this; }
     __device__ double operator()(Node a, Node b) const {
         return values[static_cast<std::size_t>(a) * n + b];
     }
@@ -17,6 +18,12 @@ struct MatrixDistance {
 struct ExplicitChoices {
     static constexpr bool shared_parent = false;
     const Node* visits;
+    __device__ ExplicitChoices for_ant(Node, Node) const { return *this; }
+    __device__ Node ant_index(Node ant) const { return ant; }
+    __device__ std::size_t parent_offset(Node ant, Node n) const {
+        return static_cast<std::size_t>(ant) * n;
+    }
+    __device__ std::size_t candidate_offset(Node, Node, Node) const { return 0; }
     __device__ Node start(Node ant, Node n) const { return visits[ant * n]; }
     template<class Distance>
     __device__ Node next(Node ant, Node, const std::uint8_t*, Node step, Node n, Distance) const {
@@ -54,15 +61,19 @@ __device__ inline void append_if_absent(Node* pending, Node from, Node node, Nod
 
 template<class Distance, class Choices>
 __global__ void construct_and_search(
-    Distance matrix, const Node* candidates, Node n, Node width,
-    const Node* parent_tours, Choices choices, const Node* targets,
+    Distance distances, const Node* all_candidates, Node n, Node width,
+    const Node* parent_tours, Choices choice_views, const Node* targets,
     std::uint64_t evaluation_limit, Node* all_tours, Node* all_positions,
     Node* all_parent_positions, Node* all_scratch, Node* all_pending,
     double* all_gains, Node* construction_tours, FacoDiagnosticInfo* output,
     std::uint8_t* all_visited) {
     const auto ant = blockIdx.x;
     const auto base = static_cast<std::size_t>(ant) * n;
-    const Node* parent = parent_tours + (Choices::shared_parent ? 0 : base);
+    const auto matrix = distances.for_ant(ant);
+    const auto choices = choice_views.for_ant(ant, n);
+    const auto local_ant = choice_views.ant_index(ant);
+    const Node* candidates = all_candidates + choice_views.candidate_offset(ant, n, width);
+    const Node* parent = parent_tours + choice_views.parent_offset(ant, n);
     std::uint8_t* visited = all_visited + base;
     Node* tour = all_tours + base;
     Node* position = all_positions + base;
@@ -79,7 +90,7 @@ __global__ void construct_and_search(
     }
     if (threadIdx.x == 0) {
         state = {};
-        state.current = choices.start(ant, n);
+        state.current = choices.start(local_ant, n);
         for (Node i = 0; i < n; ++i) {
             state.cost += distance(matrix, n, parent[(i + n - 1) % n], parent[i]);
         }
@@ -95,7 +106,7 @@ __global__ void construct_and_search(
         __syncthreads();
         if (threadIdx.x == 0) {
             ++state.construction.steps;
-            state.selected = choices.next(ant, state.current, visited, state.construction.steps, n, matrix);
+            state.selected = choices.next(local_ant, state.current, visited, state.construction.steps, n, matrix);
             visited[state.selected] = 1;
             state.old_previous = predecessor(tour, position, n, state.selected);
             state.node_position = position[state.selected];

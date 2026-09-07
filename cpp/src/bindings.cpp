@@ -11,6 +11,7 @@
 #ifdef GPFACO_CUDA
 #include <cuda_runtime.h>
 #include "gp_faco/fixed_faco_gpu.hpp"
+#include "gp_faco/batch_engine.hpp"
 #endif
 
 namespace py = pybind11;
@@ -93,7 +94,7 @@ py::dict score(const py::dict& dictionary, const FeatureArray& features,
 }  // namespace
 
 PYBIND11_MODULE(gp_faco_ext, module) {
-    module.doc() = "GP评分与固定迭代FACO开发接口；deadline/GP Engine尚未完成";
+    module.doc() = "GP评分、固定迭代与并发截止FACO接口；GP控制器尚未接入Engine";
     module.def("score_cpu", [](const py::dict& p, const FeatureArray& f, const MaskArray& m) {
         return score(p, f, m, false);
     }, py::arg("program"), py::arg("features").noconvert(), py::arg("masks").noconvert());
@@ -111,6 +112,79 @@ PYBIND11_MODULE(gp_faco_ext, module) {
         .def_readwrite("ls_evaluation_limit", &gp_faco::FixedFacoSettings::ls_evaluation_limit)
         .def_readwrite("initial_ls_evaluation_limit", &gp_faco::FixedFacoSettings::initial_ls_evaluation_limit);
     using Coordinates = py::array_t<double, py::array::c_style>;
+    using Keys = py::array_t<std::uint64_t, py::array::c_style>;
+    py::class_<gp_faco::FacoBatchEngine>(module, "FacoBatchEngine")
+        .def(py::init([](const py::object& n, const py::object& count,
+                         const gp_faco::FixedFacoSettings& settings) {
+            if (!PyLong_CheckExact(n.ptr()) || !PyLong_CheckExact(count.ptr()))
+                throw std::invalid_argument("dimension/colonies必须为整数");
+            const auto dimension = py::cast<gp_faco::Node>(n), colonies = py::cast<gp_faco::Node>(count);
+            const auto copied = settings;
+            py::gil_scoped_release release;
+            return std::make_unique<gp_faco::FacoBatchEngine>(dimension, colonies, copied);
+        }), py::arg("dimension"), py::arg("colonies"), py::arg("settings"))
+        .def("register_problem", [](gp_faco::FacoBatchEngine& engine, const py::object& key,
+                                    const Coordinates& coordinates) {
+            if (!PyLong_CheckExact(key.ptr()) || coordinates.ndim() != 2 || coordinates.shape(1) != 2)
+                throw std::invalid_argument("需要整数实例key和FP64[n,2]坐标");
+            const auto value = py::cast<std::uint64_t>(key);
+            std::vector<double> copy(coordinates.data(), coordinates.data() + coordinates.size());
+            gp_faco::RegistrationInfo info;
+            {
+                py::gil_scoped_release release;
+                info = engine.register_problem(value, std::move(copy));
+            }
+            py::dict result;
+            result["cheap_seconds"] = info.cheap_seconds;
+            result["preparation_seconds"] = info.preparation_seconds;
+            return result;
+        }, py::arg("instance_key"), py::arg("coordinates").noconvert())
+        .def("evaluate", [](gp_faco::FacoBatchEngine& engine, const Keys& keys, const Keys& seeds,
+                            const py::object& seconds, const py::object& mne, const std::string& mode) {
+            if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size() ||
+                !(PyFloat_CheckExact(seconds.ptr()) || PyLong_CheckExact(seconds.ptr())) ||
+                !PyLong_CheckExact(mne.ptr())) throw std::invalid_argument("任务数组或预算/MNE类型无效");
+            gp_faco::PreparationMode preparation;
+            if (mode == "cached_charged") preparation = gp_faco::PreparationMode::CachedCharged;
+            else if (mode == "end_to_end") preparation = gp_faco::PreparationMode::EndToEnd;
+            else throw std::invalid_argument("未知准备模式");
+            const double budget = py::cast<double>(seconds);
+            const auto target = py::cast<gp_faco::Node>(mne);
+            std::vector<gp_faco::BatchTask> tasks;
+            for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            gp_faco::BatchEvaluation result;
+            {
+                py::gil_scoped_release release;
+                result = engine.evaluate(tasks, budget, target, preparation);
+            }
+            py::dict output;
+            py::list items;
+            for (const auto& item : result.incumbents) {
+                py::dict entry;
+                entry["has_incumbent"] = item.present;
+                entry["tour"] = item.tour;
+                entry["cost"] = item.present ? py::cast(item.cost) : py::none();
+                entry["completed_seconds"] = item.completed_seconds;
+                items.append(entry);
+            }
+            output["items"] = items;
+            output["budget_seconds"] = result.budget_seconds;
+            output["elapsed_seconds"] = result.elapsed_seconds;
+            output["actual_seconds"] = result.actual_seconds;
+            output["charged_seconds"] = result.charged_seconds;
+            output["last_batch_completed_seconds"] = result.last_batch_completed_seconds;
+            output["overrun_seconds"] = result.overrun_seconds;
+            output["launched_batches"] = result.launched_batches;
+            output["completed_batches"] = result.completed_batches;
+            output["discarded_batches"] = result.discarded_batches;
+            output["completed_construction_steps"] = result.completed_construction_steps;
+            output["completed_ls_evaluations"] = result.completed_ls_evaluations;
+            output["allocated_device_bytes"] = result.allocated_device_bytes;
+            output["preparation_completed"] = result.preparation_completed;
+            output["preparation_mode"] = mode;
+            return output;
+        }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
+           py::arg("budget_seconds"), py::arg("mne_target"), py::arg("preparation_mode") = "cached_charged");
     py::class_<gp_faco::FixedFacoGpu>(module, "FixedFacoGpu")
         .def(py::init([](const Coordinates& coordinates, const py::object& key,
                           const gp_faco::FixedFacoSettings& settings) {

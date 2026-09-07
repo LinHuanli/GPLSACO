@@ -9,15 +9,18 @@ option(GP_FACO_NATIVE "Build the external native FACO and diagnostic wrapper" ON
 option(GP_FACO_CUDA "Build CUDA scoring diagnostics" OFF)
 option(GP_FACO_PYTHON "Build pybind11 diagnostic bindings" ON)
 
-add_library(gp_faco_core STATIC cpp/src/program_cpu.cpp cpp/src/faco_cpu.cpp)
+add_library(gp_faco_core STATIC cpp/src/program_cpu.cpp cpp/src/faco_cpu.cpp cpp/src/prepared_problem.cpp)
 set_target_properties(gp_faco_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(gp_faco_core PUBLIC cpp/include)
 target_compile_options(gp_faco_core PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
+add_executable(deadline_semantics tests/cpp/test_deadline.cpp)
+target_link_libraries(deadline_semantics PRIVATE gp_faco_core)
+add_test(NAME deadline_semantics COMMAND deadline_semantics)
 
 if(GP_FACO_CUDA)
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
-    add_library(gp_faco_cuda STATIC cuda/gp_score.cu cuda/faco_operations.cu cuda/fixed_faco.cu)
+    add_library(gp_faco_cuda STATIC cuda/gp_score.cu cuda/faco_operations.cu cuda/fixed_faco.cu cuda/batch_engine.cu)
     set_target_properties(gp_faco_cuda PROPERTIES
         CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON POSITION_INDEPENDENT_CODE ON)
     target_include_directories(gp_faco_cuda PUBLIC cpp/include)
@@ -34,6 +37,11 @@ if(GP_FACO_CUDA)
     target_link_libraries(fixed_faco_semantics PRIVATE gp_faco_cuda)
     add_test(NAME fixed_faco_semantics COMMAND fixed_faco_semantics
         "${CMAKE_CURRENT_BINARY_DIR}/fixed_faco_results.json")
+    add_executable(batch_engine_semantics tests/cpp/test_batch_engine.cpp)
+    target_compile_options(batch_engine_semantics PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
+    target_link_libraries(batch_engine_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME batch_engine_semantics COMMAND batch_engine_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/batch_engine_results.json")
 endif()
 
 if(GP_FACO_PYTHON)

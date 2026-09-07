@@ -29,3 +29,9 @@
 CPU 单元/差异测试优先在本地执行；CUDA 测试在空闲目标 GPU 上跑并记录 UUID/driver/compiler。Release 下测试仍使用不会被 NDEBUG 删除的断言。memcheck 和 synccheck 报告保存原日志与摘要；性能 pilot 不在 sanitizer 模式中计时。
 
 性能只在正确性相关门槛通过后解释。每个结果表注明已验证范围；IR评分通过不代表完整FACO通过，原生内部检查通过不代表独立 evaluator 核验已完成。
+
+## 当前deadline证据与未覆盖项
+
+[批量Engine报告](../reports/2026-09-08_batch_engine.md) 已覆盖可控单调时钟、截止处提交、真实更优迟到候选拒绝、昂贵准备中断保留廉价解、缓存分阶段费用、重新准备、重复/乱序任务、上一任务GB不泄漏，以及32-colony开发面板的独立路线核验。GPU检查同时回归共同构造/LS和固定迭代路径。
+
+这只关闭G2中的批量状态隔离与当前提交边界验证项。Hard全新增边、Escape同槽位/例外、epoch重启全字段事务、动作特征、GPU内核的时间粒度校准仍待实现或补充；不会因为4项CTest和49项Python测试通过而把G2/G3整体标为完成。

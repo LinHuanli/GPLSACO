@@ -8,6 +8,7 @@ namespace gp_faco::cuda_detail {
 
 struct CoordinateDistance {
     const double* xy;
+    __device__ CoordinateDistance for_ant(Node) const { return *this; }
     __device__ double operator()(Node a, Node b) const {
         const double x = xy[a * 2] - xy[b * 2], y = xy[a * 2 + 1] - xy[b * 2 + 1];
         return sqrt(x * x + y * y);
@@ -39,6 +40,10 @@ struct StochasticChoices {
     std::uint64_t seed;
     Node* selected_trace;
     double* uniform_trace;
+    __device__ StochasticChoices for_ant(Node, Node) const { return *this; }
+    __device__ Node ant_index(Node ant) const { return ant; }
+    __device__ std::size_t parent_offset(Node, Node) const { return 0; }
+    __device__ std::size_t candidate_offset(Node, Node, Node) const { return 0; }
 
     __device__ Node start(Node ant, Node n) const {
         auto random = random_state(seed, batch, ant, 0xffffffffu);
@@ -104,6 +109,37 @@ struct StochasticChoices {
             uniform_trace[static_cast<std::size_t>(ant) * n + step] = uniform;
         }
         return chosen;
+    }
+};
+
+struct BatchCoordinateDistance {
+    const double* xy;
+    Node n, ants;
+    __device__ CoordinateDistance for_ant(Node ant) const {
+        return {xy + static_cast<std::size_t>(ant / ants) * n * 2};
+    }
+};
+
+struct BatchStochasticChoices {
+    const Node* primary;
+    const Node* backup;
+    const double* products;
+    const std::uint64_t* seeds;
+    Node primary_width, backup_width, batch, ants;
+    __device__ StochasticChoices for_ant(Node ant, Node n) const {
+        const auto colony = ant / ants;
+        const auto base = static_cast<std::size_t>(colony) * n;
+        return {primary + base * primary_width,
+                backup_width ? backup + base * backup_width : nullptr,
+                products + base * primary_width, primary_width, backup_width, batch,
+                seeds[colony], nullptr, nullptr};
+    }
+    __device__ Node ant_index(Node ant) const { return ant % ants; }
+    __device__ std::size_t parent_offset(Node ant, Node n) const {
+        return static_cast<std::size_t>(ant / ants) * n;
+    }
+    __device__ std::size_t candidate_offset(Node ant, Node n, Node width) const {
+        return parent_offset(ant, n) * width;
     }
 };
 
