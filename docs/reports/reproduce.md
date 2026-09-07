@@ -94,3 +94,16 @@ bash scripts/run_gpu_checks.sh GPU-056fae3f-b504-efe0-2d9d-b1186860e643
 上面UUID是启动时cuda02的一张A5000历史身份；脚本会重查当前compute进程、显存和利用率，忙则不启动。其他型号需重新选择对应CUDA架构和独立构建目录。GPU脚本依次执行pytest、量化评分、memcheck和synccheck；所有日志在artifacts/gpu。此诊断程序每次分配显存，不是持久Engine或完整运行的计时基准。
 
 `scripts/summarize_bootstrap.py` 只汇总历史启动日志中的CPU27/GPU29项测试。当前CPU为31项；应使用本节新增的日志路径与 `scripts/summarize_core_data.py` 保留不同阶段的证据，不能将更改过的日志当作旧结果。
+
+## CUDA FACO构造与LS操作
+
+上述CUDA构建现在同时生成 `faco_cuda_semantics`，使用人工点集和给定选点排列对照CPU操作，不执行主数据集求解。
+
+```bash
+cmake --build build/cuda -j 4
+# 在当前空闲目标host的共享项目目录执行；脚本再次实时核查UUID。
+bash scripts/run_cuda_faco_checks.sh GPU-056fae3f-b504-efe0-2d9d-b1186860e643
+.venv/bin/python scripts/summarize_cuda_faco.py
+```
+
+完整差异结果在 `build/cuda/cuda_faco_results.json`，其他日志在 `artifacts/gpu/faco-operations`；pytest为33项，memcheck/synccheck/racecheck各使用540组保留全部类型的面板。此脚本使用内核锁避免同项目重复执行；锁文件存在不表示作业仍活跃。脚本退出后再归集报告，共享文件系统有缓存时应从运行host确认日志尾部与进程终态，不能据观察延迟重启。

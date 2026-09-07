@@ -10,9 +10,10 @@
 - [数据与标签协议](docs/planning/02_data_and_labels.md)
 - [可复核的启动结果](docs/reports/2026-09-08_bootstrap.md)
 - [主池划分与CPU FACO语义核验](docs/reports/2026-09-08_data_and_cpu_semantics.md)
+- [CUDA构造与局部搜索操作核验](docs/reports/2026-09-08_cuda_operations.md)
 - [构建、CPU/GPU 检查与原生试跑命令](docs/reports/reproduce.md)
 
-已完整核验500/1K主池128,416条记录，发布开发/训练/验证/测试身份；CPU FACO操作通过作者源码差异检查及ASan/UBSan。DEAP→IR→CPU/CUDA评分链路已在RTX A5000完成数值、内存和同步检查。原生连续初始化的EdgeGuard适配与零权重选点修复有明确身份说明。完整CUDA FACO、训练闭环和正式实验仍在后续工作中。
+已完整核验500/1K主池128,416条记录，发布开发/训练/验证/测试身份；CPU FACO操作通过作者源码差异检查及ASan/UBSan。DEAP→IR→CPU/CUDA评分链路及显式选点的CUDA构造/LS已在RTX A5000核验，后者通过2,160组操作对照和三种sanitizer。原生连续初始化的EdgeGuard适配与零权重选点修复有明确身份说明。完整CUDA FACO、训练闭环和正式实验仍在后续工作中。
 
 ## 目录
 

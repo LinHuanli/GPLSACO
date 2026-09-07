@@ -55,3 +55,11 @@ GP FP32 与距离/gain 内核分开。第一版 AQ 明确用独立 `rsqrtf(1+y*y
 ## 6. 工程顺序
 
 CPU 原生与操作 oracle→无 GP CUDA 构造/LS→事务和特征→GP 接入→持久 Engine 与绑定→spawn worker→完整 pilot→E1。CUDA Graph、链接式 tour 和专门化 JIT 仅在剖析证实必要时考虑；训练与部署使用相同评分后端。
+
+## 7. 首版CUDA操作实现的边界
+
+2026-09-08，`cuda/faco_operations.cu` 完成显式选点下的并行relocate/flip、原生MNE与checklist LS，并通过CPU差异与memcheck/synccheck/racecheck。一个128线程block负责一只蚂蚁，scratch隔离路线读写，候选gain并行计算后按原生顺序选择，checklist容量以初始至多n节点＋至多4n次重新入队界定。
+
+构造循环条件读取与线程0的计数更新之间必须同步，不能依赖上一轮末尾barrier；其他warp尚可能在读取本轮条件。该竞争曾在输出一致的情况下被racecheck检出，修复与复核见 [CUDA操作报告](../reports/2026-09-08_cuda_operations.md)。后续内核继续保留竞争检查，不能仅检查barrier是否合法。
+
+`cuda_faco_diagnostic` 的显式矩阵、给定选点序列、逐次分配和同步只属于≤1024节点的测试入口。完整Engine仍需独立的坐标/距离视图、设备随机选点与信息素状态、持久缓冲区、时间收费和deadline提交，不允许直接把该入口接到正式训练后称为目标架构已完成。

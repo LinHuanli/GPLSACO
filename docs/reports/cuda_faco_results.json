@@ -1,0 +1,97 @@
+{
+  "scope": "CPU/CUDA operation equivalence; full GPU FACO, Engine and E1-E4 pending",
+  "device_record": "GPU-056fae3f-b504-efe0-2d9d-b1186860e643, NVIDIA RTX A5000, 1, 0, 610.43.02",
+  "compile": {
+    "cuda_architecture": 86,
+    "fma_contraction": false,
+    "line_info": true
+  },
+  "full_differential": {
+    "status": "passed",
+    "device": "NVIDIA RTX A5000",
+    "cases": 2160,
+    "construction_transitions": 12110,
+    "ls_evaluations": 1935832,
+    "ls_reactivations": 158214,
+    "maximum_absolute_cost_error": 1.1084466677857563e-12,
+    "scope": "explicit-choice CPU/CUDA operation diagnostic; full Engine pending"
+  },
+  "sanitizers": {
+    "memcheck": {
+      "status": "passed",
+      "device": "NVIDIA RTX A5000",
+      "cases": 540,
+      "construction_transitions": 3010,
+      "ls_evaluations": 485170,
+      "ls_reactivations": 39597,
+      "maximum_absolute_cost_error": 6.252776074688882e-13,
+      "scope": "explicit-choice CPU/CUDA operation diagnostic; full Engine pending"
+    },
+    "synccheck": {
+      "status": "passed",
+      "device": "NVIDIA RTX A5000",
+      "cases": 540,
+      "construction_transitions": 3010,
+      "ls_evaluations": 485170,
+      "ls_reactivations": 39597,
+      "maximum_absolute_cost_error": 6.252776074688882e-13,
+      "scope": "explicit-choice CPU/CUDA operation diagnostic; full Engine pending"
+    },
+    "racecheck": {
+      "status": "passed",
+      "device": "NVIDIA RTX A5000",
+      "cases": 540,
+      "construction_transitions": 3010,
+      "ls_evaluations": 485170,
+      "ls_reactivations": 39597,
+      "maximum_absolute_cost_error": 6.252776074688882e-13,
+      "scope": "explicit-choice CPU/CUDA operation diagnostic; full Engine pending"
+    }
+  },
+  "logs": {
+    "ctest": {
+      "sha256": "6d93e218a10de2b4925a6e824f2469aa649e12b8b0ca02066d66b22dacbf9880",
+      "result": "100% tests passed, 0 tests failed"
+    },
+    "pytest": {
+      "sha256": "252d32449a4bfa3aff68f2bda3470012d2b8044b72944229f2afc460a9499094",
+      "result": "33 passed in 1.87s"
+    },
+    "memcheck": {
+      "sha256": "4ac82d51f70653f073487891cc05cb06a3dbf13dfaeb0565d8edb72f2add6fca",
+      "result": "ERROR SUMMARY: 0 errors"
+    },
+    "synccheck": {
+      "sha256": "4ac82d51f70653f073487891cc05cb06a3dbf13dfaeb0565d8edb72f2add6fca",
+      "result": "ERROR SUMMARY: 0 errors"
+    },
+    "racecheck": {
+      "sha256": "17e46186acce3fe30518ec1d614c1e62ea09303fba9603416a92e04186a4e2b7",
+      "result": "RACECHECK SUMMARY: 0 hazards displayed (0 errors, 0 warnings)"
+    }
+  },
+  "initial_race_and_fix": {
+    "log": {
+      "sha256": "e1086b75d588fed969cd7455dfe835e7eae764a39b1f855a2264b775900892d8",
+      "result": "RACECHECK SUMMARY: 100 hazards displayed (135 errors, 0 warnings)"
+    },
+    "source_sha256": "628e11c34b95231835c4e4f1bbf3ea3d5ac2391a3c53955551802553497686d1",
+    "fix": "block barrier after construction loop condition and before steps increment"
+  },
+  "limitations": [
+    "explicit symmetric distance matrix only for diagnostic n<=1024",
+    "given selection permutations; device roulette and pheromone pending",
+    "allocation and synchronization on every diagnostic call; not persistent Engine",
+    "no wall-clock deadline, graph legality, restart transaction or GP training tested",
+    "synthetic fixtures only; no dataset performance unblinding"
+  ],
+  "inputs": {
+    "CMakeLists.txt": "e5ab0197183482118c049b62351abb795a5fde05394982dffb9f1241bad8d0d7",
+    "cpp/include/gp_faco/faco_cuda_diagnostic.hpp": "888d6cfe9d9f5744ce68841f59917aed7abc572addd125b778e300a517c06527",
+    "cpp/src/faco_cpu.cpp": "ec8675e2d9091e4236c5ccf5a499d914713eb76e367c583b036e6868dcceafef",
+    "cuda/faco_operations.cu": "80d08e84310f36cc58d032c6241437c8781c231fc8f789184caf8a39eaedd617",
+    "tests/cpp/test_cuda_faco.cpp": "6fe1c624e05ff68f258ae39eadd6dd586d71e0a5f3adc81c54f3cef1081a3b06",
+    "scripts/run_cuda_faco_checks.sh": "5cfa25e4a65ab3725db367d6114da8cbb5abc4075eead11bb0bb2e1227c28e42",
+    "docs/reports/data_cpu_results.json": "cdf2ba1586e4f6c9256868ff5ee9ec1756169b8ba58cff00af7fec0a52772a52"
+  }
+}
