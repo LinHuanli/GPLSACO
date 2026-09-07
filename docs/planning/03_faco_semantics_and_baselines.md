@@ -57,3 +57,11 @@ LS 每次处理一个 pending 节点，按原生两类候选交换、真实距�
 - **信息素：** 对称强化分别查询两个有向存储行，并不先把成员集合对称化。图外 default 蒸发但不强化。原生 `set_all_trails` 不改变 default，项目 `reset` 明确同时覆盖两者；缓存由重置后的 trails 重新计算。该对象层检查尚不能证明完整重启事务已清除所有 ant/EMA/档案相关状态。
 
 初始化3-opt的 EdgeGuard 身份仍独立存在；上述 checklist 2-opt 对照没有借用该补丁，也没有添加统一正 gain 阈值。
+
+## 8. 固定迭代GPU开发流程
+
+`FACO-GPU-IterationPilot` 已具备设备随机选点、共同构造/LS、当前批归约和epoch信息素更新，见 [开发报告](../reports/2026-09-08_fixed_faco.md)。它统一禁用旧ant精英与局部源更新，每批冻结parent；GB与epoch分开存储，当前尚无restart，所以二者在本阶段相同。
+
+本开发版使用一个节点0最近邻初始解＋CPU checklist 2-opt，起点全tour均匀；它与原生多初始解/3-opt以及最终32动作区域接口都有明确边界。全部变体的正式初始化与区域/预算参数需在G4前共同冻结。
+
+信息素API使用保留比例lambda，底层原生 `evaporate(evaporation_rate)` 的实参则为 `1-lambda`；`ACOModel`已做一次转换，不能在移植中重复转换。非0.5取值的CPU原生对照及GPU逐批重放已通过。

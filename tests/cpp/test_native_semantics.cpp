@@ -299,8 +299,10 @@ void pheromone_tests() {
         CandListPheromone native(rows, 1.0, symmetric);
         gp_faco::SparsePheromone migrated(rows, 1.0, symmetric);
         for (int i = 0; i < 128; ++i) {
-            migrated.evaporate(0.5, 0.01);
-            native.evaporate(0.5, 0.01);
+            const double retention = std::array<double, 4>{0.25, 0.5, 0.75, 0.9}[i % 4];
+            migrated.evaporate(retention, 0.01);
+            // 原生底层方法接收蒸发比例，ACOModel以1-rho调用它。
+            native.evaporate(1 - retention, 0.01);
             const Node from = random() % 5, to = random() % 5;
             migrated.deposit(from, to, 0.2, 0.7);
             native.increase(from, to, 0.2, 0.7);

@@ -10,6 +10,7 @@
 
 #ifdef GPFACO_CUDA
 #include <cuda_runtime.h>
+#include "gp_faco/fixed_faco_gpu.hpp"
 #endif
 
 namespace py = pybind11;
@@ -92,11 +93,59 @@ py::dict score(const py::dict& dictionary, const FeatureArray& features,
 }  // namespace
 
 PYBIND11_MODULE(gp_faco_ext, module) {
-    module.doc() = "GP IR 数值诊断接口；完整 FACO Engine 尚未接入";
+    module.doc() = "GP评分与固定迭代FACO开发接口；deadline/GP Engine尚未完成";
     module.def("score_cpu", [](const py::dict& p, const FeatureArray& f, const MaskArray& m) {
         return score(p, f, m, false);
     }, py::arg("program"), py::arg("features").noconvert(), py::arg("masks").noconvert());
 #ifdef GPFACO_CUDA
+    py::class_<gp_faco::FixedFacoSettings>(module, "FixedFacoSettings")
+        .def(py::init<>())
+        .def_readwrite("ants", &gp_faco::FixedFacoSettings::ants)
+        .def_readwrite("primary_width", &gp_faco::FixedFacoSettings::primary_width)
+        .def_readwrite("backup_width", &gp_faco::FixedFacoSettings::backup_width)
+        .def_readwrite("ls_width", &gp_faco::FixedFacoSettings::ls_width)
+        .def_readwrite("beta", &gp_faco::FixedFacoSettings::beta)
+        .def_readwrite("retention", &gp_faco::FixedFacoSettings::retention)
+        .def_readwrite("p_best", &gp_faco::FixedFacoSettings::p_best)
+        .def_readwrite("epoch_source_probability", &gp_faco::FixedFacoSettings::epoch_source_probability)
+        .def_readwrite("ls_evaluation_limit", &gp_faco::FixedFacoSettings::ls_evaluation_limit)
+        .def_readwrite("initial_ls_evaluation_limit", &gp_faco::FixedFacoSettings::initial_ls_evaluation_limit);
+    using Coordinates = py::array_t<double, py::array::c_style>;
+    py::class_<gp_faco::FixedFacoGpu>(module, "FixedFacoGpu")
+        .def(py::init([](const Coordinates& coordinates, const py::object& key,
+                          const gp_faco::FixedFacoSettings& settings) {
+            if (coordinates.ndim() != 2 || coordinates.shape(1) != 2 ||
+                !PyLong_CheckExact(key.ptr())) throw std::invalid_argument("需要FP64[n,2]与整数实例key");
+            const auto instance_key = py::cast<std::uint64_t>(key);
+            const auto copied_settings = settings;
+            std::vector<double> values(coordinates.data(), coordinates.data() + coordinates.size());
+            py::gil_scoped_release release;
+            return std::make_unique<gp_faco::FixedFacoGpu>(std::move(values), instance_key, copied_settings);
+        }), py::arg("coordinates").noconvert(), py::arg("instance_key"), py::arg("settings"))
+        .def("run_iterations", [](gp_faco::FixedFacoGpu& engine, const py::object& seed,
+                                  const py::object& batches, const py::object& mne) {
+            for (const auto& value : {seed, batches, mne}) {
+                if (!PyLong_CheckExact(value.ptr())) throw std::invalid_argument("seed/batches/MNE必须为整数");
+            }
+            const auto seed_value = py::cast<std::uint64_t>(seed);
+            const auto batch_count = py::cast<gp_faco::Node>(batches);
+            const auto target = py::cast<gp_faco::Node>(mne);
+            gp_faco::FixedFacoResult result;
+            {
+                py::gil_scoped_release release;
+                result = engine.run_iterations(seed_value, batch_count, target);
+            }
+            py::dict output;
+            output["tour"] = result.tour; output["cost"] = result.cost;
+            output["initial_cost"] = result.initial_cost;
+            output["preparation_seconds"] = result.preparation_seconds;
+            output["solve_seconds"] = result.solve_seconds;
+            output["batches"] = result.batches;
+            output["construction_steps"] = result.construction_steps;
+            output["ls_evaluations"] = result.ls_evaluations;
+            output["allocated_device_bytes"] = result.allocated_device_bytes;
+            return output;
+        }, py::arg("seed"), py::arg("batches"), py::arg("mne_target"));
     module.def("score_cuda", [](const py::dict& p, const FeatureArray& f, const MaskArray& m) {
         return score(p, f, m, true);
     }, py::arg("program"), py::arg("features").noconvert(), py::arg("masks").noconvert());

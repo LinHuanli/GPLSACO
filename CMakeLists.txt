@@ -17,7 +17,7 @@ target_compile_options(gp_faco_core PRIVATE -Wall -Wextra -Wpedantic -ffp-contra
 if(GP_FACO_CUDA)
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
-    add_library(gp_faco_cuda STATIC cuda/gp_score.cu cuda/faco_operations.cu)
+    add_library(gp_faco_cuda STATIC cuda/gp_score.cu cuda/faco_operations.cu cuda/fixed_faco.cu)
     set_target_properties(gp_faco_cuda PROPERTIES
         CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON POSITION_INDEPENDENT_CODE ON)
     target_include_directories(gp_faco_cuda PUBLIC cpp/include)
@@ -29,6 +29,11 @@ if(GP_FACO_CUDA)
     target_link_libraries(faco_cuda_semantics PRIVATE gp_faco_cuda)
     add_test(NAME faco_cuda_semantics COMMAND faco_cuda_semantics
         "${CMAKE_CURRENT_BINARY_DIR}/cuda_faco_results.json")
+    add_executable(fixed_faco_semantics tests/cpp/test_fixed_faco.cpp)
+    target_compile_options(fixed_faco_semantics PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
+    target_link_libraries(fixed_faco_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME fixed_faco_semantics COMMAND fixed_faco_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/fixed_faco_results.json")
 endif()
 
 if(GP_FACO_PYTHON)

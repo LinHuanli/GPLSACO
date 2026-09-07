@@ -107,3 +107,24 @@ bash scripts/run_cuda_faco_checks.sh GPU-056fae3f-b504-efe0-2d9d-b1186860e643
 ```
 
 完整差异结果在 `build/cuda/cuda_faco_results.json`，其他日志在 `artifacts/gpu/faco-operations`；pytest为33项，memcheck/synccheck/racecheck各使用540组保留全部类型的面板。此脚本使用内核锁避免同项目重复执行；锁文件存在不表示作业仍活跃。脚本退出后再归集报告，共享文件系统有缓存时应从运行host确认日志尾部与进程终态，不能据观察延迟重启。
+
+## 固定迭代GPU FACO与开发池试跑
+
+```bash
+cmake --build build/cpu -j 4
+OMP_NUM_THREADS=1 ctest --test-dir build/cpu --output-on-failure \
+  > artifacts/environment/ctest-cpu-fixed.log
+cmake --build build/cuda -j 4
+# 在空闲目标GPU的host运行，脚本会实时检查指定UUID。
+bash scripts/run_fixed_faco_checks.sh GPU-056fae3f-b504-efe0-2d9d-b1186860e643
+# 上一作业确认结束后单独试跑；入口再次检查实时compute进程。
+CUDA_VISIBLE_DEVICES=GPU-056fae3f-b504-efe0-2d9d-b1186860e643 \
+  CUDA_CACHE_PATH="$PWD/.cache/cuda" TMPDIR="$PWD/.tmp" \
+  .venv/bin/python scripts/fixed_faco_smoke.py \
+  --gpu-uuid GPU-056fae3f-b504-efe0-2d9d-b1186860e643
+.venv/bin/python scripts/summarize_fixed_faco.py
+```
+
+当前GPU CTest包含原操作对照和固定迭代流程两个目标，pytest为39项。新入口的memcheck/synccheck/racecheck各检查20种配置、240个蚂蚁批次。所有新日志写入 `artifacts/gpu/fixed-faco`，保留之前报告的日志。
+
+开发试跑默认500/1K各8个已预登记开发ID、三个seed、50批次；重复执行须使用新的 `--output` 目录，不覆盖已有summary。标签在完整求解返回后才由外部Python evaluator读取。一次 `FixedFacoGpu.run_iterations` 完成全部迭代；这是开发接口，尚无deadline或GP决策。

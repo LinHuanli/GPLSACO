@@ -63,3 +63,11 @@ CPU 原生与操作 oracle→无 GP CUDA 构造/LS→事务和特征→GP 接入
 构造循环条件读取与线程0的计数更新之间必须同步，不能依赖上一轮末尾barrier；其他warp尚可能在读取本轮条件。该竞争曾在输出一致的情况下被racecheck检出，修复与复核见 [CUDA操作报告](../reports/2026-09-08_cuda_operations.md)。后续内核继续保留竞争检查，不能仅检查barrier是否合法。
 
 `cuda_faco_diagnostic` 的显式矩阵、给定选点序列、逐次分配和同步只属于≤1024节点的测试入口。完整Engine仍需独立的坐标/距离视图、设备随机选点与信息素状态、持久缓冲区、时间收费和deadline提交，不允许直接把该入口接到正式训练后称为目标架构已完成。
+
+## 8. 持久固定迭代实现与剩余Engine工作
+
+`FixedFacoGpu` 已持有坐标视图、O(nk)候选/信息素和O(ants*n)工作缓冲；CPU候选准备每次只保留一行临时距离，不构建n²矩阵。它与诊断入口共用 `faco_device.cuh`，通过 `MatrixDistance/CoordinateDistance` 与 `ExplicitChoices/StochasticChoices` 切换输入来源。
+
+每次 `run_iterations` 重建全部动态状态，整个C++循环释放GIL，无Python内层回调；同对象并发调用明确拒绝。当前一个对象只负责一个实例/colony，不能以此替代正式训练的固定多实例×seed并发batch。Philox流按实例/seed/batch/ant/step命名，真实选点已经通过CPU同随机数重放。
+
+该阶段仍使用固定批次数，注册成本与求解成本分开记录；还没有实例缓存收费与同步截止前incumbent提交。下一层必须同时处理廉价初始可行解、准备超预算、跨kernel/下载完成时间、迟到批次丢弃和状态复用，不能只把固定迭代外层条件替换成计时判断。
