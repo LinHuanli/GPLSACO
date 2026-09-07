@@ -1,8 +1,10 @@
 // 设备距离与独立Philox随机流。cuRAND头文件遵循CUDA Toolkit自带许可。
 #pragma once
 #include "gp_faco/faco_cpu.hpp"
+#include "gp_faco/edge_constraints.hpp"
 #include <curand_kernel.h>
 #include <math_constants.h>
+#include <type_traits>
 
 namespace gp_faco::cuda_detail {
 
@@ -29,6 +31,15 @@ __device__ inline double uniform53(curandStatePhilox4_32_10_t& state) {
     const auto hi = static_cast<std::uint64_t>(curand(&state));
     const auto lo = static_cast<std::uint64_t>(curand(&state));
     return static_cast<double>(((hi << 32) | lo) >> 11) * 0x1.0p-53;
+}
+
+template<class Allowed>
+__device__ bool available_node(const std::uint8_t* visited, const Node* tour,
+    const Node* position, Node n, Node current, Node node, const Allowed& allowed) {
+    if (visited[node]) return false;
+    // 无约束的主实验路径保留原有visited筛选，不额外执行图/重连判断。
+    if constexpr (std::is_same_v<Allowed, UnrestrictedEdges>) return true;
+    else return relocation_allowed(tour, position, n, current, node, allowed);
 }
 
 struct StochasticChoices {
@@ -59,17 +70,20 @@ struct StochasticChoices {
         return node;
     }
 
-    template<class Distance>
+    template<class Distance, class Allowed>
     __device__ Node next(Node ant, Node current, const std::uint8_t* visited,
-                         Node step, Node n, Distance distance) const {
+                         Node step, Node n, Distance distance, const Node* tour,
+                         const Node* position, const Allowed& allowed) const {
         auto random = random_state(seed, batch, ant, step);
         const double uniform = uniform53(random);
         double total = 0;
-        Node available = 0, chosen = current;
+        Node available = 0, chosen = n;
         const auto offset = static_cast<std::size_t>(current) * primary_width;
         for (Node j = 0; j < primary_width; ++j) {
             const Node node = primary[offset + j];
-            if (!visited[node]) { total += products[offset + j]; ++available; chosen = node; }
+            if (available_node(visited, tour, position, n, current, node, allowed)) {
+                total += products[offset + j]; ++available; chosen = node;
+            }
         }
         if (available) {
             if (total > 0) {
@@ -77,7 +91,7 @@ struct StochasticChoices {
                 const double threshold = uniform * total;
                 for (Node j = 0; j < primary_width; ++j) {
                     const Node node = primary[offset + j];
-                    if (!visited[node]) {
+                    if (available_node(visited, tour, position, n, current, node, allowed)) {
                         prefix += products[offset + j];
                         if (threshold < prefix) { chosen = node; break; }
                     }
@@ -87,18 +101,21 @@ struct StochasticChoices {
                 if (target >= available) target = available - 1;
                 for (Node j = 0; j < primary_width; ++j) {
                     const Node node = primary[offset + j];
-                    if (!visited[node] && target-- == 0) { chosen = node; break; }
+                    if (available_node(visited, tour, position, n, current, node, allowed)
+                        && target-- == 0) { chosen = node; break; }
                 }
             }
         } else {
             for (Node j = 0; j < backup_width; ++j) {
                 const Node node = backup[static_cast<std::size_t>(current) * backup_width + j];
-                if (!visited[node]) { chosen = node; break; }
+                if (available_node(visited, tour, position, n, current, node, allowed)) {
+                    chosen = node; break;
+                }
             }
-            if (chosen == current) {
+            if (chosen == n) {
                 double minimum = CUDART_INF;
                 for (Node node = 0; node < n; ++node) {
-                    if (visited[node]) continue;
+                    if (!available_node(visited, tour, position, n, current, node, allowed)) continue;
                     const double d = distance(current, node);
                     if (d < minimum) { minimum = d; chosen = node; }
                 }

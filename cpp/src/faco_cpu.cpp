@@ -3,6 +3,7 @@
 // provenance/licenses/Adaptive-Tuning-MIT.txt。
 // 本文件为项目 CPU 移植；来源、原文许可和适配说明见 provenance。
 #include "gp_faco/faco_cpu.hpp"
+#include "gp_faco/edge_constraints.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -146,7 +147,8 @@ void CpuTour::reverse_section(Node start, Node end) {
 
 LocalSearchStats CpuTour::checklist_two_opt(const DistanceOrderedCandidates& candidates,
                                            std::vector<Node>& checklist,
-                                           std::uint64_t max_evaluations) {
+                                           std::uint64_t max_evaluations,
+                                           const EdgeAllowed& edge_allowed) {
     require(candidates.size() == size(), "LS 候选表维数不符");
     for (Node node : checklist) require(node < size(), "checklist 节点越界");
     LocalSearchStats stats;
@@ -175,6 +177,11 @@ LocalSearchStats CpuTour::checklist_two_opt(const DistanceOrderedCandidates& can
                 }
                 ++stats.move_evaluations;
                 const Node neighbor = kind == 0 ? successor(b) : predecessor(b);
+                if (edge_allowed && !two_opt_allowed(a, kind == 0 ? a_next : a_previous,
+                                                    b, neighbor, edge_allowed)) {
+                    ++stats.constraint_rejections;
+                    continue;
+                }
                 const double other = kind == 0 ? distance_(b, neighbor) : distance_(neighbor, b);
                 const double closing = distance_(kind == 0 ? a_next : a_previous, neighbor);
                 const double gain = current_distance + other - ab - closing;
@@ -238,7 +245,7 @@ void FocusedConstruction::step(Node selected) {
 Selection select_next(Node current, const std::vector<Node>& primary,
                       const std::vector<double>& products, const std::vector<Node>& backup,
                       const std::vector<std::uint8_t>& visited, const DistanceFunction& distance,
-                      double uniform) {
+                      double uniform, const std::function<bool(Node)>& node_allowed) {
     require(current < visited.size() && visited[current] && primary.size() == products.size(),
             "选点状态或产品缓存形状不符");
     require(std::isfinite(uniform) && uniform >= 0 && uniform < 1, "随机数必须在 [0,1)");
@@ -249,7 +256,7 @@ Selection select_next(Node current, const std::vector<Node>& primary,
         const Node node = primary[i];
         require(node < visited.size() && std::isfinite(products[i]) && products[i] >= 0,
                 "候选编号或权重无效");
-        if (!visited[node]) {
+        if (!visited[node] && (!node_allowed || node_allowed(node))) {
             available.push_back(node);
             sum += products[i];
             prefixes.push_back(sum);
@@ -271,12 +278,12 @@ Selection select_next(Node current, const std::vector<Node>& primary,
     }
     for (Node node : backup) {
         require(node < visited.size(), "备用节点越界");
-        if (!visited[node]) return {node, SelectionStage::Backup};
+        if (!visited[node] && (!node_allowed || node_allowed(node))) return {node, SelectionStage::Backup};
     }
     Node chosen = current;
     double minimum = std::numeric_limits<double>::infinity();
     for (Node node = 0; node < visited.size(); ++node) {
-        if (visited[node]) continue;
+        if (visited[node] || (node_allowed && !node_allowed(node))) continue;
         const double value = distance(current, node);
         require(std::isfinite(value) && value >= 0, "回退距离必须有限且非负");
         if (value < minimum) { minimum = value; chosen = node; }

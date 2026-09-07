@@ -6,21 +6,25 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 enable_testing()
 
 option(GP_FACO_NATIVE "Build the external native FACO and diagnostic wrapper" ON)
-option(GP_FACO_CUDA "Build CUDA scoring diagnostics" OFF)
-option(GP_FACO_PYTHON "Build pybind11 diagnostic bindings" ON)
+option(GP_FACO_CUDA "Build CUDA solver and diagnostic targets" OFF)
+option(GP_FACO_PYTHON "Build pybind11 solver and scoring bindings" ON)
 
-add_library(gp_faco_core STATIC cpp/src/program_cpu.cpp cpp/src/faco_cpu.cpp cpp/src/prepared_problem.cpp)
+add_library(gp_faco_core STATIC cpp/src/program_cpu.cpp cpp/src/faco_cpu.cpp cpp/src/prepared_problem.cpp cpp/src/sparse_graph.cpp)
 set_target_properties(gp_faco_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(gp_faco_core PUBLIC cpp/include)
 target_compile_options(gp_faco_core PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
 add_executable(deadline_semantics tests/cpp/test_deadline.cpp)
 target_link_libraries(deadline_semantics PRIVATE gp_faco_core)
 add_test(NAME deadline_semantics COMMAND deadline_semantics)
+add_executable(hard_edge_semantics tests/cpp/test_hard_edges.cpp)
+target_link_libraries(hard_edge_semantics PRIVATE gp_faco_core)
+add_test(NAME hard_edge_semantics COMMAND hard_edge_semantics
+    "${CMAKE_CURRENT_BINARY_DIR}/hard_edge_results.json")
 
 if(GP_FACO_CUDA)
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
-    add_library(gp_faco_cuda STATIC cuda/gp_score.cu cuda/faco_operations.cu cuda/fixed_faco.cu cuda/batch_engine.cu)
+    add_library(gp_faco_cuda STATIC cuda/gp_score.cu cuda/faco_operations.cu cuda/fixed_faco.cu cuda/batch_engine.cu cuda/hard_diagnostic.cu)
     set_target_properties(gp_faco_cuda PROPERTIES
         CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON POSITION_INDEPENDENT_CODE ON)
     target_include_directories(gp_faco_cuda PUBLIC cpp/include)
@@ -42,6 +46,11 @@ if(GP_FACO_CUDA)
     target_link_libraries(batch_engine_semantics PRIVATE gp_faco_cuda)
     add_test(NAME batch_engine_semantics COMMAND batch_engine_semantics
         "${CMAKE_CURRENT_BINARY_DIR}/batch_engine_results.json")
+    add_executable(hard_cuda_semantics tests/cpp/test_hard_cuda.cpp)
+    target_compile_options(hard_cuda_semantics PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
+    target_link_libraries(hard_cuda_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME hard_cuda_semantics COMMAND hard_cuda_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/hard_cuda_results.json")
 endif()
 
 if(GP_FACO_PYTHON)

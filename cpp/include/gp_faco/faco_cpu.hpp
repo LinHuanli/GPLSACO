@@ -13,6 +13,7 @@ using Node = std::uint32_t;
 using DistanceFunction = std::function<double(Node, Node)>;
 using CandidateRows = std::vector<std::vector<Node>>;
 using Edge = std::pair<Node, Node>;
+using EdgeAllowed = std::function<bool(Node, Node)>;
 
 // 该层是纯 C++ 语义参考；CUDA 将使用设备视图，不携带 std::function。
 class DistanceOrderedCandidates {
@@ -36,6 +37,7 @@ struct LocalSearchStats {
     std::uint64_t move_evaluations = 0;
     std::uint64_t accepted_moves = 0;
     std::uint64_t reactivations = 0;
+    std::uint64_t constraint_rejections = 0;
     bool evaluation_limit_reached = false;
 };
 
@@ -55,7 +57,8 @@ public:
     void reverse_section(Node first, Node end);
     LocalSearchStats checklist_two_opt(
         const DistanceOrderedCandidates& candidates, std::vector<Node>& checklist,
-        std::uint64_t max_evaluations = std::numeric_limits<std::uint64_t>::max());
+        std::uint64_t max_evaluations = std::numeric_limits<std::uint64_t>::max(),
+        const EdgeAllowed& edge_allowed = {});
 private:
     void flip_without_cost(Node first, Node end);
     std::vector<Node> order_;
@@ -68,6 +71,7 @@ struct ConstructionStats {
     std::uint32_t mne = 0;
     std::uint32_t steps = 0;
     std::uint32_t nonidentity_relocations = 0;
+    bool legal_exhausted = false;
 };
 
 class FocusedConstruction {
@@ -100,7 +104,7 @@ struct Selection {
 Selection select_next(Node current, const std::vector<Node>& primary,
                       const std::vector<double>& products, const std::vector<Node>& backup,
                       const std::vector<std::uint8_t>& visited, const DistanceFunction& distance,
-                      double uniform_01);
+                      double uniform_01, const std::function<bool(Node)>& node_allowed = {});
 
 struct TrailLimits { double minimum; double maximum; };
 TrailLimits candidate_trail_limits(std::uint32_t candidate_count, double p_best,

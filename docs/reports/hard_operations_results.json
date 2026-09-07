@@ -1,0 +1,170 @@
+{
+  "scope": "Hard operation correctness; Engine integration, Escape, exporters and E3 pending",
+  "complete_edge_set_oracle": {
+    "status": "passed",
+    "relocations": 34404,
+    "two_opt_moves": 68808,
+    "predicate_graph_checks": 370416,
+    "rejected_moves": 237648,
+    "oracle": "complete before/after tour edge sets"
+  },
+  "gpu_differential": {
+    "status": "passed",
+    "operation_cases": 576,
+    "ls_accepted": 20216,
+    "ls_constraint_rejections": 602794,
+    "construction_exhausted": 123,
+    "stochastic_choices": 6144,
+    "selection_stages": [
+      2001,
+      2165,
+      82,
+      1038,
+      858
+    ],
+    "maximum_absolute_cost_error": 3.410605131648481e-13,
+    "scope": "Hard operation diagnostic; Engine/Escape/candidate exporters pending"
+  },
+  "selection_stage_order": [
+    "primary",
+    "zero_weight_primary",
+    "backup",
+    "global",
+    "exhausted"
+  ],
+  "sanitizers": {
+    "memcheck": {
+      "status": "passed",
+      "operation_cases": 288,
+      "ls_accepted": 9649,
+      "ls_constraint_rejections": 294581,
+      "construction_exhausted": 60,
+      "stochastic_choices": 1536,
+      "selection_stages": [
+        486,
+        522,
+        16,
+        302,
+        210
+      ],
+      "maximum_absolute_cost_error": 5.115907697472721e-13,
+      "scope": "Hard operation diagnostic; Engine/Escape/candidate exporters pending"
+    },
+    "synccheck": {
+      "status": "passed",
+      "operation_cases": 288,
+      "ls_accepted": 9649,
+      "ls_constraint_rejections": 294581,
+      "construction_exhausted": 60,
+      "stochastic_choices": 1536,
+      "selection_stages": [
+        486,
+        522,
+        16,
+        302,
+        210
+      ],
+      "maximum_absolute_cost_error": 5.115907697472721e-13,
+      "scope": "Hard operation diagnostic; Engine/Escape/candidate exporters pending"
+    },
+    "racecheck": {
+      "status": "passed",
+      "operation_cases": 288,
+      "ls_accepted": 9649,
+      "ls_constraint_rejections": 294581,
+      "construction_exhausted": 60,
+      "stochastic_choices": 1536,
+      "selection_stages": [
+        486,
+        522,
+        16,
+        302,
+        210
+      ],
+      "maximum_absolute_cost_error": 5.115907697472721e-13,
+      "scope": "Hard operation diagnostic; Engine/Escape/candidate exporters pending"
+    }
+  },
+  "logs": {
+    "cpu_ctest": {
+      "result": "100% tests passed, 0 tests failed out of 3",
+      "sha256": "d68ca0ef5a82471b4019e8be5ab5c8b5de9a48010ae97b72b477b8fdd8094575"
+    },
+    "cpu_asan_ubsan": {
+      "result": "100% tests passed, 0 tests failed out of 3",
+      "sha256": "cf804da7f2913cceb0713776892eb8098fa2656492853a962135feed1d2c57a3"
+    },
+    "gpu_ctest": {
+      "result": "100% tests passed, 0 tests failed out of 6",
+      "sha256": "1fdcdd75d45e148dd504e7375a060d6df983bec78c7770e0ed9d8c6a1013401b"
+    },
+    "gpu_pytest": {
+      "result": "49 passed in 2.59s",
+      "sha256": "dadbb178c069be924dcd30c7160c4368a85057a0242ed0c1087d1673241c2839"
+    },
+    "memcheck": {
+      "result": "ERROR SUMMARY: 0 errors",
+      "sha256": "4ea3eec6059cc7b6ea9d6e6d05bfed9f98a3241d66b0a7ce590053d4dfb01455"
+    },
+    "synccheck": {
+      "result": "ERROR SUMMARY: 0 errors",
+      "sha256": "4ea3eec6059cc7b6ea9d6e6d05bfed9f98a3241d66b0a7ce590053d4dfb01455"
+    },
+    "racecheck": {
+      "result": "RACECHECK SUMMARY: 0 hazards displayed (0 errors, 0 warnings)",
+      "sha256": "84c10bef82ba9956211caa48c119ed4b086e2446048d7da12022e29d9df3921b"
+    }
+  },
+  "device_record": "GPU-056fae3f-b504-efe0-2d9d-b1186860e643, NVIDIA RTX A5000, 1, 0, 610.43.02",
+  "shared_kernel_regression": {
+    "explicit_operations": {
+      "status": "passed",
+      "device": "NVIDIA RTX A5000",
+      "cases": 2160,
+      "construction_transitions": 12110,
+      "ls_evaluations": 1935832,
+      "ls_reactivations": 158214,
+      "maximum_absolute_cost_error": 1.1084466677857563e-12,
+      "scope": "explicit-choice CPU/CUDA operation diagnostic; full Engine pending"
+    },
+    "fixed_iterations": {
+      "status": "passed",
+      "colony_configurations": 20,
+      "ant_batch_cases": 1280,
+      "selection_decisions": 61654,
+      "backup_choices": 2744,
+      "global_fallback_choices": 13996,
+      "maximum_cost_error": 4.973799150320701e-14,
+      "maximum_pheromone_error": 6.938893903907228e-17,
+      "scope": "fixed-iteration GPU pipeline; deadline/GP Engine pending"
+    },
+    "batch_deadline": {
+      "status": "passed",
+      "panel_configurations": 4,
+      "single_colony_comparisons": 16,
+      "maximum_charged_seconds": 0.034963466,
+      "late_batch_completion_seconds": 1.003108477,
+      "late_budget_seconds": 0.5,
+      "real_late_improvement_discarded": true,
+      "scope": "batch and deadline Engine; GP/restart/graph constraints pending"
+    }
+  },
+  "inputs": {
+    "CMakeLists.txt": "121694829c15b8c0d249285a5cd1b5daaebce56dd0802f10df346e253ea2418b",
+    "cpp/include/gp_faco/edge_constraints.hpp": "f3dca715f44b63bfa014e8d89b44bd2d128baf26a68a829e9d2335617bf522f7",
+    "cpp/include/gp_faco/sparse_graph.hpp": "e72ea2f9418491cde2f3965fa8a14608db7b5b16dd0f1a91ae03014f215de8b1",
+    "cpp/include/gp_faco/hard_diagnostic.hpp": "2942746e42e5b55da670f479f426c53194f887fadd854508f371822a06606d5e",
+    "cpp/include/gp_faco/faco_cpu.hpp": "a2ef7d555d43d3e51f34e9f42fd8d872a69d928783328962dd2ddf1f0d55d407",
+    "cpp/include/gp_faco/faco_cuda_diagnostic.hpp": "e1858b7056d9f3f89d020a343672370841c08c624da664f990d2a5cb87a83283",
+    "cpp/src/sparse_graph.cpp": "c5c97358f1dd3b11bea9cce63d0de9e77dca89bebbe9180b1e283ff79f2b589f",
+    "cpp/src/faco_cpu.cpp": "4dae4789894846ae53da230e645e59c0a34aae1004d670660d5f85a4cdbf1a0f",
+    "cuda/faco_device.cuh": "1621d0f9c0e52464b9ab35b6e8dc05de6a3e6f7efa558edf878e5f4010a2da3f",
+    "cuda/faco_choices.cuh": "221f6850bdf60653c8193e4fc3b7da6faa363353921aebe13195feb70a6c4838",
+    "cuda/faco_operations.cu": "1c724c2ce88798b0f38c86d40d33219c8e17e5e0ffb550eb7c38a004562e98c8",
+    "cuda/hard_diagnostic.cu": "bd857a2422e38fce80d2f357ba97d308940b9d1901f0038b46bdf5f7c35c7109",
+    "tests/cpp/test_hard_edges.cpp": "f2255b41c22063eb81c956928aeb33e3f45b2ee11fb6300f7ba9a60a7fff7dfe",
+    "tests/cpp/test_hard_cuda.cpp": "882e0a10b524c515d23a7fdb082d902b4bd456d0d4f285d75be0a67110ece705",
+    "scripts/run_hard_checks.sh": "5bdc3ef8b062c4c4e9297dd6f1eaef84ee15645895e26aeb20af24de0e09f779",
+    "scripts/summarize_hard_operations.py": "e2ca78dee1bbadfc325c56db86f8860f12e91ffcfb2c4b59802cdd93850b8f88"
+  }
+}

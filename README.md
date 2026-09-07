@@ -13,6 +13,7 @@
 - [CUDA构造与局部搜索操作核验](docs/reports/2026-09-08_cuda_operations.md)
 - [固定迭代GPU FACO与开发池结果](docs/reports/2026-09-08_fixed_faco.md)
 - [固定并发Engine、预算扣费与截止核验](docs/reports/2026-09-08_batch_engine.md)
+- [Hard全新增边与受限CPU/CUDA操作核验](docs/reports/2026-09-08_hard_operations.md)
 - [构建、CPU/GPU 检查与原生试跑命令](docs/reports/reproduce.md)
 
 已完整核验500/1K主池128,416条记录并发布划分。CPU FACO操作、DEAP→IR→CPU/CUDA评分，以及真实随机选点/信息素的GPU流程已核验。固定并发wall-clock Engine支持准备扣费和截止前结果提交；RTX A5000上16个开发计时面板、512条路线全部通过独立重算与完成时间检查。完整动作控制/GP Engine、训练闭环和E1–E4仍在后续工作中。

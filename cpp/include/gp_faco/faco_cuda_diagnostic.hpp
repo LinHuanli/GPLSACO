@@ -4,6 +4,8 @@
 
 namespace gp_faco {
 
+class SparseUndirectedGraph;
+
 // 仅用于操作级对照：显式距离矩阵不作为完整求解器或10K表示。
 struct FacoDiagnosticTask {
     std::vector<Node> tour;
@@ -30,6 +32,7 @@ struct FacoDiagnosticResult {
 // 同步返回诊断结果；不含roulette/信息素更新/完整Engine或deadline语义。
 std::vector<FacoDiagnosticResult> cuda_faco_diagnostic(
     const std::vector<double>& distances, const CandidateRows& ls_candidates,
-    const std::vector<FacoDiagnosticTask>& tasks, std::uint64_t evaluation_limit);
+    const std::vector<FacoDiagnosticTask>& tasks, std::uint64_t evaluation_limit,
+    const SparseUndirectedGraph* hard_graph = nullptr);
 
 }  // namespace gp_faco

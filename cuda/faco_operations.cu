@@ -2,12 +2,14 @@
 // 完整许可见 provenance/licenses/Adaptive-Tuning-MIT.txt。
 // 本阶段只实现显式选点的操作诊断，不作为完整搜索/性能基准。
 #include "gp_faco/faco_cuda_diagnostic.hpp"
+#include "gp_faco/sparse_graph.hpp"
 #include "faco_device.cuh"
 
 #include <cuda_runtime.h>
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -57,12 +59,14 @@ void permutation(const std::vector<Node>& values, Node n) {
 
 std::vector<FacoDiagnosticResult> cuda_faco_diagnostic(
     const std::vector<double>& distances, const CandidateRows& ls_candidates,
-    const std::vector<FacoDiagnosticTask>& tasks, std::uint64_t evaluation_limit) {
+    const std::vector<FacoDiagnosticTask>& tasks, std::uint64_t evaluation_limit,
+    const SparseUndirectedGraph* hard_graph) {
     const auto n = static_cast<Node>(ls_candidates.size());
     // 限定显式矩阵诊断的规模，避免它意外成为10K Engine的表示。
     require(n >= 3 && n <= 1024 && !tasks.empty() && tasks.size() <= 256,
             "诊断仅支持3..1024节点、1..256蚂蚁");
     require(distances.size() == static_cast<std::size_t>(n) * n, "诊断距离矩阵形状不符");
+    require(!hard_graph || hard_graph->size() == n, "Hard图维数不符");
     const Node width = ls_candidates[0].size();
     require(width > 0 && width < n, "诊断候选宽度无效");
     for (Node a = 0; a < n; ++a) for (Node b = 0; b < n; ++b) {
@@ -79,6 +83,7 @@ std::vector<FacoDiagnosticResult> cuda_faco_diagnostic(
     for (const auto& task : tasks) {
         permutation(task.tour, n);
         permutation(task.visit_order, n);
+        require(!hard_graph || hard_graph->contains_tour(task.tour), "Hard父tour不在固定图内");
         require(task.mne_target > 0, "诊断MNE必须为正");
         tours.insert(tours.end(), task.tour.begin(), task.tour.end());
         visits.insert(visits.end(), task.visit_order.begin(), task.visit_order.end());
@@ -93,11 +98,20 @@ std::vector<FacoDiagnosticResult> cuda_faco_diagnostic(
     Buffer<std::uint8_t> d_visited(cells);
     d_distances.upload(distances); d_candidates.upload(candidates);
     d_parents.upload(tours); d_visits.upload(visits); d_targets.upload(targets);
-    cuda_detail::construct_and_search<<<tasks.size(), 128>>>(
+    const auto launch = [&](auto allowed) {
+      cuda_detail::construct_and_search<<<tasks.size(), 128>>>(
         cuda_detail::MatrixDistance{d_distances.data(), n}, d_candidates.data(), n, width, d_parents.data(), cuda_detail::ExplicitChoices{d_visits.data()},
         d_targets.data(), evaluation_limit, d_tours.data(), d_positions.data(),
         d_parent_positions.data(), d_scratch.data(), d_pending.data(), d_gains.data(),
-        d_constructed.data(), d_info.data(), d_visited.data());
+        d_constructed.data(), d_info.data(), d_visited.data(), allowed);
+    };
+    std::unique_ptr<Buffer<Node>> offsets, neighbors;
+    if (hard_graph) {
+        offsets = std::make_unique<Buffer<Node>>(hard_graph->offsets().size());
+        neighbors = std::make_unique<Buffer<Node>>(hard_graph->neighbors().size());
+        offsets->upload(hard_graph->offsets()); neighbors->upload(hard_graph->neighbors());
+        launch(SparseGraphView{offsets->data(), neighbors->data(), n});
+    } else launch(UnrestrictedEdges{});
     checked(cudaGetLastError());
     checked(cudaDeviceSynchronize());
     const auto final_tours = d_tours.download(), final_positions = d_positions.download(),

@@ -2,7 +2,10 @@
 // 原始Route/LS语义 Copyright (c) 2024 RSkinderowicz，MIT许可见provenance。
 #pragma once
 #include "gp_faco/faco_cuda_diagnostic.hpp"
+#include "gp_faco/edge_constraints.hpp"
 #include <cuda_runtime.h>
+#include <math_constants.h>
+#include <type_traits>
 
 namespace gp_faco::cuda_detail {
 
@@ -25,9 +28,12 @@ struct ExplicitChoices {
     }
     __device__ std::size_t candidate_offset(Node, Node, Node) const { return 0; }
     __device__ Node start(Node ant, Node n) const { return visits[ant * n]; }
-    template<class Distance>
-    __device__ Node next(Node ant, Node, const std::uint8_t*, Node step, Node n, Distance) const {
-        return visits[ant * n + step];
+    template<class Distance, class Allowed>
+    __device__ Node next(Node ant, Node current, const std::uint8_t*, Node step, Node n, Distance,
+                        const Node* tour, const Node* position, const Allowed& allowed) const {
+        const Node node = visits[ant * n + step];
+        if constexpr (std::is_same_v<Allowed, UnrestrictedEdges>) return node;
+        else return relocation_allowed(tour, position, n, current, node, allowed) ? node : n;
     }
 };
 
@@ -59,19 +65,20 @@ __device__ inline void append_if_absent(Node* pending, Node from, Node node, Nod
     pending[length++] = node;
 }
 
-template<class Distance, class Choices>
+template<class Distance, class Choices, class Allowed = UnrestrictedEdges>
 __global__ void construct_and_search(
     Distance distances, const Node* all_candidates, Node n, Node width,
     const Node* parent_tours, Choices choice_views, const Node* targets,
     std::uint64_t evaluation_limit, Node* all_tours, Node* all_positions,
     Node* all_parent_positions, Node* all_scratch, Node* all_pending,
     double* all_gains, Node* construction_tours, FacoDiagnosticInfo* output,
-    std::uint8_t* all_visited) {
+    std::uint8_t* all_visited, Allowed all_allowed = {}) {
     const auto ant = blockIdx.x;
     const auto base = static_cast<std::size_t>(ant) * n;
     const auto matrix = distances.for_ant(ant);
     const auto choices = choice_views.for_ant(ant, n);
     const auto local_ant = choice_views.ant_index(ant);
+    const auto allowed = all_allowed.for_ant(ant, n);
     const Node* candidates = all_candidates + choice_views.candidate_offset(ant, n, width);
     const Node* parent = parent_tours + choice_views.parent_offset(ant, n);
     std::uint8_t* visited = all_visited + base;
@@ -105,26 +112,34 @@ __global__ void construct_and_search(
         // 所有warp先读完循环条件，线程0才能增加该条件所读取的steps。
         __syncthreads();
         if (threadIdx.x == 0) {
-            ++state.construction.steps;
-            state.selected = choices.next(local_ant, state.current, visited, state.construction.steps, n, matrix);
-            visited[state.selected] = 1;
-            state.old_previous = predecessor(tour, position, n, state.selected);
-            state.node_position = position[state.selected];
-            state.target_position = position[state.current];
-            const Node after = successor(tour, position, n, state.selected);
-            const Node target_after = successor(tour, position, n, state.current);
-            state.nonidentity = target_after != state.selected;
-            if (state.nonidentity) {
-                ++state.construction.nonidentity_relocations;
-                state.cost += -distance(matrix, n, state.old_previous, state.selected)
-                              -distance(matrix, n, state.selected, after)
-                              -distance(matrix, n, state.current, target_after)
-                              +distance(matrix, n, state.old_previous, after)
-                              +distance(matrix, n, state.current, state.selected)
-                              +distance(matrix, n, state.selected, target_after);
+            state.selected = choices.next(local_ant, state.current, visited, state.construction.steps + 1,
+                                          n, matrix, tour, position, allowed);
+            state.stopped = state.selected >= n;
+            if (state.stopped) state.construction.legal_exhausted = true;
+            // 同一线程完成选择与端点捕获，随后只需一次block发布边界。
+            else {
+                ++state.construction.steps;
+                visited[state.selected] = 1;
+                state.old_previous = predecessor(tour, position, n, state.selected);
+                state.node_position = position[state.selected];
+                state.target_position = position[state.current];
+                const Node after = successor(tour, position, n, state.selected);
+                const Node target_after = successor(tour, position, n, state.current);
+                state.nonidentity = target_after != state.selected;
+                if (state.nonidentity) {
+                    ++state.construction.nonidentity_relocations;
+                    state.cost += -distance(matrix, n, state.old_previous, state.selected)
+                                  -distance(matrix, n, state.selected, after)
+                                  -distance(matrix, n, state.current, target_after)
+                                  +distance(matrix, n, state.old_previous, after)
+                                  +distance(matrix, n, state.current, state.selected)
+                                  +distance(matrix, n, state.selected, target_after);
+                }
             }
         }
         __syncthreads();
+        // 全声明枚举均无合法移动时共同退出；没有visited[n]或隐式图外回退。
+        if (state.stopped) break;
         if (state.nonidentity) {
             for (Node i = threadIdx.x; i < n; i += blockDim.x) {
                 Node source = i;
@@ -187,6 +202,10 @@ __global__ void construct_and_search(
                         }
                         ++state.ls.move_evaluations;
                         ++state.allowed[kind];
+                        const Node neighbor = kind == 0 ? successor(tour, position, n, b)
+                                                        : predecessor(tour, position, n, b);
+                        if (!two_opt_allowed(state.a, kind == 0 ? state.a_next : state.a_previous,
+                                             b, neighbor, allowed)) ++state.ls.constraint_rejections;
                     }
                 }
             }
@@ -205,8 +224,10 @@ __global__ void construct_and_search(
             const double other = kind == 0 ? distance(matrix, n, b, neighbor)
                                            : distance(matrix, n, neighbor, b);
             const Node closing = kind == 0 ? state.a_next : state.a_previous;
-            gains[index] = current_distance + other - distance(matrix, n, state.a, b)
-                           -distance(matrix, n, closing, neighbor);
+            gains[index] = two_opt_allowed(state.a, closing, b, neighbor, allowed)
+                ? current_distance + other - distance(matrix, n, state.a, b)
+                  -distance(matrix, n, closing, neighbor)
+                : -CUDART_INF;
         }
         __syncthreads();
         if (threadIdx.x == 0) {
