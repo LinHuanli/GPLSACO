@@ -5,13 +5,16 @@ import argparse
 import csv
 import json
 import subprocess
+import sys
 from pathlib import Path
 
-from research_e1 import PROJECT, RegisteredTrainingRun, load_plan, require, training_settings
+PROJECT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT / "python"))
 
-from gp_faco.dataset_index import IndexedDataset
-from gp_faco.training import TrainingData
-from gp_faco.worker import SolverSettings, WorkerProtocol, content_hash, file_hash
+from gp_faco.dataset_index import IndexedDataset  # noqa: E402
+from gp_faco.training import TrainingData  # noqa: E402
+from gp_faco.worker import SolverSettings, WorkerProtocol, content_hash, file_hash  # noqa: E402
+from research_e1 import RegisteredTrainingRun, load_plan, require, training_settings  # noqa: E402
 
 
 def load_amendment(path, plan):
@@ -90,7 +93,8 @@ def train(args):
                 "e1_plan_sha256": plan["sha256"],
                 "condition": args.condition,
                 "hardware_amendment_sha256": amendment["sha256"],
-                "selection": "complete frozen train and validation splits; no development or test members",
+                "selection": "complete frozen train and validation splits; "
+                "no development or test members",
                 "reference_status": "user_supplied_not_independently_certified",
             },
         )
