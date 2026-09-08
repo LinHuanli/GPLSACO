@@ -200,6 +200,7 @@ __global__ void construct_and_search(
                     for (Node j = 0; j < width; ++j) {
                         const Node b = candidates[state.a * width + j];
                         ++state.ls.candidate_checks;
+                        if (b >= n) break;  // 距离有序行的右侧padding，不访问哨兵坐标。
                         if (!(current_distance > distance(matrix, n, state.a, b))) break;
                         if (state.ls.move_evaluations == evaluation_limit) {
                             state.ls.evaluation_limit_reached = true;

@@ -6,12 +6,14 @@
 #include "gp_faco/program.hpp"
 #include "gp_faco/profiling.hpp"
 #include "gp_faco/baseline_policy.hpp"
+#include "gp_faco/prepared_problem.hpp"
 
 #include <memory>
 
 namespace gp_faco {
 
 enum class PreparationMode { CachedCharged, EndToEnd };
+enum class ConstraintMode { Unrestricted, Hard };
 struct BatchTask { std::uint64_t instance_key, seed; };
 struct RegistrationInfo { double cheap_seconds, preparation_seconds; };
 
@@ -26,6 +28,9 @@ struct BatchEvaluation {
     bool count_limited = false;
     std::uint64_t evaluation_limit_per_colony = 0, completed_tour_evaluations_per_colony = 0;
     std::uint64_t total_tour_evaluations = 0;
+    ConstraintMode constraint_mode = ConstraintMode::Unrestricted;
+    std::vector<std::uint64_t> graph_edges_per_colony;
+    std::uint64_t completed_constraint_rejections = 0;
     // 仅C++诊断入口填充，Python正式结果不暴露迟到tour或成本。
     std::vector<double> discarded_costs;
     std::vector<ControllerState> completed_control_states;
@@ -47,11 +52,14 @@ struct BatchDiagnosticControls {
 class FacoBatchEngine {
 public:
     // 固定形状缓冲预分配属于通用worker准备，不处理实例或标签。
-    FacoBatchEngine(Node dimension, Node colonies, FixedFacoSettings settings = {});
+    FacoBatchEngine(Node dimension, Node colonies, FixedFacoSettings settings = {},
+                   ConstraintMode constraint_mode = ConstraintMode::Unrestricted);
     ~FacoBatchEngine();
     FacoBatchEngine(const FacoBatchEngine&) = delete;
     FacoBatchEngine& operator=(const FacoBatchEngine&) = delete;
     RegistrationInfo register_problem(std::uint64_t key, std::vector<double> coordinates);
+    RegistrationInfo register_graph_problem(std::uint64_t key, std::vector<double> coordinates,
+                                            CandidateGraphSpec spec);
     // 实测准备耗时保持不变；指定用于评价扣费的冻结值，同一实例只能赋一次。
     void set_preparation_charges(std::uint64_t key, RegistrationInfo charges);
     PreparationProfile preparation_profile(std::uint64_t key) const;

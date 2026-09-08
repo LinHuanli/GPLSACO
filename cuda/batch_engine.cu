@@ -33,6 +33,8 @@ std::uint64_t mixed(std::uint64_t value) {
 struct FacoBatchEngine::Impl {
     Node n, colonies;
     FixedFacoSettings config;
+    ConstraintMode constraint_mode;
+    Node graph_neighbor_stride = 0;
     int device = 0;
     std::mutex mutex;
     std::map<std::uint64_t, PreparedProblem> registry;
@@ -54,6 +56,7 @@ struct FacoBatchEngine::Impl {
     DeviceArray<float> features, scores;
     DeviceArray<std::uint32_t> experiment_masks, masks;
     DeviceArray<std::int32_t> actions;
+    DeviceArray<Node> graph_offsets, graph_neighbors;
     struct ProfileBuffers {
         cuda_detail::ProfileEvents events;
         DeviceArray<AntPhaseCycles> cycles;
@@ -61,8 +64,10 @@ struct FacoBatchEngine::Impl {
     };
     std::unique_ptr<ProfileBuffers> profiling;
 
-    Impl(Node dimension, Node count, FixedFacoSettings settings)
-        : n(dimension), colonies(count), config(normalized_settings(settings, dimension)) {
+    Impl(Node dimension, Node count, FixedFacoSettings settings, ConstraintMode mode)
+        : n(dimension), colonies(count), config(normalized_settings(settings, dimension)),
+          constraint_mode(mode) {
+        require(mode == ConstraintMode::Unrestricted || mode == ConstraintMode::Hard, "未知图约束模式");
         require(colonies >= 1 && colonies <= 128, "并发colony数必须在1..128");
         const std::size_t nodes = static_cast<std::size_t>(n) * colonies;
         const std::size_t ants = static_cast<std::size_t>(config.ants) * colonies;
@@ -87,6 +92,13 @@ struct FacoBatchEngine::Impl {
         allocate(alternatives, colonies); allocate(identities, ants); allocate(controllers, colonies);
         allocate(regions, colonies); allocate(features, colonies * 12 * 32); allocate(scores, colonies * 32);
         allocate(experiment_masks, colonies); allocate(masks, colonies); allocate(actions, colonies);
+        if (constraint_mode == ConstraintMode::Hard) {
+            const auto stride = static_cast<std::size_t>(n) * 2 * (config.primary_width + 1);
+            require(stride <= UINT32_MAX, "图邻接容量超过uint32");
+            graph_neighbor_stride = static_cast<Node>(stride);
+            allocate(graph_offsets, static_cast<std::size_t>(colonies) * (n + 1));
+            allocate(graph_neighbors, static_cast<std::size_t>(colonies) * stride);
+        }
     }
 
     ControlDeviceSnapshot snapshot() const {
@@ -117,14 +129,15 @@ struct FacoBatchEngine::Impl {
     }
 };
 
-FacoBatchEngine::FacoBatchEngine(Node n, Node colonies, FixedFacoSettings settings)
-    : impl_(std::make_unique<Impl>(n, colonies, settings)) {}
+FacoBatchEngine::FacoBatchEngine(Node n, Node colonies, FixedFacoSettings settings, ConstraintMode mode)
+    : impl_(std::make_unique<Impl>(n, colonies, settings, mode)) {}
 FacoBatchEngine::~FacoBatchEngine() = default;
 
 RegistrationInfo FacoBatchEngine::register_problem(std::uint64_t key, std::vector<double> coordinates) {
     auto& p = *impl_;
     std::unique_lock<std::mutex> lock(p.mutex, std::try_to_lock);
     require(lock.owns_lock(), "同一Engine的注册与评价不能重叠");
+    require(p.constraint_mode == ConstraintMode::Unrestricted, "Hard实例须通过图注册入口");
     require(coordinates.size() == static_cast<std::size_t>(p.n) * 2, "实例维数与固定面板不符");
     const auto existing = p.registry.find(key);
     if (existing != p.registry.end()) {
@@ -133,6 +146,27 @@ RegistrationInfo FacoBatchEngine::register_problem(std::uint64_t key, std::vecto
     }
     auto prepared = make_cheap_problem(std::move(coordinates), p.config);
     prepare_problem(prepared);
+    const RegistrationInfo info{prepared.cheap_seconds, prepared.preparation_seconds};
+    p.registry.emplace(key, std::move(prepared));
+    return info;
+}
+
+RegistrationInfo FacoBatchEngine::register_graph_problem(std::uint64_t key,
+    std::vector<double> coordinates, CandidateGraphSpec spec) {
+    auto& p = *impl_;
+    std::unique_lock<std::mutex> lock(p.mutex, std::try_to_lock);
+    require(lock.owns_lock(), "同一Engine的图注册与评价不能重叠");
+    require(p.constraint_mode == ConstraintMode::Hard &&
+            coordinates.size() == static_cast<std::size_t>(p.n) * 2, "图注册模式/维数不符");
+    const auto existing = p.registry.find(key);
+    if (existing != p.registry.end()) {
+        require(existing->second.coordinates == coordinates && existing->second.graph_spec &&
+                *existing->second.graph_spec == spec, "相同key的坐标、初始tour或图枚举行改变");
+        return {existing->second.cheap_seconds, existing->second.preparation_seconds};
+    }
+    auto prepared = make_cheap_problem(std::move(coordinates), p.config);
+    prepare_problem(prepared);
+    apply_candidate_graph(prepared, std::move(spec));
     const RegistrationInfo info{prepared.cheap_seconds, prepared.preparation_seconds};
     p.registry.emplace(key, std::move(prepared));
     return info;
@@ -206,6 +240,8 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     require(tasks.size() == p.colonies && mne_target > 0 && controls.completion_delay_ms <= 2000,
             "任务数量、MNE或诊断延迟无效");
     require(mode == PreparationMode::CachedCharged || mode == PreparationMode::EndToEnd, "未知准备模式");
+    require(p.constraint_mode == ConstraintMode::Unrestricted || count_limited,
+            "Hard主入口只支持评价次数，不能以旧截止路径发布图外廉价解");
     require(!count_limited || (evaluation_limit % p.config.ants == 0 &&
             evaluation_limit / p.config.ants <= UINT32_MAX && controls.fixed_batches == 0 &&
             controls.fixed_elapsed_ratio == -1),
@@ -240,6 +276,7 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     BatchEvaluation result;
     result.budget_seconds = seconds;
     result.count_limited = count_limited;
+    result.constraint_mode = p.constraint_mode;
     result.evaluation_limit_per_colony = evaluation_limit;
     result.allocated_device_bytes = p.allocated_bytes;
     if (controls.profile) {
@@ -306,6 +343,8 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         } else {
             auto& prepared = fresh.at(key);
             if (!prepare_problem(prepared, [&]() { return budget.expired(); })) return finish();
+            if (p.constraint_mode == ConstraintMode::Hard)
+                apply_candidate_graph(prepared, *p.registry.at(key).graph_spec);
             offer(ids, prepared.initial_tour, prepared.initial_cost);
         }
         if (budget.expired()) return finish();
@@ -314,6 +353,7 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     const auto pack_started = profile_now();
     std::vector<double> xy, costs, local_scale, epsilons;
     std::vector<Node> primary, backup, ls, initial, samples;
+    std::vector<Node> graph_offsets, graph_neighbors;
     std::vector<std::uint64_t> keys;
     std::map<std::uint64_t, std::vector<Node>> sample_cache;
     for (const auto& task : tasks) {
@@ -325,6 +365,13 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         for (const auto& row : prepared.primary) primary.insert(primary.end(), row.begin(), row.end());
         for (const auto& row : prepared.backup) backup.insert(backup.end(), row.begin(), row.end());
         for (const auto& row : prepared.ls) ls.insert(ls.end(), row.begin(), row.end());
+        if (p.constraint_mode == ConstraintMode::Hard) {
+            const auto& graph = *prepared.graph;
+            graph_offsets.insert(graph_offsets.end(), graph.offsets().begin(), graph.offsets().end());
+            graph_neighbors.insert(graph_neighbors.end(), graph.neighbors().begin(), graph.neighbors().end());
+            graph_neighbors.insert(graph_neighbors.end(), p.graph_neighbor_stride - graph.neighbors().size(), p.n);
+            result.graph_edges_per_colony.push_back(graph.edges());
+        }
         keys.push_back(mixed(task.seed ^ mixed(task.instance_key + 0xd1b54a32d192ed03ULL)));
         if (controlled) {
             local_scale.insert(local_scale.end(), prepared.local_scale.begin(), prepared.local_scale.end());
@@ -341,6 +388,9 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     auto upload_started = profile_now();
     p.xy.upload(xy); p.costs.upload(costs); p.primary.upload(primary); p.backup.upload(backup);
     p.ls.upload(ls); p.initial.upload(initial); p.keys.upload(keys);
+    if (p.constraint_mode == ConstraintMode::Hard) {
+        p.graph_offsets.upload(graph_offsets); p.graph_neighbors.upload(graph_neighbors);
+    }
     const auto& c = p.config;
     const Node ants = c.ants * p.colonies, cells = p.n * c.primary_width * p.colonies;
     p.targets.upload(std::vector<Node>(ants, mne_target));
@@ -419,23 +469,29 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         const cuda_detail::BatchCoordinateDistance distance{p.xy.data(), p.n, c.ants};
         const cuda_detail::BatchStochasticChoices choices{p.primary.data(), p.backup.data(), p.products.data(),
             p.keys.data(), c.primary_width, c.backup_width, batch, c.ants};
-        const auto construct = [&](auto view) {
+        const auto construct = [&](auto view, auto allowed) {
             if (controls.profile) {
-                cuda_detail::construct_and_search<decltype(distance), decltype(view), UnrestrictedEdges, true>
+                cuda_detail::construct_and_search<decltype(distance), decltype(view), decltype(allowed), true>
                     <<<ants, 128>>>(distance, p.ls.data(), p.n, c.ls_width,
                     p.parent.data(), view, p.targets.data(), c.ls_evaluation_limit, p.tours.data(),
                     p.positions.data(), p.parent_positions.data(), p.scratch.data(), p.pending.data(),
-                    p.gains.data(), nullptr, p.info.data(), p.visited.data(), {}, p.profiling->cycles.data());
+                    p.gains.data(), nullptr, p.info.data(), p.visited.data(), allowed, p.profiling->cycles.data());
             } else {
                 cuda_detail::construct_and_search<<<ants, 128>>>(distance, p.ls.data(), p.n, c.ls_width,
                     p.parent.data(), view, p.targets.data(), c.ls_evaluation_limit, p.tours.data(),
                     p.positions.data(), p.parent_positions.data(), p.scratch.data(), p.pending.data(),
-                    p.gains.data(), nullptr, p.info.data(), p.visited.data());
+                    p.gains.data(), nullptr, p.info.data(), p.visited.data(), allowed);
             }
         };
         event_begin(GpuProfileStage::ConstructionAndSearch);
-        if (controlled) construct(cuda_detail::BatchRegionChoices{choices, p.regions.data(), p.actions.data()});
-        else construct(choices);
+        const auto with_constraint = [&](auto allowed) {
+            if (controlled) construct(cuda_detail::BatchRegionChoices{choices, p.regions.data(), p.actions.data()}, allowed);
+            else construct(choices, allowed);
+        };
+        if (p.constraint_mode == ConstraintMode::Hard)
+            with_constraint(BatchSparseGraphView{p.graph_offsets.data(), p.graph_neighbors.data(),
+                                                c.ants, p.graph_neighbor_stride});
+        else with_constraint(UnrestrictedEdges{});
         event_end(GpuProfileStage::ConstructionAndSearch);
         event_begin(GpuProfileStage::Reduction);
         cuda_detail::reduce_and_select<<<p.colonies, 128>>>(p.n, c.ants, p.tours.data(), p.info.data(),
@@ -473,6 +529,8 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
             const auto base = static_cast<std::size_t>(colony) * p.n;
             std::vector<Node> candidate(tours.begin() + base, tours.begin() + base + p.n);
             const auto& problem = p.registry.at(tasks[colony].instance_key);
+            require(!problem.graph || problem.graph->contains_tour(candidate),
+                    "Hard设备incumbent存在图外边");
             // 同步完成后验证完整排列/成本；验证耗时也在完成时间戳之前。
             CpuTour verified(candidate, [&](Node a, Node b) { return problem.distance(a, b); });
             const double value = verified.cost();
@@ -508,6 +566,7 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         for (const auto& ant : info) {
             result.completed_construction_steps += ant.construction.steps;
             result.completed_ls_evaluations += ant.local_search.move_evaluations;
+            result.completed_constraint_rejections += ant.local_search.constraint_rejections;
         }
         if (batch == std::numeric_limits<Node>::max()) throw std::runtime_error("随机批次编号用尽");
     }

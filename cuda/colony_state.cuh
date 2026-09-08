@@ -76,6 +76,11 @@ static __global__ void initialize_products(cuda_detail::CoordinateDistance dista
     const Node i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= cells) return;
     const Node colony = i / (n * width);
+    if (primary[i] >= n) {
+        heuristic[i] = products[i] = 0;
+        trails[i] = state[colony].maximum;
+        return;
+    }
     const double d = distance(i / width, primary[i] + colony * n);
     heuristic[i] = d > 0 ? 1.0 / pow(d, beta) : 1.0;
     trails[i] = state[colony].maximum;

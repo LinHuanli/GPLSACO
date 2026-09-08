@@ -130,7 +130,8 @@ GPFACO_CONTROL_HD inline void build_region(TourView reference, const Node* prima
         for (Node head = 0; head < used && used < count; ++head)
             for (Node j = 0; j < width && used < count; ++j) {
                 const Node node = primary[nodes[head] * width + j];
-                if (!has_node(nodes, used, node)) nodes[used++] = node;
+                // 稀疏图的右侧空槽不能进入BFS队列，否则下一层会越界读取整行。
+                if (node < n && !has_node(nodes, used, node)) nodes[used++] = node;
             }
     }
     while (used < count) {

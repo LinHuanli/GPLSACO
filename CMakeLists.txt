@@ -28,6 +28,10 @@ add_executable(baseline_policy_semantics tests/cpp/test_baseline_policy.cpp)
 target_link_libraries(baseline_policy_semantics PRIVATE gp_faco_core)
 add_test(NAME baseline_policy_semantics COMMAND baseline_policy_semantics
     "${CMAKE_CURRENT_BINARY_DIR}/baseline_policy_results.json")
+add_executable(graph_preparation_semantics tests/cpp/test_graph_preparation.cpp)
+target_link_libraries(graph_preparation_semantics PRIVATE gp_faco_core)
+add_test(NAME graph_preparation_semantics COMMAND graph_preparation_semantics
+    "${CMAKE_CURRENT_BINARY_DIR}/graph_preparation_results.json")
 
 if(GP_FACO_CUDA)
     enable_language(CUDA)
@@ -79,6 +83,10 @@ if(GP_FACO_CUDA)
     target_link_libraries(baseline_engine_semantics PRIVATE gp_faco_cuda)
     add_test(NAME baseline_engine_semantics COMMAND baseline_engine_semantics
         "${CMAKE_CURRENT_BINARY_DIR}/baseline_engine_results.json")
+    add_executable(hard_engine_semantics tests/cpp/test_hard_engine.cpp)
+    target_link_libraries(hard_engine_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME hard_engine_semantics COMMAND hard_engine_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/hard_engine_results.json")
 endif()
 
 if(GP_FACO_PYTHON)

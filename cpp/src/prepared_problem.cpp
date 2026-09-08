@@ -120,6 +120,47 @@ bool prepare_problem(PreparedProblem& p, const std::function<bool()>& stop_reque
     return true;
 }
 
+void apply_candidate_graph(PreparedProblem& p, CandidateGraphSpec spec) {
+    const auto started = Clock::now();
+    require(p.ready && !p.graph, "固定图需要已完成的共同准备，且只能登记一次");
+    const Node n = p.size();
+    require(spec.common_initial_tour == p.initial_tour, "图输入改变了共同初始tour");
+    SparseUndirectedGraph graph(n, spec.edges);
+    require(graph.edges() == spec.edges.size() && graph.contains_tour(p.initial_tour),
+            "图含重复边或遗漏共同初始tour边");
+    require(graph.edges() <= static_cast<std::size_t>(n) * (p.settings.primary_width + 1),
+            "实际图超过预登记的固定容量");
+    const auto validate = [&](const CandidateRows& rows, Node width, bool in_graph, bool ordered) {
+        require(rows.size() == n, "图枚举行节点数不符");
+        for (Node a = 0; a < n; ++a) {
+            require(rows[a].size() == width, "图枚举行必须使用固定槽位");
+            bool padded = false;
+            std::vector<Node> seen;
+            std::pair<double, Node> previous{-1, 0};
+            for (Node b : rows[a]) {
+                if (b == n) { padded = true; continue; }
+                require(!padded && b < n && b != a &&
+                        std::find(seen.begin(), seen.end(), b) == seen.end(),
+                        "图枚举含未知/重复节点、自环或非右侧padding");
+                require(!in_graph || graph.contains(a, b), "主行或LS行成员不在完整图中");
+                const std::pair<double, Node> current{p.distance(a, b), b};
+                require(!ordered || previous <= current, "LS行必须按原问题距离和节点ID排序");
+                previous = current; seen.push_back(b);
+            }
+        }
+    };
+    validate(spec.primary, p.settings.primary_width, true, false);
+    validate(spec.backup, p.settings.backup_width, false, false);
+    validate(spec.ls, p.settings.ls_width, true, true);
+    for (Node a = 0; a < n; ++a) for (Node b : spec.backup[a]) if (b < n)
+        require(std::find(spec.primary[a].begin(), spec.primary[a].end(), b) == spec.primary[a].end(),
+                "主行和备用行重复了实际成员");
+    p.primary = spec.primary; p.backup = spec.backup; p.ls = spec.ls;
+    p.graph_spec = std::move(spec); p.graph = std::move(graph);
+    p.graph_preparation_seconds = seconds(started);
+    p.preparation_seconds += p.graph_preparation_seconds;
+}
+
 std::vector<Node> flattened(const CandidateRows& rows) {
     std::vector<Node> values;
     for (const auto& row : rows) values.insert(values.end(), row.begin(), row.end());
