@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gp_faco/fixed_faco_gpu.hpp"
+#include "gp_faco/profiling.hpp"
 
 #include <functional>
 
@@ -15,6 +16,7 @@ struct PreparedProblem {
     std::vector<Node> cheap_tour, initial_tour;
     double cheap_cost = 0, initial_cost = 0;
     double cheap_seconds = 0, preparation_seconds = 0;
+    PreparationProfile preparation_profile;
     bool ready = false;
     Node size() const { return coordinates.size() / 2; }
     double distance(Node a, Node b) const;

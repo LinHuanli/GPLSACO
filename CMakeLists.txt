@@ -60,6 +60,11 @@ if(GP_FACO_CUDA)
     target_link_libraries(hard_cuda_semantics PRIVATE gp_faco_cuda)
     add_test(NAME hard_cuda_semantics COMMAND hard_cuda_semantics
         "${CMAKE_CURRENT_BINARY_DIR}/hard_cuda_results.json")
+    add_executable(profiling_semantics tests/cpp/test_profiling.cpp)
+    target_compile_options(profiling_semantics PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
+    target_link_libraries(profiling_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME profiling_semantics COMMAND profiling_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/profiling_semantics.json")
 endif()
 
 if(GP_FACO_PYTHON)

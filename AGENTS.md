@@ -2,6 +2,7 @@
 
 - 所有代码、构建、虚拟环境、临时文件和运行输出均位于本目录；外部 `../Datasets` 与 `../references` 只读。
 - 以 `docs/design/GP_ACO_TSP_Research_Proposal_v4.md` 为科学范围；实现细化见 `docs/README.md`。不得把准备工作或 smoke test 写成 E1–E4 的完成证据。
+- 按用户2026-09-08补充，进化和ACO主实验按evaluation次数终止，尽量不设时间上限；最新协议见 `docs/planning/12_evaluation_count_protocol.md`，优先于旧wall-clock主协议。旧计时记录保留为工程证据。
 - Python 管理离线 GP；C++17/CUDA 执行在线求解。新增核心逻辑写中文注释，保留第三方原有版权。
 - 求解器输入不包含最优值、最优 tour 或标签文件路径；评分位于外部 evaluator。
 - 使用项目 `.venv`；设置 `TMPDIR=$PWD/.tmp`、`PIP_CACHE_DIR=$PWD/.cache/pip`。只版本化源码、配置、manifest 和精简报告，不提交原始数据、二进制或完整运行日志。

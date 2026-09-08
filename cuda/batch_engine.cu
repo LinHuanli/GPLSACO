@@ -5,6 +5,7 @@
 #include "faco_device.cuh"
 #include "control_state.cuh"
 #include "gp_score.cuh"
+#include "profile_events.cuh"
 
 #include <algorithm>
 #include <chrono>
@@ -52,6 +53,12 @@ struct FacoBatchEngine::Impl {
     DeviceArray<float> features, scores;
     DeviceArray<std::uint32_t> experiment_masks, masks;
     DeviceArray<std::int32_t> actions;
+    struct ProfileBuffers {
+        cuda_detail::ProfileEvents events;
+        DeviceArray<AntPhaseCycles> cycles;
+        explicit ProfileBuffers(std::size_t ants) { cycles.allocate(ants); }
+    };
+    std::unique_ptr<ProfileBuffers> profiling;
 
     Impl(Node dimension, Node count, FixedFacoSettings settings)
         : n(dimension), colonies(count), config(normalized_settings(settings, dimension)) {
@@ -144,6 +151,14 @@ void FacoBatchEngine::set_preparation_charges(std::uint64_t key, RegistrationInf
             "同一Engine中的冻结准备费用不能改变");
 }
 
+PreparationProfile FacoBatchEngine::preparation_profile(std::uint64_t key) const {
+    auto& p = *impl_;
+    std::unique_lock<std::mutex> lock(p.mutex, std::try_to_lock);
+    require(lock.owns_lock(), "同一Engine的准备剖析读取与评价不能重叠");
+    require(p.registry.find(key) != p.registry.end(), "准备剖析对应实例尚未注册");
+    return p.registry.at(key).preparation_profile;
+}
+
 BatchEvaluation FacoBatchEngine::evaluate(const std::vector<BatchTask>& tasks, double seconds,
                                         Node mne_target, PreparationMode mode) {
     return evaluate_diagnostic(tasks, seconds, mne_target, mode, {});
@@ -176,6 +191,12 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     require(tasks.size() == p.colonies && mne_target > 0 && controls.completion_delay_ms <= 2000,
             "任务数量、MNE或诊断延迟无效");
     require(mode == PreparationMode::CachedCharged || mode == PreparationMode::EndToEnd, "未知准备模式");
+    require(std::isfinite(controls.fixed_elapsed_ratio) &&
+            (controls.fixed_elapsed_ratio == -1 || (controls.fixed_batches > 0 &&
+             controls.fixed_elapsed_ratio >= 0 && controls.fixed_elapsed_ratio <= 1)),
+            "固定elapsed特征只能用于固定批次诊断且须在[0,1]");
+    require(!controls.profile || (controls.fixed_batches > 0 && controls.fixed_elapsed_ratio >= 0),
+            "profile必须固定批次数与elapsed特征，不能混入主fitness");
     if (program) {
         validate_program(*program);
         require((experiment_mask & 0xffffu) != 0, "实验mask必须保留至少一个保持模式动作");
@@ -189,6 +210,21 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     BatchEvaluation result;
     result.budget_seconds = seconds;
     result.allocated_device_bytes = p.allocated_bytes;
+    if (controls.profile) {
+        const auto setup = Clock::now();
+        // 临时对象完整构造后才发布；分配失败不能留下可被后续调用误用的半成品。
+        if (!p.profiling) p.profiling = std::make_unique<Impl::ProfileBuffers>(
+            static_cast<std::size_t>(p.config.ants) * p.colonies);
+        result.profile.setup_seconds = std::chrono::duration<double>(Clock::now() - setup).count();
+        result.profile.diagnostic_device_bytes = p.profiling->cycles.bytes();
+    }
+    auto* events = controls.profile ? &p.profiling->events : nullptr;
+    const auto event_begin = [&](GpuProfileStage stage) { if (events) events->begin(stage); };
+    const auto event_end = [&](GpuProfileStage stage) { if (events) events->end(stage); };
+    const auto profile_now = [&]() { return controls.profile ? Clock::now() : Clock::time_point{}; };
+    const auto host_duration = [](Clock::time_point start) {
+        return std::chrono::duration<double>(Clock::now() - start).count();
+    };
     result.incumbents.resize(p.colonies);
     if (program) result.completed_control_states.resize(p.colonies);
     std::map<std::uint64_t, std::vector<Node>> groups;
@@ -241,6 +277,7 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         if (budget.expired()) return finish();
     }
 
+    const auto pack_started = profile_now();
     std::vector<double> xy, costs, local_scale, epsilons;
     std::vector<Node> primary, backup, ls, initial, samples;
     std::vector<std::uint64_t> keys;
@@ -263,27 +300,39 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
             samples.insert(samples.end(), entry->second.begin(), entry->second.end());
         }
     }
+    if (controls.profile) result.profile.host_pack_seconds = host_duration(pack_started);
     if (!budget.can_start()) return finish();
+    if (events) events->reset();
+    event_begin(GpuProfileStage::Initialization);
+    auto upload_started = profile_now();
     p.xy.upload(xy); p.costs.upload(costs); p.primary.upload(primary); p.backup.upload(backup);
     p.ls.upload(ls); p.initial.upload(initial); p.keys.upload(keys);
     const auto& c = p.config;
     const Node ants = c.ants * p.colonies, cells = p.n * c.primary_width * p.colonies;
     p.targets.upload(std::vector<Node>(ants, mne_target));
+    if (controls.profile) result.profile.upload_seconds += host_duration(upload_started);
     cuda_detail::reset_colony<<<p.colonies, 128>>>(p.n, p.initial.data(), p.costs.data(), p.parent.data(),
         p.epoch.data(), p.global.data(), p.state.data(), c.primary_width, c.retention, c.p_best);
     cuda_detail::initialize_products<<<(cells + 255) / 256, 256>>>(
         cuda_detail::CoordinateDistance{p.xy.data()}, cells, p.n, c.primary_width, p.primary.data(),
         c.beta, p.state.data(), p.heuristic.data(), p.trails.data(), p.products.data());
     if (program) {
+        upload_started = profile_now();
         p.local_scale.upload(local_scale); p.epsilons.upload(epsilons); p.samples.upload(samples);
         p.experiment_masks.upload(std::vector<std::uint32_t>(p.colonies, experiment_mask));
+        if (controls.profile) result.profile.upload_seconds += host_duration(upload_started);
         cuda_detail::initialize_control<<<p.colonies, 128>>>(p.n, p.initial.data(), p.costs.data(),
             p.parent_position.data(), p.archive.data(), p.archive_positions.data(), p.controllers.data(),
             controls.force_fingerprint_collisions);
         p.actions.zero(); p.apply_actions(true);
     }
+    event_end(GpuProfileStage::Initialization);
     checked(cudaGetLastError()); checked(cudaDeviceSynchronize());
+    if (events) result.profile.initialization_gpu_milliseconds =
+        events->elapsed()[static_cast<unsigned>(GpuProfileStage::Initialization)];
+    const auto initial_download_started = profile_now();
     const auto initial_control = program ? p.controllers.download() : std::vector<ControllerState>{};
+    if (controls.profile) result.profile.initialization_download_seconds = host_duration(initial_download_started);
     if (budget.expired()) return finish();
     result.preparation_completed = true;
     if (program) result.completed_control_states = initial_control;
@@ -291,57 +340,87 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     for (Node batch = 0; budget.can_start(); ++batch) {
         if (controls.fixed_batches && batch >= controls.fixed_batches) break;
         ++result.launched_batches;
+        const auto batch_started = profile_now();
+        BatchPhaseProfile profile; profile.batch = batch;
+        if (events) events->reset();
         ControlBatchTrace trace;
         if (program) {
             trace.batch = batch;
             if (controls.capture_control) trace.before = p.snapshot();
-            trace.elapsed_ratio = budget.elapsed() / seconds;
+            trace.elapsed_ratio = controls.fixed_elapsed_ratio >= 0 ? controls.fixed_elapsed_ratio : budget.elapsed() / seconds;
+            event_begin(GpuProfileStage::Features);
             cuda_detail::build_control_features<<<p.colonies, 128>>>(p.n, c.primary_width, p.colonies,
                 p.xy.data(), p.primary.data(), p.local_scale.data(), p.epsilons.data(), p.samples.data(),
                 p.keys.data(), batch, trace.elapsed_ratio, p.parent.data(), p.parent_position.data(),
                 p.archive.data(), p.archive_positions.data(), p.controllers.data(), p.state.data(),
                 p.trails.data(), p.experiment_masks.data(), p.regions.data(), p.alternatives.data(),
                 p.masks.data(), p.features.data());
+            event_end(GpuProfileStage::Features);
+            event_begin(GpuProfileStage::Scoring);
             cuda_detail::score_actions<<<(p.colonies + 3) / 4, 128>>>(*program, p.features.data(),
                 p.masks.data(), p.scores.data(), p.actions.data(), p.colonies);
+            event_end(GpuProfileStage::Scoring);
             if (controls.capture_control) {
                 trace.features = p.features.download(); trace.scores = p.scores.download();
                 trace.masks = p.masks.download(); trace.actions = p.actions.download();
                 trace.alternatives = p.alternatives.download(); trace.regions = p.regions.download();
             }
+            event_begin(GpuProfileStage::Action);
             p.apply_actions();
+            event_end(GpuProfileStage::Action);
             if (controls.capture_control) trace.after_restart = p.snapshot();
         }
         const cuda_detail::BatchCoordinateDistance distance{p.xy.data(), p.n, c.ants};
         const cuda_detail::BatchStochasticChoices choices{p.primary.data(), p.backup.data(), p.products.data(),
             p.keys.data(), c.primary_width, c.backup_width, batch, c.ants};
         const auto construct = [&](auto view) {
-            cuda_detail::construct_and_search<<<ants, 128>>>(distance, p.ls.data(), p.n, c.ls_width,
-                p.parent.data(), view, p.targets.data(), c.ls_evaluation_limit, p.tours.data(),
-                p.positions.data(), p.parent_positions.data(), p.scratch.data(), p.pending.data(),
-                p.gains.data(), nullptr, p.info.data(), p.visited.data());
+            if (controls.profile) {
+                cuda_detail::construct_and_search<decltype(distance), decltype(view), UnrestrictedEdges, true>
+                    <<<ants, 128>>>(distance, p.ls.data(), p.n, c.ls_width,
+                    p.parent.data(), view, p.targets.data(), c.ls_evaluation_limit, p.tours.data(),
+                    p.positions.data(), p.parent_positions.data(), p.scratch.data(), p.pending.data(),
+                    p.gains.data(), nullptr, p.info.data(), p.visited.data(), {}, p.profiling->cycles.data());
+            } else {
+                cuda_detail::construct_and_search<<<ants, 128>>>(distance, p.ls.data(), p.n, c.ls_width,
+                    p.parent.data(), view, p.targets.data(), c.ls_evaluation_limit, p.tours.data(),
+                    p.positions.data(), p.parent_positions.data(), p.scratch.data(), p.pending.data(),
+                    p.gains.data(), nullptr, p.info.data(), p.visited.data());
+            }
         };
+        event_begin(GpuProfileStage::ConstructionAndSearch);
         if (program) construct(cuda_detail::BatchRegionChoices{choices, p.regions.data(), p.actions.data()});
         else construct(choices);
+        event_end(GpuProfileStage::ConstructionAndSearch);
+        event_begin(GpuProfileStage::Reduction);
         cuda_detail::reduce_and_select<<<p.colonies, 128>>>(p.n, c.ants, p.tours.data(), p.info.data(),
             p.parent.data(), p.parent_position.data(), p.epoch.data(), p.global.data(), p.state.data(),
             c.primary_width, c.retention, c.p_best, c.epoch_source_probability, p.keys.data(), batch);
+        event_end(GpuProfileStage::Reduction);
+        event_begin(GpuProfileStage::Pheromone);
         cuda_detail::update_pheromone<<<(cells + 255) / 256, 256>>>(p.n, c.primary_width, p.colonies,
             p.primary.data(), p.parent.data(), p.parent_position.data(), c.retention, p.state.data(),
             p.heuristic.data(), p.trails.data(), p.products.data());
+        event_end(GpuProfileStage::Pheromone);
         if (program) {
+            event_begin(GpuProfileStage::Fingerprints);
             cuda_detail::fingerprint_ants<<<ants, 128>>>(p.n, p.tours.data(), p.identities.data(),
                 controls.force_fingerprint_collisions);
+            event_end(GpuProfileStage::Fingerprints);
+            event_begin(GpuProfileStage::ArchiveAndFeedback);
             cuda_detail::update_control<<<p.colonies, 128>>>(p.n, c.ants, p.tours.data(), p.positions.data(),
                 p.info.data(), p.identities.data(), p.state.data(), p.archive.data(), p.archive_positions.data(),
                 p.archive_scratch.data(), p.archive_scratch_positions.data(), p.controllers.data(), c.ls_evaluation_limit);
+            event_end(GpuProfileStage::ArchiveAndFeedback);
         }
         checked(cudaGetLastError()); checked(cudaDeviceSynchronize());
+        const auto download_started = profile_now();
         const auto states = p.state.download();
         const auto tours = p.global.download();
         const auto info = p.info.download();
         const auto controller_state = program ? p.controllers.download() : std::vector<ControllerState>{};
         if (controls.capture_control) trace.after_batch = p.snapshot();
+        if (controls.profile) profile.download_seconds = host_duration(download_started);
+        const auto verification_started = profile_now();
         std::vector<std::vector<Node>> candidates;
         std::vector<double> candidate_costs;
         for (Node colony = 0; colony < p.colonies; ++colony) {
@@ -356,18 +435,28 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
                     "设备incumbent成本与完整重算不符");
             candidates.push_back(std::move(candidate)); candidate_costs.push_back(value);
         }
+        if (controls.profile) {
+            profile.verification_seconds = host_duration(verification_started);
+            const auto collection_started = Clock::now();
+            profile.gpu_milliseconds = events->elapsed();
+            profile.ant_cycles = p.profiling->cycles.download();
+            profile.collection_seconds = host_duration(collection_started);
+            profile.wall_seconds = host_duration(batch_started);
+        }
         if (controls.completion_delay_ms && batch == controls.delay_batch)
             std::this_thread::sleep_for(std::chrono::milliseconds(controls.completion_delay_ms));
         const double completed = budget.elapsed();
         result.last_batch_completed_seconds = completed;
         if (!budget.completed_on_time(completed)) {
             ++result.discarded_batches;
+            if (controls.profile) result.profile.batches.push_back(std::move(profile));
             if (controls.capture_discarded) result.discarded_costs = candidate_costs;
             break;
         }
         for (Node colony = 0; colony < p.colonies; ++colony)
             result.incumbents[colony].offer(std::move(candidates[colony]), candidate_costs[colony], completed, budget);
         ++result.completed_batches;
+        if (controls.profile) { profile.committed = true; result.profile.batches.push_back(std::move(profile)); }
         if (program) result.completed_control_states = controller_state;
         if (controls.capture_control) result.control_trace.push_back(std::move(trace));
         for (const auto& ant : info) {

@@ -1,5 +1,7 @@
 # 启动工作复现命令
 
+最新主实验遵循[评价次数协议](../planning/12_evaluation_count_protocol.md)。本文件已执行的wall-clock任务是历史工程检查，不构成主时间预算冻结。
+
 以下从GPLSACO根执行；外部Datasets/references路径按默认布局存在。所有生成物位于项目内。精确依赖见provenance/python.lock.txt；环境安装见资源文档。
 
 ## 来源与数据
@@ -194,3 +196,28 @@ TMPDIR="$PWD/.tmp" .venv/bin/python scripts/summarize_training.py \
 这关闭了上节worker阶段的代际/恢复待办；正式共享准备费用校准仍未完成。默认配置为 `configs/training_pilot.json`，只读取开发池；正式128×50配置和E1参数未冻结。归档包含带版本/hash的JSON envelope，实际IR位于 `selected_program.json` 的 `state.program`，其内容可直接用于 `Program.from_dict` 后传给原生Engine。`programs/` 保存全部出现过的IR，`generations/` 保存完整已评种群，`tasks/` 保存逐任务返回与外部核验，checkpoint保存RNG、费用和完成表。
 
 摘要校验拒绝源码、配置、软件、数据或GPU身份变化；不能换GPU后把旧成绩继续拼入当前run。占用检查在提交前失败则保留待办，确认该句柄已终止且设备空闲后才恢复。运行中Future超时保持原句柄，不另起同一任务。当前真实恢复验收是 `pilot-v2`，`pilot-v1` 的归档摘要失败证据保留在训练报告中。
+
+## 分层成本与旧时间入口工程校准
+
+历史GPU运行命令如下；当时使用空目录和cuda04的空闲A5000。本轮配置与秒数只保留为工程证据，新主实验使用评价次数。再次运行需新输出目录及与新计时报告对应的新校准配置，不覆盖现有报告或恢复已完成矩阵。
+
+```bash
+bash scripts/run_profiling_checks.sh GPU-34b223c6-7502-b097-19e0-a411b1708f06
+TMPDIR="$PWD/.tmp" .venv/bin/python scripts/profile_solver.py \
+  --gpu-uuid GPU-34b223c6-7502-b097-19e0-a411b1708f06
+# 冻结当前原始源码字节；后续构建不能覆盖历史运行副本。
+.venv/bin/python scripts/archive_profiling_runtime.py \
+  artifacts/gpu/profiling/cost-matrix-v1
+TMPDIR="$PWD/.tmp" .venv/bin/python scripts/summarize_profiling.py \
+  artifacts/gpu/profiling/cost-matrix-v1 --output docs/reports/profiling_results.json
+TMPDIR="$PWD/.tmp" .venv/bin/python scripts/calibrate_budget.py \
+  --gpu-uuid GPU-34b223c6-7502-b097-19e0-a411b1708f06
+.venv/bin/python scripts/archive_profiling_runtime.py \
+  artifacts/gpu/profiling/deadline-v1
+TMPDIR="$PWD/.tmp" .venv/bin/python scripts/summarize_calibration.py \
+  artifacts/gpu/profiling/deadline-v1 --output docs/reports/budget_calibration_results.json
+```
+
+实际GPU命令外层另用GNU time记录完整CLI墙钟、CPU user/system、max RSS与exit code，保存在同名`.time.json`。两个摘要脚本只读开发坐标和已归档结果，独立重算全部路线，不启动CUDA、不读取标签。重审计可将`--output`指向项目内新的audit路径；`archive_profiling_runtime.py`验证已有快照而不覆盖。快照通过内容摘要与原始manifest对应，即使后续源码/二进制已重建仍能核验旧身份。
+
+已验收训练二进制`5f9211…`在重建前另存于`artifacts/binaries/<完整SHA256>/`，附12875d6的Git源快照。旧训练的完整重放还要求对应的旧Python源和协议；不能把当前源码的版本检查绕过后拼接旧结果。

@@ -84,6 +84,9 @@ bool prepare_problem(PreparedProblem& p, const std::function<bool()>& stop_reque
             p.backup[a].push_back(row[j].second);
         for (Node j = 0; j < c.ls_width; ++j) p.ls[a].push_back(row[j].second);
     }
+    const auto candidates_finished = Clock::now();
+    p.preparation_profile.candidates_and_scales_seconds =
+        std::chrono::duration<double>(candidates_finished - started).count();
     std::vector<Node> initial;
     std::vector<bool> visited(n, false);
     Node current = 0;
@@ -96,15 +99,23 @@ bool prepare_problem(PreparedProblem& p, const std::function<bool()>& stop_reque
         }
         current = next;
     }
+    const auto nearest_finished = Clock::now();
+    p.preparation_profile.nearest_neighbor_seconds =
+        std::chrono::duration<double>(nearest_finished - candidates_finished).count();
     const auto distance = [&](Node a, Node b) { return p.distance(a, b); };
     CpuTour tour(initial, distance);
     std::vector<Node> checklist(initial);
     tour.checklist_two_opt(DistanceOrderedCandidates(p.ls, distance), checklist, c.initial_ls_evaluation_limit);
+    const auto ls_finished = Clock::now();
+    p.preparation_profile.initial_ls_seconds =
+        std::chrono::duration<double>(ls_finished - nearest_finished).count();
     if (expired()) return false;
     p.initial_tour = tour.order(); p.initial_cost = tour.recomputed_cost();
     // 初始改进不能丢掉更早完成的廉价解；等成本保留较早的候选。
     if (p.cheap_cost <= p.initial_cost) { p.initial_tour = p.cheap_tour; p.initial_cost = p.cheap_cost; }
-    p.preparation_seconds = seconds(started);
+    const auto finished = Clock::now();
+    p.preparation_profile.finalization_seconds = std::chrono::duration<double>(finished - ls_finished).count();
+    p.preparation_seconds = std::chrono::duration<double>(finished - started).count();
     p.ready = true;
     return true;
 }

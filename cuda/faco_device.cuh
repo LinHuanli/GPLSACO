@@ -3,6 +3,7 @@
 #pragma once
 #include "gp_faco/faco_cuda_diagnostic.hpp"
 #include "gp_faco/edge_constraints.hpp"
+#include "gp_faco/profiling.hpp"
 #include <cuda_runtime.h>
 #include <math_constants.h>
 #include <type_traits>
@@ -65,14 +66,16 @@ __device__ inline void append_if_absent(Node* pending, Node from, Node node, Nod
     pending[length++] = node;
 }
 
-template<class Distance, class Choices, class Allowed = UnrestrictedEdges>
+template<class Distance, class Choices, class Allowed = UnrestrictedEdges, bool Profile = false>
 __global__ void construct_and_search(
     Distance distances, const Node* all_candidates, Node n, Node width,
     const Node* parent_tours, Choices choice_views, const Node* targets,
     std::uint64_t evaluation_limit, Node* all_tours, Node* all_positions,
     Node* all_parent_positions, Node* all_scratch, Node* all_pending,
     double* all_gains, Node* construction_tours, FacoDiagnosticInfo* output,
-    std::uint8_t* all_visited, Allowed all_allowed = {}) {
+    std::uint8_t* all_visited, Allowed all_allowed = {}, AntPhaseCycles* profile_cycles = nullptr) {
+    std::uint64_t tick0 = 0, tick1 = 0, tick2 = 0, tick3 = 0;
+    if constexpr (Profile) { if (threadIdx.x == 0) tick0 = clock64(); }
     const auto ant = blockIdx.x;
     const auto base = static_cast<std::size_t>(ant) * n;
     const auto matrix = distances.for_ant(ant);
@@ -107,6 +110,7 @@ __global__ void construct_and_search(
 
     if (threadIdx.x == 0) visited[state.current] = 1;
     __syncthreads();
+    if constexpr (Profile) { if (threadIdx.x == 0) tick1 = clock64(); }
 
     // 一蚂蚁一block，移动前捕获端点；scratch隔离并行读取和覆盖。
     while (state.construction.mne < targets[ant] && state.construction.steps + 1 < n) {
@@ -173,6 +177,7 @@ __global__ void construct_and_search(
     }
     if (threadIdx.x == 0) output[ant].construction_cost = state.cost;
     __syncthreads();
+    if constexpr (Profile) { if (threadIdx.x == 0) tick2 = clock64(); }
 
     for (;;) {
         if (threadIdx.x == 0) {
@@ -285,10 +290,13 @@ __global__ void construct_and_search(
         __syncthreads();
     }
     if (threadIdx.x == 0) {
+        if constexpr (Profile) tick3 = clock64();
         output[ant].final_cost = state.cost + state.accumulated_gain;
         output[ant].construction = state.construction;
         output[ant].local_search = state.ls;
         output[ant].checklist_size = state.pending_size;
+        if constexpr (Profile) profile_cycles[ant] = {
+            tick1 - tick0, tick2 - tick1, tick3 - tick2, clock64() - tick3};
     }
 }
 

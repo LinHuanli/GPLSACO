@@ -4,6 +4,7 @@
 #include "gp_faco/fixed_faco_gpu.hpp"
 #include "gp_faco/control_trace.hpp"
 #include "gp_faco/program.hpp"
+#include "gp_faco/profiling.hpp"
 
 #include <memory>
 
@@ -25,6 +26,7 @@ struct BatchEvaluation {
     std::vector<double> discarded_costs;
     std::vector<ControllerState> completed_control_states;
     std::vector<ControlBatchTrace> control_trace;
+    EvaluationProfile profile;  // 仅显式诊断返回，生产Python输出不暴露。
 };
 
 struct BatchDiagnosticControls {
@@ -34,6 +36,8 @@ struct BatchDiagnosticControls {
     bool capture_discarded = false;
     bool capture_control = false;
     bool force_fingerprint_collisions = false;  // 只供C++诊断检验完整邻接去重。
+    bool profile = false;
+    double fixed_elapsed_ratio = -1;  // 固定批次对照专用；负一表示正常wall-clock特征。
 };
 
 class FacoBatchEngine {
@@ -46,6 +50,7 @@ public:
     RegistrationInfo register_problem(std::uint64_t key, std::vector<double> coordinates);
     // 实测准备耗时保持不变；指定用于评价扣费的冻结值，同一实例只能赋一次。
     void set_preparation_charges(std::uint64_t key, RegistrationInfo charges);
+    PreparationProfile preparation_profile(std::uint64_t key) const;
     BatchEvaluation evaluate(const std::vector<BatchTask>& tasks, double seconds,
                              Node mne_target, PreparationMode mode);
     BatchEvaluation evaluate_diagnostic(const std::vector<BatchTask>& tasks, double seconds,

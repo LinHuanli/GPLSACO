@@ -141,6 +141,37 @@ py::dict batch_output(const gp_faco::BatchEvaluation& result, const std::string&
     }
     return output;
 }
+
+py::dict profiling_output(const gp_faco::EvaluationProfile& profile) {
+    py::dict result;
+    result["profile_version"] = 1;
+    result["setup_seconds"] = profile.setup_seconds;
+    result["host_pack_seconds"] = profile.host_pack_seconds;
+    result["upload_call_seconds"] = profile.upload_seconds;
+    result["initialization_gpu_milliseconds"] = profile.initialization_gpu_milliseconds;
+    result["initialization_includes_uploads"] = true;
+    result["initialization_download_seconds"] = profile.initialization_download_seconds;
+    result["diagnostic_device_bytes"] = profile.diagnostic_device_bytes;
+    py::list batches;
+    for (const auto& entry : profile.batches) {
+        py::dict batch, gpu;
+        batch["batch"] = entry.batch; batch["committed"] = entry.committed;
+        batch["wall_seconds"] = entry.wall_seconds;
+        batch["download_seconds"] = entry.download_seconds;
+        batch["verification_seconds"] = entry.verification_seconds;
+        batch["collection_seconds"] = entry.collection_seconds;
+        for (unsigned i = 0; i < gp_faco::gpu_profile_stage_count; ++i)
+            gpu[gp_faco::gpu_profile_stage_names[i]] = entry.gpu_milliseconds[i];
+        batch["gpu_milliseconds"] = gpu;
+        py::list cycles;
+        for (const auto& ant : entry.ant_cycles) cycles.append(py::make_tuple(
+            ant.initialization, ant.construction, ant.local_search, ant.finalization));
+        batch["ant_phase_cycles"] = cycles;
+        batches.append(batch);
+    }
+    result["batches"] = batches;
+    return result;
+}
 #endif
 
 }  // namespace
@@ -191,6 +222,18 @@ PYBIND11_MODULE(gp_faco_ext, module) {
             result["preparation_seconds"] = info.preparation_seconds;
             return result;
         }, py::arg("instance_key"), py::arg("coordinates").noconvert())
+        .def("preparation_profile", [](const gp_faco::FacoBatchEngine& engine, const py::object& key) {
+            if (!PyLong_CheckExact(key.ptr())) throw std::invalid_argument("准备剖析需要整数实例key");
+            const auto value = py::cast<std::uint64_t>(key);
+            gp_faco::PreparationProfile profile;
+            { py::gil_scoped_release release; profile = engine.preparation_profile(value); }
+            py::dict result;
+            result["candidates_and_scales_seconds"] = profile.candidates_and_scales_seconds;
+            result["nearest_neighbor_seconds"] = profile.nearest_neighbor_seconds;
+            result["initial_ls_seconds"] = profile.initial_ls_seconds;
+            result["finalization_seconds"] = profile.finalization_seconds;
+            return result;
+        }, py::arg("instance_key"))
         .def("set_preparation_charges", [](gp_faco::FacoBatchEngine& engine, const py::object& key,
                                            const py::object& cheap, const py::object& preparation) {
             if (!PyLong_CheckExact(key.ptr()) ||
@@ -240,7 +283,42 @@ PYBIND11_MODULE(gp_faco_ext, module) {
             return batch_output(result, mode);
         }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
            py::arg("budget_seconds"), py::arg("program"),
-           py::arg("preparation_mode") = "cached_charged", py::arg("experiment_mask") = UINT32_MAX);
+           py::arg("preparation_mode") = "cached_charged", py::arg("experiment_mask") = UINT32_MAX)
+        .def("run_program_diagnostic", [](gp_faco::FacoBatchEngine& engine, const Keys& keys,
+                const Keys& seeds, const py::dict& dictionary, const py::object& batches,
+                const py::object& ratio, const py::object& enabled, const py::object& mask,
+                const std::string& mode, const py::object& seconds) {
+            if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size() ||
+                !PyLong_CheckExact(batches.ptr()) || !PyBool_Check(enabled.ptr()) ||
+                !(PyFloat_CheckExact(ratio.ptr()) || PyLong_CheckExact(ratio.ptr())) ||
+                !(PyFloat_CheckExact(seconds.ptr()) || PyLong_CheckExact(seconds.ptr())) ||
+                !PyLong_CheckExact(mask.ptr())) throw std::invalid_argument("诊断数组或计时参数类型无效");
+            const auto program = read_program(dictionary);
+            const auto preparation = preparation_mode(mode);
+            gp_faco::BatchDiagnosticControls controls;
+            controls.fixed_batches = py::cast<gp_faco::Node>(batches);
+            if (!controls.fixed_batches || controls.fixed_batches > 10000)
+                throw std::invalid_argument("诊断批次数必须在1..10000");
+            controls.fixed_elapsed_ratio = py::cast<double>(ratio);
+            controls.profile = py::cast<bool>(enabled);
+            const auto experiment_mask = py::cast<std::uint32_t>(mask);
+            const auto budget = py::cast<double>(seconds);
+            std::vector<gp_faco::BatchTask> tasks;
+            for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            gp_faco::BatchEvaluation result;
+            {
+                py::gil_scoped_release release;
+                result = engine.evaluate_program_diagnostic(tasks, budget, program, preparation,
+                                                             experiment_mask, controls);
+            }
+            auto output = batch_output(result, mode);
+            output["scope"] = "fixed_batch_diagnostic_not_fitness";
+            output["profile"] = profiling_output(result.profile);
+            return output;
+        }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(), py::arg("program"),
+           py::arg("batches"), py::arg("elapsed_ratio") = 0.5, py::arg("profile") = true,
+           py::arg("experiment_mask") = UINT32_MAX, py::arg("preparation_mode") = "cached_charged",
+           py::arg("budget_seconds") = 120.0);
     py::class_<gp_faco::FixedFacoGpu>(module, "FixedFacoGpu")
         .def(py::init([](const Coordinates& coordinates, const py::object& key,
                           const gp_faco::FixedFacoSettings& settings) {

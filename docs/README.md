@@ -2,6 +2,8 @@
 
 本组文档将 [v4 研究方案](design/GP_ACO_TSP_Research_Proposal_v4.md) 转换为可以实现、测试和预注册的工作包。原方案中的建议参数不自动成为已验证配置；本组文档中标注为“开发候选”的定义须在正式测试前冻结。
 
+**最新用户指示：进化与ACO主实验按evaluation次数终止，尽量不设时间上限。** [次数协议](planning/12_evaluation_count_protocol.md)优先于前序wall-clock主预算描述；历史计时结果作为工程/资源证据保留。
+
 | 顺序 | 文档 | 解决的问题 |
 |---|---|---|
 | 1 | [范围与关键决策](planning/01_scope_and_decisions.md) | 研究贡献、歧义、哪些假设可能失败 |
@@ -14,6 +16,8 @@
 | 8 | [资源与执行顺序](planning/08_execution_and_resources.md) | 环境、GPU、训练成本、Git 与里程碑 |
 | 9 | [主底座控制层契约](planning/09_control_contract.md) | 档案、区域、十二特征、完整重启和碰撞边界 |
 | 10 | [代际训练、费用与恢复契约](planning/10_training_state_contract.md) | 标准DEAP、固定面板/费用、可信checkpoint、验证与导出 |
+| 11 | [成本剖析与时间入口校准](planning/11_profiling_and_calibration.md) | 分层GPU/CPU成本、插桩语义、旧截止路径的工程证据 |
+| 12 | [评价次数主协议](planning/12_evaluation_count_protocol.md) | 用户补充后的计数单位、终止规则、progress特征及冻结顺序 |
 | E1 | [反馈价值](experiments/E1_feedback.md) | 完整程序、去反馈重训及状态分叉 |
 | E2 | [两尺度关系](experiments/E2_factorial.md) | 2×2 析因与交互 |
 | E3 | [候选与出口](experiments/E3_candidates_and_escape.md) | Hard/Escape 的可执行定义与公平性 |
