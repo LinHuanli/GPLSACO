@@ -6,6 +6,8 @@
 
 E1机制所需的[完整状态分叉与真实面板验收](reports/2026-09-09_e1_state_fork_engine.md)已在隔离分支完成；每个分支从同一快照恢复并按相同额外FE继续。正式分层采样与效应统计仍待执行，主训练和E3继续使用原冻结底座。
 
+E2已完成[动作限制、真实跨二进制对照及独立重训/恢复验收](reports/2026-09-09_e2_factorial_engine.md)，174调用/1,425,408 FE通过；完整设计已登记M00选择、五seed重训与统计。正式执行仍待主基线选择、身份封存与轻量行为输出。
+
 | 顺序 | 文档 | 解决的问题 |
 |---|---|---|
 | 1 | [范围与关键决策](planning/01_scope_and_decisions.md) | 研究贡献、歧义、哪些假设可能失败 |
@@ -30,8 +32,8 @@ E1机制所需的[完整状态分叉与真实面板验收](reports/2026-09-09_e1
 
 用户进一步允许使用任何实时空闲的兼容GPU，先用`gpu-free`发现再核查UUID占用；型号与计时分列。十个完整E1训练已启动，见[启动与快照审计](reports/2026-09-09_e1_training_launch.md)。
 
-独立E3分支已完成[Hard/Escape及匹配图工程验收](https://github.com/LinHuanli/GPLSACO/blob/7c442af1247241bb4b8bcd9c1f7430041398f53b/docs/reports/2026-09-09_escape_engine.md)、[图worker与四条件开发训练/恢复](https://github.com/LinHuanli/GPLSACO/blob/ca7b7c9ef3df91b3126f6ebddf68e6f7197fe302/docs/reports/2026-09-09_graph_worker.md)，以及[正式协议与全部2,296实例/4,592成对图准备](https://github.com/LinHuanli/GPLSACO/blob/c12120199aca2595f57a5eca8b433e49949cd95c/docs/reports/2026-09-09_e3_formal_preparation.md)。完整图目录已独立审计并封存，A5000四条件worker也已通过核验；20个完整GP及四个完整Static运行的执行入口与终态审计仍待完成。源码、二进制、worker图输入和审计快照均在项目内归档，原始候选收据单独保留；主分支活动训练的实现未变。
+独立E3分支已完成[Hard/Escape及匹配图工程验收](https://github.com/LinHuanli/GPLSACO/blob/7c442af1247241bb4b8bcd9c1f7430041398f53b/docs/reports/2026-09-09_escape_engine.md)、[图worker与四条件开发训练/恢复](https://github.com/LinHuanli/GPLSACO/blob/ca7b7c9ef3df91b3126f6ebddf68e6f7197fe302/docs/reports/2026-09-09_graph_worker.md)，以及[正式协议与全部2,296实例/4,592成对图准备](https://github.com/LinHuanli/GPLSACO/blob/c12120199aca2595f57a5eca8b433e49949cd95c/docs/reports/2026-09-09_e3_formal_preparation.md)。完整图目录已独立审计并封存，A5000四条件worker也已通过核验；正式执行入口与分组启动已完成，四个Static已通过终态审计，20个GP继续全部预登记训练/验证。源码、二进制、worker图输入和审计快照均在项目内归档，原始候选收据单独保留；主分支活动训练的实现未变。
 
 当前事实以 [进度记录](reports/progress.md) 和其链接的机器可读报告为准。历史 v4 中“已核查”“待安装”等描述保留为方案写作时点，不替代本地执行状态。
 
-E3后续已完成[23设备分组正式启动与19个GP前缀独立审计](reports/2026-09-09_e3_formal_launch.md)：19个GP及四个Static已返回真实评价，另一个GP由固定队列接续。全部128×50/完整160族及4,096 FE保持冻结；完整终态、选择封存与TEST仍待完成，主树活动底座未合入E3改动。
+E3已完成[四条件完整Static调优与策略封存](reports/2026-09-09_e3_static_terminal.md)：5,280调用/692,060,160 FE通过终态审计；第20个GP已按原队列启动并通过111调用前缀审计。此前[19个GP启动前缀](reports/2026-09-09_e3_formal_launch.md)保留原证据。20个完整GP及其验证、选择与TEST仍待完成；其中两个恢复等待原GPU，主树活动底座未合入E3/E2改动。
