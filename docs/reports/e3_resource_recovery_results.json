@@ -1,0 +1,556 @@
+{
+  "status": "original-return preservation and resumed-prefix audits passed; full run active",
+  "observed_at_utc": "2026-09-08T19:44:31.144439+00:00",
+  "source_commit": "a3a395f09623747c4b5542f3e19578989dc2e5c9",
+  "script_sha256": "ee611849869d86bd6314a3ee677bd249a310c4f8519123b4cd8e41aba31e53c9",
+  "policy_file_sha256": "9834b4a6c0c99f656cb6b63894dbab16fe34b108e4b7097a3d85b44ea660135b",
+  "base_execution_sha256": "f70f8691c8643f346ddb44ab07f6a87fe026d61ba89cf19dd06c3f1d4d2c6cbb",
+  "original_incident_evidence_sha256": "b866df517f5dde1fed4b80dd6a6479fb65b76e54e63603823e3b8302fa08622f",
+  "preservation": {
+    "after_costs": {
+      "charged_seconds": 0.0,
+      "completed_batches": 8448,
+      "completed_construction_steps": 800973625,
+      "completed_ls_evaluations": 27889705594,
+      "evaluator_seconds": 2.9866399304009974,
+      "failed_solves": 0,
+      "infrastructure_failures": 0,
+      "native_actual_seconds": 427.97746619700007,
+      "observer_timeouts": 32,
+      "overrun_seconds": 0.0,
+      "preparation_jobs": 2,
+      "registration_seconds": 0.30445899395272136,
+      "search_tour_evaluations": 8650752,
+      "solve_jobs": 66,
+      "unobserved_terminated_attempts": 0,
+      "valid_members": 2112,
+      "worker_seconds": 429.7454687147401
+    },
+    "before_costs": {
+      "charged_seconds": 0.0,
+      "completed_batches": 8320,
+      "completed_construction_steps": 791535334,
+      "completed_ls_evaluations": 27356901506,
+      "evaluator_seconds": 2.6145382905378938,
+      "failed_solves": 0,
+      "infrastructure_failures": 0,
+      "native_actual_seconds": 418.13673494600005,
+      "observer_timeouts": 32,
+      "overrun_seconds": 0.0,
+      "preparation_jobs": 2,
+      "registration_seconds": 0.2984142699278891,
+      "search_tour_evaluations": 8519680,
+      "solve_jobs": 65,
+      "unobserved_terminated_attempts": 0,
+      "valid_members": 2080,
+      "worker_seconds": 419.891897554975
+    },
+    "new_native_submissions": 0,
+    "original_completed_record_count": 67,
+    "original_task_bytes_preserved": true,
+    "prefix_cli_exit_code": 0,
+    "prefix_cli_session_id": 97766,
+    "raw_return_unchanged": true,
+    "resources": {
+      "exit_code": 0,
+      "max_rss_kib": 189236,
+      "system_seconds": 0.16,
+      "user_seconds": 1.33,
+      "wall_seconds": 3.97
+    },
+    "status": "passed",
+    "task_key": "14992391d33c2ce02ef45c770bad256beda7d4300897270f85668cf865ab4675",
+    "unchanged_original_completed_records": true,
+    "worker_history_unchanged": true
+  },
+  "prefix_audit": {
+    "base_audit": {
+      "audit_sources": {
+        "python/gp_faco/training_audit.py": "4d3f9f2a137d2a39f41b68e70c81a66bb7b97aecb441989b6414444bfbb90ef7",
+        "scripts/audit_e3_training.py": "d17c9a7fe878973cca00aeb596de86f1a58bf0243ea8c56c2f9b03b92bb6a602"
+      },
+      "checkpoint_state_sha256": "f6c013b56b0edaad39c357789aa9d1fe4016eb9d2c049eb4e2124bdea5339a7a",
+      "cli_resources_sha256": null,
+      "complete_training_and_validation_audit": false,
+      "condition": "alpha-Hard",
+      "evolution_seed": 5519,
+      "execution_sha256": "f70f8691c8643f346ddb44ab07f6a87fe026d61ba89cf19dd06c3f1d4d2c6cbb",
+      "formal_test_released": false,
+      "limits": [
+        "Snapshot covers committed prefix only",
+        "All failed solve positions retained",
+        "FE excludes LS move checks; those counts remain separate",
+        "Hardware timings remain stratified by model/driver",
+        "User-supplied reference labels lack independent optimality certificates"
+      ],
+      "max_independent_cost_error": 4.618527782440651e-14,
+      "observed_at_utc": "2026-09-08T19:40:05.914559+00:00",
+      "plan_sha256": "8a43009604769d94898f2d92b066072c29f0ea6685de6521519aa2d730150822",
+      "protocol": {
+        "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+        "colonies": 32,
+        "constraint_mode": "hard",
+        "dimensions": [
+          500,
+          1000
+        ],
+        "driver_version": "610.43.02",
+        "escape_spec_id": 0,
+        "execution_host": "cuda00.sms.vuw.ac.nz",
+        "extension_directory": "build/cuda",
+        "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+        "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+        "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+        "gpu_uuid": "GPU-a0a5bcb0-b6d9-5eef-4c90-2a9aa7fc75f4",
+        "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+        "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+        "graph_prior_kind": "ALPHA",
+        "graph_spec_id": 1,
+        "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+        "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+        "matching_spec_id": 2,
+        "maximum_registered_per_dimension": 1056,
+        "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+        "protocol_version": 5,
+        "settings": {
+          "ants": 32,
+          "backup_width": 64,
+          "beta": 1.0,
+          "epoch_source_probability": 0.01,
+          "initial_ls_evaluation_limit": 100000,
+          "ls_evaluation_limit": 100000,
+          "ls_width": 20,
+          "p_best": 0.1,
+          "primary_width": 16,
+          "retention": 0.5
+        },
+        "submission_boundary": "native_whole_panel_completed_and_verified"
+      },
+      "recomputed_costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 8448,
+        "completed_construction_steps": 800973625,
+        "completed_ls_evaluations": 27889705594,
+        "evaluator_seconds": 2.9866399304009974,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 427.9774661970001,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.30445899395272136,
+        "search_tour_evaluations": 8650752,
+        "solve_jobs": 66,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 2112,
+        "worker_seconds": 429.7454687147401
+      },
+      "recorded_costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 8448,
+        "completed_construction_steps": 800973625,
+        "completed_ls_evaluations": 27889705594,
+        "evaluator_seconds": 2.9866399304009974,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 427.97746619700007,
+        "observer_timeouts": 32,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.30445899395272136,
+        "search_tour_evaluations": 8650752,
+        "solve_jobs": 66,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 2112,
+        "worker_seconds": 429.7454687147401
+      },
+      "replay": {
+        "assigned_current_individuals": 32,
+        "completed_generations": 0,
+        "completed_validation_candidates": 0,
+        "current_generation": 0,
+        "generations": [],
+        "validation_candidates": 0,
+        "variation_counts": {
+          "crossovers": 0,
+          "fallbacks": 0,
+          "mutations": 0
+        }
+      },
+      "resource_observations": {
+        "after_foreign": 1,
+        "after_unknown": 0,
+        "before_foreign_or_unknown": 0
+      },
+      "run_id": "99b0ee6e32ca8d9f8a502389433c8fb5bcd07eb3f0bc32bee20f10ab842009ad",
+      "scope": "formal E3 training integrity; no TEST inference",
+      "selected": null,
+      "settings": {
+        "budget_kind": "search_tour_evaluations",
+        "budgets": [
+          [
+            500,
+            4096
+          ],
+          [
+            1000,
+            4096
+          ]
+        ],
+        "evolution": {
+          "crossover_probability": 0.8,
+          "elites": 4,
+          "feature_spec_id": 2,
+          "generations": 50,
+          "initial_depth_max": 3,
+          "initial_depth_min": 1,
+          "max_depth": 5,
+          "max_nodes": 63,
+          "mutation_depth_max": 2,
+          "mutation_depth_min": 0,
+          "mutation_probability": 0.2,
+          "no_feedback": false,
+          "population": 128,
+          "tournament_size": 4
+        },
+        "evolution_seed": 5519,
+        "experiment_mask": 4294967295,
+        "infrastructure_retries": 1,
+        "instances_per_panel": 16,
+        "panel_seed": 73001,
+        "preparation_mode": "cached",
+        "scope": "E3_formal_training",
+        "solver_seeds_per_instance": 2,
+        "validation_seeds": [
+          17,
+          29
+        ]
+      },
+      "status": "snapshot_passed",
+      "training_outcome": "training",
+      "work_by_phase": {
+        "training": {
+          "charged_seconds": 0.0,
+          "completed_batches": 8448,
+          "completed_construction_steps": 800973625,
+          "completed_ls_evaluations": 27889705594,
+          "failed_solves": 0,
+          "native_actual_seconds": 427.9774661970001,
+          "overrun_seconds": 0.0,
+          "search_tour_evaluations": 8650752,
+          "solve_jobs": 66
+        },
+        "validation": {}
+      }
+    },
+    "base_execution_sha256": "f70f8691c8643f346ddb44ab07f6a87fe026d61ba89cf19dd06c3f1d4d2c6cbb",
+    "formal_test_released": false,
+    "implementation_sha256": "ee611849869d86bd6314a3ee677bd249a310c4f8519123b4cd8e41aba31e53c9",
+    "observed_at_utc": "2026-09-08T19:40:06.031065+00:00",
+    "policy_file_sha256": "9834b4a6c0c99f656cb6b63894dbab16fe34b108e4b7097a3d85b44ea660135b",
+    "resource_deviations": {
+      "completed_resource_deviations": 1,
+      "implementation_sha256": "ee611849869d86bd6314a3ee677bd249a310c4f8519123b4cd8e41aba31e53c9",
+      "policy_sha256": "bd6473d180a5f91e19f2c3717ebdb1e49f1fec88060cfca9171d998cc98ce53c",
+      "pre_submission_wait_samples": 0,
+      "resource_recovery_file_sha256": "9bc402d01925d59a87f1b8807fde0d54b5c6bb881b8b8f2b5f88f1e7baab5348",
+      "task_keys": [
+        "14992391d33c2ce02ef45c770bad256beda7d4300897270f85668cf865ab4675"
+      ],
+      "timing_class": "recorded_contention_or_unknown; exclude aggregate clean-speed comparison"
+    },
+    "run_id": "99b0ee6e32ca8d9f8a502389433c8fb5bcd07eb3f0bc32bee20f10ab842009ad",
+    "scope": "explicit resource deviation amendment; native inputs/evaluator unchanged",
+    "status": "snapshot_passed"
+  },
+  "resumed_audit": {
+    "base_audit": {
+      "audit_sources": {
+        "python/gp_faco/training_audit.py": "4d3f9f2a137d2a39f41b68e70c81a66bb7b97aecb441989b6414444bfbb90ef7",
+        "scripts/audit_e3_training.py": "d17c9a7fe878973cca00aeb596de86f1a58bf0243ea8c56c2f9b03b92bb6a602"
+      },
+      "checkpoint_state_sha256": "3dcc34e50465aafe17fb5a4ffd5930aa5b5a131da2db29cb9aff7b650aacf717",
+      "cli_resources_sha256": null,
+      "complete_training_and_validation_audit": false,
+      "condition": "alpha-Hard",
+      "evolution_seed": 5519,
+      "execution_sha256": "f70f8691c8643f346ddb44ab07f6a87fe026d61ba89cf19dd06c3f1d4d2c6cbb",
+      "formal_test_released": false,
+      "limits": [
+        "Snapshot covers committed prefix only",
+        "All failed solve positions retained",
+        "FE excludes LS move checks; those counts remain separate",
+        "Hardware timings remain stratified by model/driver",
+        "User-supplied reference labels lack independent optimality certificates"
+      ],
+      "max_independent_cost_error": 4.618527782440651e-14,
+      "observed_at_utc": "2026-09-08T19:42:51.437855+00:00",
+      "plan_sha256": "8a43009604769d94898f2d92b066072c29f0ea6685de6521519aa2d730150822",
+      "protocol": {
+        "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+        "colonies": 32,
+        "constraint_mode": "hard",
+        "dimensions": [
+          500,
+          1000
+        ],
+        "driver_version": "610.43.02",
+        "escape_spec_id": 0,
+        "execution_host": "cuda00.sms.vuw.ac.nz",
+        "extension_directory": "build/cuda",
+        "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+        "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+        "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+        "gpu_uuid": "GPU-a0a5bcb0-b6d9-5eef-4c90-2a9aa7fc75f4",
+        "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+        "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+        "graph_prior_kind": "ALPHA",
+        "graph_spec_id": 1,
+        "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+        "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+        "matching_spec_id": 2,
+        "maximum_registered_per_dimension": 1056,
+        "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+        "protocol_version": 5,
+        "settings": {
+          "ants": 32,
+          "backup_width": 64,
+          "beta": 1.0,
+          "epoch_source_probability": 0.01,
+          "initial_ls_evaluation_limit": 100000,
+          "ls_evaluation_limit": 100000,
+          "ls_width": 20,
+          "p_best": 0.1,
+          "primary_width": 16,
+          "retention": 0.5
+        },
+        "submission_boundary": "native_whole_panel_completed_and_verified"
+      },
+      "recomputed_costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 9856,
+        "completed_construction_steps": 879668851,
+        "completed_ls_evaluations": 32229319453,
+        "evaluator_seconds": 3.3219437175430357,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 495.3041921259999,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 1.3183738673105836,
+        "search_tour_evaluations": 10092544,
+        "solve_jobs": 77,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 2464,
+        "worker_seconds": 498.1455864892341
+      },
+      "recorded_costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 9856,
+        "completed_construction_steps": 879668851,
+        "completed_ls_evaluations": 32229319453,
+        "evaluator_seconds": 3.3219437175430357,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 495.304192126,
+        "observer_timeouts": 37,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 1.3183738673105836,
+        "search_tour_evaluations": 10092544,
+        "solve_jobs": 77,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 2464,
+        "worker_seconds": 498.1455864892341
+      },
+      "replay": {
+        "assigned_current_individuals": 38,
+        "completed_generations": 0,
+        "completed_validation_candidates": 0,
+        "current_generation": 0,
+        "generations": [],
+        "validation_candidates": 0,
+        "variation_counts": {
+          "crossovers": 0,
+          "fallbacks": 0,
+          "mutations": 0
+        }
+      },
+      "resource_observations": {
+        "after_foreign": 1,
+        "after_unknown": 0,
+        "before_foreign_or_unknown": 0
+      },
+      "run_id": "99b0ee6e32ca8d9f8a502389433c8fb5bcd07eb3f0bc32bee20f10ab842009ad",
+      "scope": "formal E3 training integrity; no TEST inference",
+      "selected": null,
+      "settings": {
+        "budget_kind": "search_tour_evaluations",
+        "budgets": [
+          [
+            500,
+            4096
+          ],
+          [
+            1000,
+            4096
+          ]
+        ],
+        "evolution": {
+          "crossover_probability": 0.8,
+          "elites": 4,
+          "feature_spec_id": 2,
+          "generations": 50,
+          "initial_depth_max": 3,
+          "initial_depth_min": 1,
+          "max_depth": 5,
+          "max_nodes": 63,
+          "mutation_depth_max": 2,
+          "mutation_depth_min": 0,
+          "mutation_probability": 0.2,
+          "no_feedback": false,
+          "population": 128,
+          "tournament_size": 4
+        },
+        "evolution_seed": 5519,
+        "experiment_mask": 4294967295,
+        "infrastructure_retries": 1,
+        "instances_per_panel": 16,
+        "panel_seed": 73001,
+        "preparation_mode": "cached",
+        "scope": "E3_formal_training",
+        "solver_seeds_per_instance": 2,
+        "validation_seeds": [
+          17,
+          29
+        ]
+      },
+      "status": "snapshot_passed",
+      "training_outcome": "training",
+      "work_by_phase": {
+        "training": {
+          "charged_seconds": 0.0,
+          "completed_batches": 9856,
+          "completed_construction_steps": 879668851,
+          "completed_ls_evaluations": 32229319453,
+          "failed_solves": 0,
+          "native_actual_seconds": 495.3041921259999,
+          "overrun_seconds": 0.0,
+          "search_tour_evaluations": 10092544,
+          "solve_jobs": 77
+        },
+        "validation": {}
+      }
+    },
+    "base_execution_sha256": "f70f8691c8643f346ddb44ab07f6a87fe026d61ba89cf19dd06c3f1d4d2c6cbb",
+    "formal_test_released": false,
+    "implementation_sha256": "ee611849869d86bd6314a3ee677bd249a310c4f8519123b4cd8e41aba31e53c9",
+    "observed_at_utc": "2026-09-08T19:42:51.598409+00:00",
+    "policy_file_sha256": "9834b4a6c0c99f656cb6b63894dbab16fe34b108e4b7097a3d85b44ea660135b",
+    "resource_deviations": {
+      "completed_resource_deviations": 1,
+      "implementation_sha256": "ee611849869d86bd6314a3ee677bd249a310c4f8519123b4cd8e41aba31e53c9",
+      "policy_sha256": "bd6473d180a5f91e19f2c3717ebdb1e49f1fec88060cfca9171d998cc98ce53c",
+      "pre_submission_wait_samples": 0,
+      "resource_recovery_file_sha256": "9bc402d01925d59a87f1b8807fde0d54b5c6bb881b8b8f2b5f88f1e7baab5348",
+      "task_keys": [
+        "14992391d33c2ce02ef45c770bad256beda7d4300897270f85668cf865ab4675"
+      ],
+      "timing_class": "recorded_contention_or_unknown; exclude aggregate clean-speed comparison"
+    },
+    "run_id": "99b0ee6e32ca8d9f8a502389433c8fb5bcd07eb3f0bc32bee20f10ab842009ad",
+    "scope": "explicit resource deviation amendment; native inputs/evaluator unchanged",
+    "status": "snapshot_passed"
+  },
+  "resumed_snapshot": {
+    "run_id": "99b0ee6e32ca8d9f8a502389433c8fb5bcd07eb3f0bc32bee20f10ab842009ad",
+    "source_session_id": 91788,
+    "checkpoint_sha256": "b51dd30db1dd57425e1084c4b0faffec5323f5207b587814b968ba1e28f089d8",
+    "calls": 77,
+    "worker_pid": 3016004,
+    "worker_history_length": 2,
+    "original_prefix_preserved": true,
+    "source_commit": "a3a395f09623747c4b5542f3e19578989dc2e5c9",
+    "formal_test_released": false
+  },
+  "cli_handles": {
+    "original_interrupted": {
+      "id": 37720,
+      "exit_code": 1
+    },
+    "prefix": {
+      "id": 97766,
+      "exit_code": 0
+    },
+    "prefix_audit": {
+      "id": 96340,
+      "exit_code": 0
+    },
+    "resumed_snapshot_audit": {
+      "id": 95878,
+      "exit_code": 0
+    },
+    "full_resume": {
+      "id": 91788,
+      "exit_code": null,
+      "observed_live": true
+    }
+  },
+  "pytest": {
+    "passed": 7,
+    "seconds": 27.88,
+    "exit_code": 0,
+    "log_sha256": "1409a47330f75e03b9001f333d48743ceadde729c52a324b45d1a85f01696f1e"
+  },
+  "raw_evidence_archive": {
+    "path": "artifacts/runtimes/a3a395f09623747c4b5542f3e19578989dc2e5c9/resource-recovery-after-resume.tar.zst",
+    "sha256": "6213bae31b553bc04fb8a1f99cf772c5ca6640214484b9d2a78d4f2c9bb918d2",
+    "bytes": 10632940
+  },
+  "E3_activity": {
+    "observed_at_utc": "2026-09-08T19:43:05.209400+00:00",
+    "totals": {
+      "static": {
+        "FE": 244318208,
+        "calls": 1864,
+        "failures": 0
+      },
+      "train": {
+        "FE": 869138432,
+        "calls": 6631,
+        "failures": 0
+      }
+    },
+    "groups": 23,
+    "queued_GP": 1
+  },
+  "main_activity": {
+    "E1": {
+      "FE": 3156475904,
+      "calls": 24082,
+      "failed_solves": 0,
+      "generations": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        9,
+        15
+      ],
+      "runs": 10
+    },
+    "baseline": {
+      "FE": 320471040,
+      "calls": 2445,
+      "failed_solves": 0,
+      "phase": "search"
+    },
+    "formal_test_released": false,
+    "observed_at_utc": "2026-09-08T19:43:51.073436+00:00"
+  },
+  "complete_research_outcome": false,
+  "formal_test_released": false
+}
