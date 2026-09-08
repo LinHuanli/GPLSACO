@@ -1,6 +1,6 @@
 # 研究进度与下一工作项
 
-更新：2026-09-08。目标保持为v4的完整研究规划和实施；**主底座在线GP控制、档案与完整重启已完成当前工程核验；常驻worker、真实演化训练和研究实验仍未完成。** 最新实测见 [控制Engine报告](2026-09-08_control_engine.md)；已有 [Hard操作报告](2026-09-08_hard_operations.md)、[批量与截止报告](2026-09-08_batch_engine.md)、[固定迭代GPU](2026-09-08_fixed_faco.md)、[CUDA操作](2026-09-08_cuda_operations.md)、[数据与CPU](2026-09-08_data_and_cpu_semantics.md)、[启动报告](2026-09-08_bootstrap.md)。
+更新：2026-09-08。目标保持为v4的完整研究规划和实施；**主底座在线GP控制、档案/重启、spawn worker与外部fitness已通过当前工程核验；真实DEAP演化、验证/checkpoint和研究实验仍未完成。** 最新实测见 [worker报告](2026-09-08_worker.md)、[控制Engine报告](2026-09-08_control_engine.md)；已有 [Hard操作报告](2026-09-08_hard_operations.md)、[批量与截止报告](2026-09-08_batch_engine.md)、[固定迭代GPU](2026-09-08_fixed_faco.md)、[CUDA操作](2026-09-08_cuda_operations.md)、[数据与CPU](2026-09-08_data_and_cpu_semantics.md)、[启动报告](2026-09-08_bootstrap.md)。
 
 ## 已有证据
 
@@ -15,7 +15,7 @@
 | DEAP→IR→Python/C++/CUDA | 评分链路通过当前验证 | CPU27/GPU29测试，A5000三后端分数、sanitizer |
 | 主池全量核验/split | 已发布首版身份；父实例元数据仍缺失 | splits.v1.json；全部点集无标签重放一致；1,280条偏移读取复核 |
 | CPU FACO操作语义 | 已覆盖当前操作对照；声明退化适配 | 236,004次relocate、276,318次flip、480组构造/LS；Release及ASan/UBSan通过 |
-| CUDA显式选点构造/LS | 已通过操作对照；完整无GP求解待完成 | A5000上2,160组CPU/GPU一致，三个sanitizer各540组通过；已修复共享计数竞争 |
+| CUDA显式选点构造/LS | 已通过操作对照并复用于完整求解 | A5000上2,160组CPU/GPU一致，三个sanitizer各540组通过；已修复共享计数竞争 |
 | CUDA随机选点/信息素/完整迭代 | 已实现固定迭代开发版 | 61,654次随机选点与1,280个蚂蚁批次重放一致；39项Python测试、三个sanitizer通过 |
 | 500/1K开发池GPU试跑 | 48/48合法，未揭盲正式测试 | 各8实例×3seed×50批次；独立重算最大误差4.62e-14 |
 | 多实例deadline/缓存扣费 | 已完成首版工程验收 | 4规模、16项单实例对照；真实更优迟到批拒绝；准备中断/零预算/乱序/状态复用通过 |
@@ -23,14 +23,15 @@
 | Hard操作语义 | CPU完整边集与GPU对照通过，完整E3 Engine未接入 | 370,416项CPU图检查、576组CUDA操作、6,144次真实选点；三种sanitizer通过 |
 | 特征/档案/epoch重启 | 主底座CPU/GPU逐字段核验通过 | 实际GP动作/区域起点、碰撞后完整去重、质量带、旧信息素、完整事务与迟到控制状态丢弃；详见控制报告 |
 | 完整控制开发计时 | 24面板、768条截止前合法路线 | 两个未训练程序，500/1K各16开发实例×2seed；8个极短预算无搜索，16搜索面板末批丢弃 |
-| 持久Engine/worker/GP训练 | GP在线控制与绑定已接通；spawn worker和真实演化未实现 | 最新8项GPU CTest、62项Python测试和三个sanitizer通过；CPU Release/ASan各4项；G3/G4未完成 |
+| 持久Engine/worker/外部fitness | 已接通并验证；真实DEAP演化仍未实现 | 真实spawn与同PID A–B–A、原Future等待、缓存容量边界、输入错误恢复、缺失解失败保留；500/1K共64成员外部核验 |
+| 当前回归范围 | GPU Python 73通过；CPU Python 42通过/29 GPU专属跳过 | 原生控制阶段8项GPU CTest、三种CUDA工具、CPU Release/ASan各4项通过；本轮未修改CUDA内核；G3/G4未完成 |
 | E1–E4 | 未执行 | 实验草案保留完整范围 |
 
 ## 下一次继续的顺序
 
 1. 读取工作树、远端和具体运行句柄；当前已有任务的终态须重新查验，不根据日志名字重启。
 2. 复用已发布500/1K索引、split与CPU oracle，不重复建立身份；追查旋转/缩放/子采样父来源元数据。正式配置冻结前复核源文件全hash，不看测试性能。
-3. 复用已验证的在线GP主底座，建立显式spawn的同型号GPU worker与任务身份、失败处理、外部fitness；再接通真实DEAP所有个体重评、最终代、验证shortlist和原子checkpoint/恢复。
+3. 复用已验证的spawn worker、任务身份和外部fitness，接通真实DEAP所有个体重评、最终代、验证shortlist和可信原子checkpoint/恢复。固定基础设施重试次数并保持原任务身份；Future超时不能直接重启。普通准备错误和进程故障须分别处理。
 4. 剖析十二特征与档案/事务分项成本，统一校准完整动作下的提交粒度/丢弃率、正式缓存费用和单实例端到端成本。当前开发预算不自动成为正式实验预算。Hard操作无需重做，E3候选工具/Escape/完整预算集成继续保持独立工作项。
 5. 同时可开展原TSPLIB元数据恢复与LKH候选导出验证；不据迁移成绩改变本轮规则。
 

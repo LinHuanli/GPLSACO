@@ -150,3 +150,19 @@ CUDA_VISIBLE_DEVICES=GPU-056fae3f-b504-efe0-2d9d-b1186860e643 \
 新增核验为8项GPU CTest、62项Python测试，三种sanitizer执行完整控制循环的小面板。CPU原语包含手算和独立枚举；C++ GPU诊断包含强制双指纹碰撞。生产调用 `engine.evaluate_program(keys, seeds, seconds, program_dict, preparation_mode, experiment_mask)` 不导出完整诊断轨迹、强制碰撞开关或迟到候选。
 
 计时试跑固定32 colony、每colony 32 ants，500/1K各16个已有开发实例×2 solve seeds，两个未训练的一终端程序和两种准备模式。它核验实际控制与提交成本，不是正式GP训练或统计比较。原始日志位于 `artifacts/gpu/control-engine`，精简报告为 `control_engine_results.json`。
+
+## 常驻worker与外部fitness
+
+```bash
+# CPU协议/聚合检查，不启动CUDA。
+PYTHONPATH="$PWD/python:$PWD/build/cpu" GP_FACO_REQUIRE_NATIVE=1 \
+  .venv/bin/python -m pytest -q --basetemp="$PWD/.tmp/pytest-worker-cpu"
+# 在当前空闲目标host运行；接口检查和真实worker诊断分别保存。
+bash scripts/run_worker_checks.sh GPU-056fae3f-b504-efe0-2d9d-b1186860e643
+TMPDIR="$PWD/.tmp" PYTHONPATH="$PWD/python" \
+  .venv/bin/python scripts/worker_smoke.py \
+  --gpu-uuid GPU-056fae3f-b504-efe0-2d9d-b1186860e643
+PYTHONPATH="$PWD/python" .venv/bin/python scripts/summarize_worker.py
+```
+
+`worker_smoke.py` 拒绝覆盖任何已有任务目录，重新运行须给新的 `--output`。其协调进程不导入 `gp_faco_ext`，GPU选择在spawn子进程内完成。Future超时后保持原句柄，不据共享文件系统日志可见性重新提交。当前正式准备费用表、DEAP代际及checkpoint仍待实现；普通任务错误会原样保存，初始化/进程故障通过Future显式报错。

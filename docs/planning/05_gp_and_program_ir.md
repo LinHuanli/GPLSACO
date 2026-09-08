@@ -37,3 +37,13 @@ checkpoint 原子落盘：阶段、当前/下一代、种群和 ERC、演化 RNG
 ## 6. 验收样例
 
 固定例 `SUB(MUL(return_rate,restart),MUL(ls_work,mne_level))` 的 postfix 要保序；随机合法深度≤5树跨 Python/C++/CUDA 比分与 action；删反馈后 restart 仍为4；未知 IR/超深 ABS 链/NaN/ERC越界被拒绝；final generation 已评价；更换 panel 后 elites 也实际运行；一次 worker 连续 A-B-A 证明动态状态隔离。
+
+## 7. 首版worker与外部fitness实现
+
+`worker.py` 已用显式spawn执行单GPU常驻Engine；协调进程禁止导入CUDA扩展。任务ID包含评价位置，因此相同IR的不同个体仍会分别执行；Future等待超时保留原任务，活动任务期间拒绝新提交。固定GPU/driver/host、二进制和Python源码hash、batch shape及设置进入协议身份。
+
+输入只携带冻结的无标签Instance和Program。静态登记超容量时在任务边界重建该规模Engine，输出实际登记费、engine generation和worker时间。当前准备费仍为开发测量，正式表尚未冻结。完整有序坐标hash用于任务和实例key身份，split防泄漏继续由已发布点集分组负责。
+
+`fitness.py` 独立核验返回身份、路线、成本与截止时间，拒绝遗漏/重复/混用程序或硬件；任一预定面板失败使个体fitness为+infinity，数据标签错误直接报错。聚合先实例内seed、再规模内实例、最后两规模等权。实际spawn、失败/容量边界、64条开发路线和73项GPU Python回归证据见 [worker报告](../reports/2026-09-08_worker.md)。
+
+以上没有实现代际循环、精英实评、最终代/验证选择、调度重试或checkpoint恢复；这些仍属于G3下一项，不能以单次两规模fitness返回有限值代替。
