@@ -1,0 +1,138 @@
+{
+  "status": "native full-state API and real development matrix audited",
+  "source_commit": "4206c55962904d7a68b6b73e9a85e33af29cf126",
+  "native_sha256": "ca70d9c49435ec865255e9cd5f229daa6d6740504a33218b8b9a41dea8235f69",
+  "CXX_development_check": {
+    "status": "passed",
+    "cut_points": 4,
+    "compared_source_batches": 32,
+    "paired_interventions": 12,
+    "single_colony_pairs": 12,
+    "buffers": 40,
+    "snapshot_bytes": 299052,
+    "formal_mechanism_result": false
+  },
+  "CXX_resources": {
+    "wall_seconds": 1.18,
+    "user_seconds": 0.65,
+    "system_seconds": 0.27,
+    "max_rss_kib": 163204,
+    "exit_code": 0
+  },
+  "regression_CTest": {
+    "passed": 12,
+    "exit_code": 0,
+    "resources": {
+      "wall_seconds": 20.28,
+      "user_seconds": 15.46,
+      "system_seconds": 1.99,
+      "max_rss_kib": 208472,
+      "exit_code": 0
+    }
+  },
+  "python_tests": {
+    "passed": 4,
+    "seconds": 0.87,
+    "session_id": 86426,
+    "exit_code": 0,
+    "log_sha256": "29705242d4ebbb03a855581a17470390cbdf7bd12a62507d9e95d6b3f2be6268"
+  },
+  "sanitizers": [
+    {
+      "tool": "memcheck",
+      "exit_code": 0,
+      "log": ".tmp/state-fork-memcheck-v1.log"
+    },
+    {
+      "tool": "racecheck",
+      "exit_code": 0,
+      "log": ".tmp/state-fork-racecheck-v1.log"
+    },
+    {
+      "tool": "synccheck",
+      "exit_code": 0,
+      "log": ".tmp/state-fork-synccheck-v1.log"
+    },
+    {
+      "tool": "initcheck",
+      "session_id": 19625,
+      "exit_code": 0,
+      "log": ".tmp/state-fork-initcheck-v1.log"
+    }
+  ],
+  "real_development": {
+    "audit": {
+      "FE": 156160,
+      "calls": 40,
+      "formal_mechanism_result": false,
+      "formal_test_released": false,
+      "label_queries": 0,
+      "manifest_sha256": "42feded7394c2d66409155ad983cfdd02bc7322392c0e6b8faadd1f2e8a5b881",
+      "max_independent_cost_error": 6.394884621840902e-14,
+      "members": 1156,
+      "native_sha256": "ca70d9c49435ec865255e9cd5f229daa6d6740504a33218b8b9a41dea8235f69",
+      "observed_at_utc": "2026-09-08T20:35:55.218049+00:00",
+      "resource_deviations": 0,
+      "resources_sha256": "2893a27069cbe7071a6d3cec0de4997509f28c40751a9a78160c49529927b83b",
+      "status": "passed"
+    },
+    "host": "bordeaux.ecs.vuw.ac.nz",
+    "device_before": {
+      "driver_version": "610.43.02",
+      "foreign_processes": 0,
+      "gpu_model": "Quadro RTX 6000",
+      "gpu_uuid": "GPU-cadcb7cc-937d-9f8e-6a29-efb7ea30bfd9",
+      "memory_used_mib": 5,
+      "utilization_percent": 0
+    },
+    "CLI_session_id": 29578,
+    "CLI_exit_code": 0,
+    "audit_CLI_session_id": 2124,
+    "audit_CLI_exit_code": 0,
+    "resources": {
+      "wall_seconds": 25.79,
+      "user_seconds": 18.31,
+      "system_seconds": 3.35,
+      "max_rss_kib": 736988,
+      "exit_code": 0
+    },
+    "snapshot_files": [
+      {
+        "case": "1000-baseline",
+        "sha256": "088117a68fc7e1d39d9f34e8e871faafe35ca2e9243b76a26623232f2fac9a5c",
+        "bytes": 67224428
+      },
+      {
+        "case": "1000-program",
+        "sha256": "5d0931488c4dcc01124f0eeab027aeca15549f34c651f05920177ca749743fb5",
+        "bytes": 67224428
+      },
+      {
+        "case": "500-baseline",
+        "sha256": "348c40f4af6e34613eeaa7109b88e2cb0d7e199169a46a1ef6b3b36ede7617d1",
+        "bytes": 33880428
+      },
+      {
+        "case": "500-program",
+        "sha256": "f7c9ed69be698df345b9c4a93c3a444b45e1c0b2213f33fa1aef957f12f36074",
+        "bytes": 33880428
+      }
+    ],
+    "instance_policy": "first16 development IDs per N, two source controller types; engineering data only"
+  },
+  "source_archive_sha256": "aabaff447efeeed5a74ae307b3f6c6fc6d750f840abbc26f8a9a5431769964bf",
+  "raw_evidence_archive": {
+    "path": "artifacts/runtimes/4206c55962904d7a68b6b73e9a85e33af29cf126/real-state-fork-evidence.tar.zst",
+    "sha256": "5778480a401769579cc4f0631a34e8a0a2cae5c384b8e4c106f9c7b328c7748c",
+    "bytes": 26994100
+  },
+  "formal_mechanism_result": false,
+  "formal_test_released": false,
+  "remaining": [
+    "freeze source controllers and development pilot/sample split",
+    "freeze q/c strata and paired fork design before effect outcomes",
+    "collect registered snapshots and paired outcomes",
+    "instance-level stratified inference",
+    "finish full E1-E4 and test gate"
+  ]
+}

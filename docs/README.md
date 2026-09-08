@@ -4,6 +4,8 @@
 
 **最新用户指示：进化与ACO主实验按evaluation次数终止，尽量不设时间上限。** [次数协议](planning/12_evaluation_count_protocol.md)优先于前序wall-clock主预算描述；次数入口与实际训练恢复已有[开发验收](reports/2026-09-08_evaluation_counts.md)，历史计时结果作为工程/资源证据保留。
 
+E1机制所需的[完整状态分叉与真实面板验收](reports/2026-09-09_e1_state_fork_engine.md)已在隔离分支完成；每个分支从同一快照恢复并按相同额外FE继续。正式分层采样与效应统计仍待执行，主训练和E3继续使用原冻结底座。
+
 | 顺序 | 文档 | 解决的问题 |
 |---|---|---|
 | 1 | [范围与关键决策](planning/01_scope_and_decisions.md) | 研究贡献、歧义、哪些假设可能失败 |
