@@ -1,6 +1,6 @@
 # E1：LS 后反馈的样本外价值
 
-状态：预注册草案，须先通过G0–G4；无实验结果。公共预算/统计见[公共协议](../planning/07_evaluation_and_statistics.md)。
+状态：主训练/比较配置进入[具体冻结协议](../planning/16_e1_freeze_and_execution.md)，完整FE校准已通过；正式测试仍须完整G4及全部训练/验证和基线选择封存。无测试结果。公共预算/统计见[公共协议](../planning/07_evaluation_and_statistics.md)。
 
 ## 1. 处理与主要终点
 

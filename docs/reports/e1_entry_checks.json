@@ -1,0 +1,131 @@
+{
+  "status": "passed",
+  "scope": "E1 formal entry and data/observation controls; unchanged native solver has separate existing evidence",
+  "current_targeted_python_checks": 5,
+  "current_targeted_log": "artifacts/environment/pytest-e1-entry-v4.log",
+  "unchanged_core_regression_checks_passed": 30,
+  "core_regression_log": "artifacts/environment/pytest-e1-entry-v3.log",
+  "failed_harness_attempts": [
+    {
+      "version": 1,
+      "passed": 2,
+      "failed": 3,
+      "cause": "Shared test fixture returns settings/protocol/source, initially unpacked as two fields."
+    },
+    {
+      "version": 2,
+      "passed": 4,
+      "failed": 1,
+      "cause": "Test omitted explicit preparation operations when counting device observations."
+    },
+    {
+      "version": 3,
+      "passed": 34,
+      "failed": 1,
+      "cause": "Test read dataclass property failed as a serialized field; serialized field is error."
+    }
+  ],
+  "implementation_failure_in_these_attempts": false,
+  "checked": [
+    "both methods and all five predeclared seeds preserve full 128x50 and 4096 FE",
+    "freeze enumerates IDs without reading coordinates or labels",
+    "reject wrong counts and overlapping splits",
+    "original futures survive observer timeouts and post-return resource query failure",
+    "registered wrapper produces exactly the same selection and panel stream as ordinary TrainingRun",
+    "wrong panel or busy GPU produces no submission"
+  ],
+  "sources": {
+    "scripts/research_e1.py": "ab4b350bc3ab0f45a113467c7a892259625287977424cb3be4f4c2ad71dc7bb9",
+    "tests/python/test_research_e1.py": "3eca837414a4b12437938ede500584757952d10b4a574b3513d25dadb59d6ce8",
+    "configs/e1_protocol_v1.json": "64da3991c0b2b564af1497667b67a1b09f907c16814ec1c8af30bc048f62648f"
+  },
+  "log_sha256": {
+    "pytest-e1-entry-v1.log": "b74b1e24fb53fa8ba44c05e0b001353c250740f17f1c81b062151c91a2fdb8a5",
+    "pytest-e1-entry-v2.log": "7f02b233eedb5d61382b49da9f9402e8ea189409bea11e27e819085c0c8c578e",
+    "pytest-e1-entry-v3.log": "6754d104981f8508f27f3f947dfbd92225b4d39fdb969a1ed90f0806e0471707",
+    "pytest-e1-entry-v4.log": "3a8209c18190836fcf1a0f5d91b651afff93b7e0075d6b771f757f8e36d421ed"
+  },
+  "freeze_sha256": "59816af33c45ed0777ea45fec65ca9a392befd579e0b5875dfcce7b4b392e1fa",
+  "host_probes": {
+    "cuda02.json": {
+      "host": "cuda02.sms.vuw.ac.nz",
+      "platform": "Linux-7.0.11-arch1-1-x86_64-with-glibc2.43",
+      "python": "3.12.13 (main, Jun  9 2026, 14:19:59) [GCC 16.1.1 20260430]",
+      "numpy": "2.5.3",
+      "deap": "1.4.4",
+      "native_binary_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+      "native_path": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/build/cuda/gp_faco_ext.so",
+      "count_api_available": true
+    },
+    "cuda03.json": {
+      "host": "cuda03.sms.vuw.ac.nz",
+      "platform": "Linux-7.0.11-arch1-1-x86_64-with-glibc2.43",
+      "python": "3.12.13 (main, Jun  9 2026, 14:19:59) [GCC 16.1.1 20260430]",
+      "numpy": "2.5.3",
+      "deap": "1.4.4",
+      "native_binary_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+      "native_path": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/build/cuda/gp_faco_ext.so",
+      "count_api_available": true
+    },
+    "cuda04.json": {
+      "host": "cuda04.sms.vuw.ac.nz",
+      "platform": "Linux-7.0.11-arch1-1-x86_64-with-glibc2.43",
+      "python": "3.12.13 (main, Jun  9 2026, 14:19:59) [GCC 16.1.1 20260430]",
+      "numpy": "2.5.3",
+      "deap": "1.4.4",
+      "native_binary_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+      "native_path": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/build/cuda/gp_faco_ext.so",
+      "count_api_available": true
+    },
+    "cuda08.json": {
+      "host": "cuda08.ecs.vuw.ac.nz",
+      "platform": "Linux-7.0.11-arch1-1-x86_64-with-glibc2.43",
+      "python": "3.12.13 (main, Jun  9 2026, 14:19:59) [GCC 16.1.1 20260430]",
+      "numpy": "2.5.3",
+      "deap": "1.4.4",
+      "native_binary_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+      "native_path": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/build/cuda/gp_faco_ext.so",
+      "count_api_available": true
+    },
+    "cuda10.json": {
+      "host": "cuda10.ecs.vuw.ac.nz",
+      "platform": "Linux-7.0.11-arch1-1-x86_64-with-glibc2.43",
+      "python": "3.12.13 (main, Jun  9 2026, 14:19:59) [GCC 16.1.1 20260430]",
+      "numpy": "2.5.3",
+      "deap": "1.4.4",
+      "native_binary_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+      "native_path": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/build/cuda/gp_faco_ext.so",
+      "count_api_available": true
+    },
+    "cuda12.json": {
+      "host": "cuda12.ecs.vuw.ac.nz",
+      "platform": "Linux-7.0.11-arch1-1-x86_64-with-glibc2.43",
+      "python": "3.12.13 (main, Jun  9 2026, 14:19:59) [GCC 16.1.1 20260430]",
+      "numpy": "2.5.3",
+      "deap": "1.4.4",
+      "native_binary_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+      "native_path": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/build/cuda/gp_faco_ext.so",
+      "count_api_available": true
+    },
+    "cuda13.json": {
+      "host": "cuda13.ecs.vuw.ac.nz",
+      "platform": "Linux-7.0.11-arch1-1-x86_64-with-glibc2.43",
+      "python": "3.12.13 (main, Jun  9 2026, 14:19:59) [GCC 16.1.1 20260430]",
+      "numpy": "2.5.3",
+      "deap": "1.4.4",
+      "native_binary_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+      "native_path": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/build/cuda/gp_faco_ext.so",
+      "count_api_available": true
+    },
+    "piccolo.json": {
+      "host": "piccolo.ecs.vuw.ac.nz",
+      "platform": "Linux-7.0.11-arch1-1-x86_64-with-glibc2.43",
+      "python": "3.12.13 (main, Jun  9 2026, 14:19:59) [GCC 16.1.1 20260430]",
+      "numpy": "2.5.3",
+      "deap": "1.4.4",
+      "native_binary_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+      "native_path": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/build/cuda/gp_faco_ext.so",
+      "count_api_available": true
+    }
+  }
+}

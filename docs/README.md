@@ -20,6 +20,7 @@
 | 12 | [评价次数主协议](planning/12_evaluation_count_protocol.md) | 用户补充后的计数单位、终止规则、progress特征及冻结顺序 |
 | 13 | [Static/Rule共同底座契约](planning/13_baseline_control_contract.md) | 参数族、独立重启随机流、停滞升级/冷却、mask及开发调优边界 |
 | 14 | [开发集FE校准与基线配置搜索](planning/14_baseline_search_and_fe_calibration.md) | 480任务次数曲线、776配置完整调优、固定验证选择及恢复/资源账目 |
+| 16 | [E1完整训练与冻结顺序](planning/16_e1_freeze_and_execution.md) | 128×50×5、Full/NoFeedback独立重训、全部数据/面板身份及与基线调优的并行边界 |
 | E1 | [反馈价值](experiments/E1_feedback.md) | 完整程序、去反馈重训及状态分叉 |
 | E2 | [两尺度关系](experiments/E2_factorial.md) | 2×2 析因与交互 |
 | E3 | [候选与出口](experiments/E3_candidates_and_escape.md) | Hard/Escape 的可执行定义与公平性 |
