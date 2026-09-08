@@ -6,6 +6,7 @@
 #include "gp_faco/program.hpp"
 #include "gp_faco/profiling.hpp"
 #include "gp_faco/baseline_policy.hpp"
+#include "gp_faco/factorial_policy.hpp"
 
 #include <memory>
 
@@ -71,12 +72,16 @@ public:
     BatchEvaluation evaluate_baseline_evaluations(const std::vector<BatchTask>& tasks,
         std::uint64_t evaluation_limit_per_colony, const BaselinePolicy& policy, PreparationMode mode,
         std::uint32_t experiment_mask = UINT32_MAX, BatchDiagnosticControls controls = {});
+    BatchEvaluation evaluate_factorial_evaluations(const std::vector<BatchTask>& tasks,
+        std::uint64_t evaluation_limit_per_colony, const Program& program, const FactorialPolicy& policy,
+        PreparationMode mode, std::uint32_t experiment_mask = UINT32_MAX,
+        BatchDiagnosticControls controls = {});
 private:
     BatchEvaluation evaluate_impl(const std::vector<BatchTask>& tasks, double seconds,
         Node mne_target, PreparationMode mode, BatchDiagnosticControls controls,
         const Program* program, std::uint32_t experiment_mask,
         bool count_limited = false, std::uint64_t evaluation_limit_per_colony = 0,
-        const BaselinePolicy* baseline = nullptr);
+        const BaselinePolicy* baseline = nullptr, const FactorialPolicy* factorial = nullptr);
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };

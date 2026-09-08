@@ -194,10 +194,25 @@ BatchEvaluation FacoBatchEngine::evaluate_baseline_evaluations(const std::vector
     return evaluate_impl(tasks, 0, 2, mode, controls, nullptr, experiment_mask, true, evaluations, &policy);
 }
 
+BatchEvaluation FacoBatchEngine::evaluate_factorial_evaluations(const std::vector<BatchTask>& tasks,
+    std::uint64_t evaluations, const Program& program, const FactorialPolicy& policy, PreparationMode mode,
+    std::uint32_t experiment_mask, BatchDiagnosticControls controls) {
+    validate_factorial(policy, experiment_mask);
+    validate_program(program);
+    require(program.feature_spec_id == 2, "析因入口只接受评价次数特征v2");
+    // M00不执行评分树，M11完全沿用Full入口；两端点没有额外的动作限制内核。
+    if (policy.variant == FactorialVariant::M00)
+        return evaluate_baseline_evaluations(tasks, evaluations, policy.baseline, mode, experiment_mask, controls);
+    if (policy.variant == FactorialVariant::M11)
+        return evaluate_program_evaluations(tasks, evaluations, program, mode, experiment_mask, controls);
+    return evaluate_impl(tasks, 0, 2, mode, controls, &program, experiment_mask, true, evaluations,
+                         nullptr, &policy);
+}
+
 BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tasks, double seconds,
     Node mne_target, PreparationMode mode, BatchDiagnosticControls controls, const Program* program,
     std::uint32_t experiment_mask, bool count_limited, std::uint64_t evaluation_limit,
-    const BaselinePolicy* baseline) {
+    const BaselinePolicy* baseline, const FactorialPolicy* factorial) {
     const auto started = Clock::now();
     auto& p = *impl_;
     const bool controlled = program || baseline;
@@ -225,6 +240,10 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         require(count_limited && !program, "基线需要独立的次数入口");
         validate_baseline(*baseline, experiment_mask);
     }
+    if (factorial) {
+        require(count_limited && program && !baseline, "析因学习需要独立的次数入口");
+        validate_factorial(*factorial, experiment_mask);
+    }
     if (controlled) {
         require((experiment_mask & 0xffffu) != 0, "实验mask必须保留至少一个保持模式动作");
         require(!controls.force_fingerprint_collisions || controls.capture_control,
@@ -233,7 +252,7 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     int device = -1; checked(cudaGetDevice(&device));
     require(device == p.device, "Engine必须在创建它的CUDA设备上评价");
     DeviceArray<double> baseline_uniforms;
-    if (baseline && controls.capture_control) baseline_uniforms.allocate(p.colonies);
+    if ((baseline || factorial) && controls.capture_control) baseline_uniforms.allocate(p.colonies);
     const auto actual_elapsed = [&]() { return std::chrono::duration<double>(Clock::now() - started).count(); };
     DeadlineLedger budget = count_limited ? DeadlineLedger(std::nullopt, actual_elapsed)
                                          : DeadlineLedger(seconds, actual_elapsed);
@@ -394,7 +413,13 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
                 p.trails.data(), p.experiment_masks.data(), p.regions.data(), p.alternatives.data(),
                 p.masks.data(), p.features.data());
             event_end(GpuProfileStage::Features);
+            if (factorial && controls.capture_control) trace.legal_masks = p.masks.download();
             event_begin(GpuProfileStage::Scoring);
+            if (factorial) {
+                cuda_detail::restrict_factorial_actions<<<(p.colonies + 127) / 128, 128>>>(*factorial,
+                    p.controllers.data(), p.keys.data(), batch, p.masks.data(), p.colonies,
+                    baseline_uniforms.data());
+            }
             if (program) {
                 cuda_detail::score_actions<<<(p.colonies + 3) / 4, 128>>>(*program, p.features.data(),
                     p.masks.data(), p.scores.data(), p.actions.data(), p.colonies);
@@ -407,7 +432,7 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
             if (controls.capture_control) {
                 trace.features = p.features.download();
                 if (program) trace.scores = p.scores.download();
-                else trace.baseline_uniforms = baseline_uniforms.download();
+                if (baseline || factorial) trace.baseline_uniforms = baseline_uniforms.download();
                 trace.masks = p.masks.download(); trace.actions = p.actions.download();
                 trace.alternatives = p.alternatives.download(); trace.regions = p.regions.download();
             }

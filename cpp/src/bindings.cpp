@@ -151,6 +151,34 @@ py::dict baseline_output(const gp_faco::BaselinePolicy& p) {
     return result;
 }
 
+gp_faco::FactorialPolicy read_factorial(const py::dict& dictionary) {
+    if (dictionary.size() != 3 || !dictionary.contains("factorial_spec_id") ||
+        !dictionary.contains("variant") || !dictionary.contains("baseline_policy") ||
+        read_unsigned(dictionary["factorial_spec_id"]) != 1 ||
+        !py::isinstance<py::dict>(dictionary["baseline_policy"]))
+        throw std::invalid_argument("析因配置字段或规格版本无效");
+    gp_faco::FactorialPolicy result;
+    const auto variant = py::cast<std::string>(dictionary["variant"]);
+    if (variant == "M00") result.variant = gp_faco::FactorialVariant::M00;
+    else if (variant == "M10") result.variant = gp_faco::FactorialVariant::M10;
+    else if (variant == "M01") result.variant = gp_faco::FactorialVariant::M01;
+    else if (variant == "M11") result.variant = gp_faco::FactorialVariant::M11;
+    else throw std::invalid_argument("未知析因变体");
+    result.baseline = read_baseline(py::cast<py::dict>(dictionary["baseline_policy"]));
+    gp_faco::validate_factorial(result);
+    return result;
+}
+
+py::dict factorial_output(const gp_faco::FactorialPolicy& policy) {
+    py::dict result;
+    result["factorial_spec_id"] = 1;
+    result["variant"] = policy.variant == gp_faco::FactorialVariant::M00 ? "M00" :
+        policy.variant == gp_faco::FactorialVariant::M10 ? "M10" :
+        policy.variant == gp_faco::FactorialVariant::M01 ? "M01" : "M11";
+    result["baseline_policy"] = baseline_output(policy.baseline);
+    return result;
+}
+
 gp_faco::PreparationMode preparation_mode(const std::string& mode) {
     if (mode == "cached_charged") return gp_faco::PreparationMode::CachedCharged;
     if (mode == "end_to_end") return gp_faco::PreparationMode::EndToEnd;
@@ -399,6 +427,33 @@ PYBIND11_MODULE(gp_faco_ext, module) {
             return output;
         }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
            py::arg("evaluation_limit_per_colony"), py::arg("policy"),
+           py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX)
+        .def("evaluate_factorial_evaluations", [](gp_faco::FacoBatchEngine& engine,
+                const Keys& keys, const Keys& seeds, const py::object& evaluations,
+                const py::dict& dictionary, const py::dict& policy_dictionary,
+                const std::string& mode, const py::object& mask) {
+            if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size())
+                throw std::invalid_argument("析因次数入口需要完整任务数组");
+            if (mode != "cached" && mode != "end_to_end")
+                throw std::invalid_argument("次数入口只接受cached或end_to_end准备");
+            const auto program = read_program(dictionary);
+            const auto policy = read_factorial(policy_dictionary);
+            const auto limit = read_unsigned(evaluations);
+            const auto experiment_mask = read_node(mask);
+            const auto preparation = preparation_mode(mode == "cached" ? "cached_charged" : mode);
+            std::vector<gp_faco::BatchTask> tasks;
+            for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            gp_faco::BatchEvaluation result;
+            {
+                py::gil_scoped_release release;
+                result = engine.evaluate_factorial_evaluations(tasks, limit, program, policy,
+                                                               preparation, experiment_mask);
+            }
+            auto output = batch_output(result, mode);
+            output["factorial_policy"] = factorial_output(policy);
+            return output;
+        }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
+           py::arg("evaluation_limit_per_colony"), py::arg("program"), py::arg("policy"),
            py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX)
         .def("run_program_diagnostic", [](gp_faco::FacoBatchEngine& engine, const Keys& keys,
                 const Keys& seeds, const py::dict& dictionary, const py::object& batches,

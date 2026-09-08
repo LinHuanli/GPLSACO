@@ -29,6 +29,8 @@ struct ControlBatchTrace {
     std::vector<float> features, scores;
     std::vector<double> baseline_uniforms;  // 仅基线诊断，生产入口不复制。
     std::vector<std::uint32_t> masks;
+    // 仅M10/M01诊断：限制前的动作机会，用于区分无替代解与未选择重启。
+    std::vector<std::uint32_t> legal_masks;
     std::vector<std::int32_t> actions;
     std::vector<Node> alternatives;
     std::vector<StartRegions> regions;
