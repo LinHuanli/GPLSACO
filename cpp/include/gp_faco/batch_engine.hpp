@@ -6,13 +6,13 @@
 #include "gp_faco/program.hpp"
 #include "gp_faco/profiling.hpp"
 #include "gp_faco/baseline_policy.hpp"
+#include "gp_faco/counted_state.hpp"
 
 #include <memory>
 
 namespace gp_faco {
 
 enum class PreparationMode { CachedCharged, EndToEnd };
-struct BatchTask { std::uint64_t instance_key, seed; };
 struct RegistrationInfo { double cheap_seconds, preparation_seconds; };
 
 struct BatchEvaluation {
@@ -71,12 +71,29 @@ public:
     BatchEvaluation evaluate_baseline_evaluations(const std::vector<BatchTask>& tasks,
         std::uint64_t evaluation_limit_per_colony, const BaselinePolicy& policy, PreparationMode mode,
         std::uint32_t experiment_mask = UINT32_MAX, BatchDiagnosticControls controls = {});
+    // E1开发机制专用：停止点不改变源progress分母；完整状态在同步提交边界发布。
+    BatchEvaluation capture_program_state(const std::vector<BatchTask>& tasks,
+        std::uint64_t source_evaluations, std::uint64_t capture_after_evaluations,
+        const Program& program, CountedState& output, std::uint32_t experiment_mask = UINT32_MAX,
+        BatchDiagnosticControls controls = {});
+    BatchEvaluation capture_baseline_state(const std::vector<BatchTask>& tasks,
+        std::uint64_t source_evaluations, std::uint64_t capture_after_evaluations,
+        const BaselinePolicy& policy, CountedState& output, std::uint32_t experiment_mask = UINT32_MAX,
+        BatchDiagnosticControls controls = {});
+    BatchEvaluation continue_program_state(const CountedState& state,
+        std::uint64_t additional_evaluations, const Program& program,
+        BatchDiagnosticControls controls = {});
+    BatchEvaluation continue_baseline_state(const CountedState& state,
+        std::uint64_t additional_evaluations, const BaselinePolicy& policy,
+        ForkIntervention intervention = {}, BatchDiagnosticControls controls = {});
 private:
     BatchEvaluation evaluate_impl(const std::vector<BatchTask>& tasks, double seconds,
         Node mne_target, PreparationMode mode, BatchDiagnosticControls controls,
         const Program* program, std::uint32_t experiment_mask,
         bool count_limited = false, std::uint64_t evaluation_limit_per_colony = 0,
-        const BaselinePolicy* baseline = nullptr);
+        const BaselinePolicy* baseline = nullptr, CountedState* snapshot_output = nullptr,
+        std::uint64_t capture_after_evaluations = 0, const CountedState* resumed_state = nullptr,
+        ForkIntervention intervention = {});
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };
