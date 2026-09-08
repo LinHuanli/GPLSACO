@@ -380,13 +380,74 @@
         "search_tour_evaluations": 114688,
         "solve_jobs": 40,
         "source_manifest_sha256": "451d52adb238f7c22403b564c18da6eb97ca4e773aed14440034574f9408c86f"
+      },
+      {
+        "audit_path": "artifacts/e3/compatibility-v1-pro6000-audit.json",
+        "audit_sha256": "35cac74b602fbbd527ed0f899df99da97fe8430a4a9a861eb0657832d5c816b3",
+        "cross_a5000_different": [],
+        "cross_a5000_equal": 40,
+        "hard_tour_edges_checked": 480000,
+        "max_independent_cost_error": 3.552713678800501e-14,
+        "name": "pro6000",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "hard",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 0,
+          "execution_host": "cuda24.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+          "gpu_uuid": "GPU-c2cde103-a3fe-1e5d-ec16-8bc6ccda401a",
+          "graph_catalog_path": "artifacts/graph-worker/catalog-v1.json",
+          "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+          "graph_prior_kind": "ALPHA",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 32,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "resources": {
+          "exit_code": 0,
+          "max_rss_kib": 278580,
+          "system_seconds": 3.34,
+          "user_seconds": 15.33,
+          "wall_seconds": 26.16
+        },
+        "routes": 1280,
+        "same_pid_replay_pairs": 16,
+        "search_tour_evaluations": 114688,
+        "solve_jobs": 40,
+        "source_manifest_sha256": "09e3508dcb0fd4714af46253ba44f6c6b76797bfabd39ffd51e1f1e08ece9314"
       }
     ],
     "reference_manifest_sha256": "6969e87f43e323ef14f87999f8b10e66956a8fdfd1401f276ea45d422795164b",
     "scope": "finite engineering compatibility cases; timings separate; no universal cross-GPU identity proof",
     "status": "passed",
-    "total_new_FE": 688128,
-    "total_new_solve_jobs": 240
+    "total_new_FE": 802816,
+    "total_new_solve_jobs": 280
   },
   "engineering_entrypoint_sha256": "132817a40182691d36176619b77ba17d61622f7d6b7a719b3f03008dfc6daaf6",
   "execution_sha256": "f70f8691c8643f346ddb44ab07f6a87fe026d61ba89cf19dd06c3f1d4d2c6cbb",
@@ -419,6 +480,7 @@
     "scripts/summarize_configuration_search.py": "9488c49272401d5fe4c2e7270948d56639f6e9985ad73ea25f6cf5b0a464c702"
   },
   "formal_test_released": false,
+  "launch_plan_v2_sha256": "56b2796f4a1c682432b9fb898da687cdd5ee3dfea785c1e7729d9704e8b8323b",
   "plan_sha256": "8a43009604769d94898f2d92b066072c29f0ea6685de6521519aa2d730150822",
   "recovery": {
     "static": {
