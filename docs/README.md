@@ -30,3 +30,5 @@
 | E4 | [冻结迁移](experiments/E4_transfer.md) | 10K、TSPLIB、失败与适用范围 |
 
 当前事实以 [进度记录](reports/progress.md) 和其链接的机器可读报告为准。历史 v4 中“已核查”“待安装”等描述保留为方案写作时点，不替代本地执行状态。
+
+正式E3执行依赖、21张GPU分配、顺序队列和完整审计入口见[执行门槛验收](reports/2026-09-09_e3_execution_gate.md)。进化/ACO按evaluation次数停止，设备计时分列；完整研究结果仍须逐运行审计。
