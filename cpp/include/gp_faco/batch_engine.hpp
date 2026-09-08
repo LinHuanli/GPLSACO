@@ -22,6 +22,9 @@ struct BatchEvaluation {
     std::uint64_t completed_construction_steps = 0, completed_ls_evaluations = 0;
     std::size_t allocated_device_bytes = 0;
     bool preparation_completed = false;
+    bool count_limited = false;
+    std::uint64_t evaluation_limit_per_colony = 0, completed_tour_evaluations_per_colony = 0;
+    std::uint64_t total_tour_evaluations = 0;
     // 仅C++诊断入口填充，Python正式结果不暴露迟到tour或成本。
     std::vector<double> discarded_costs;
     std::vector<ControllerState> completed_control_states;
@@ -60,10 +63,15 @@ public:
     BatchEvaluation evaluate_program_diagnostic(const std::vector<BatchTask>& tasks, double seconds,
         const Program& program, PreparationMode mode, std::uint32_t experiment_mask,
         BatchDiagnosticControls controls);
+    // 主次数入口：每个colony的蚂蚁完整tour计数，不设置wall-clock截止。
+    BatchEvaluation evaluate_program_evaluations(const std::vector<BatchTask>& tasks,
+        std::uint64_t evaluation_limit_per_colony, const Program& program, PreparationMode mode,
+        std::uint32_t experiment_mask = UINT32_MAX, BatchDiagnosticControls controls = {});
 private:
     BatchEvaluation evaluate_impl(const std::vector<BatchTask>& tasks, double seconds,
         Node mne_target, PreparationMode mode, BatchDiagnosticControls controls,
-        const Program* program, std::uint32_t experiment_mask);
+        const Program* program, std::uint32_t experiment_mask,
+        bool count_limited = false, std::uint64_t evaluation_limit_per_colony = 0);
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };

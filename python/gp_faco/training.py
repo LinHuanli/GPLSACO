@@ -64,12 +64,18 @@ class TrainingSettings:
     experiment_mask: int = 0xFFFFFFFF
     infrastructure_retries: int = 1
     scope: str = "engineering_development"
+    budget_kind: str = "wall_clock"
 
     def __post_init__(self):
         object.__setattr__(self, "validation_seeds", tuple(self.validation_seeds))
         object.__setattr__(self, "budgets", tuple(tuple(v) for v in self.budgets))
         if type(self.evolution) is not EvolutionSettings:
             raise TypeError("训练需要显式演化配置")
+        if self.budget_kind not in ("wall_clock", "search_tour_evaluations"):
+            raise ValueError("未知训练预算单位")
+        counted = self.budget_kind == "search_tour_evaluations"
+        if self.evolution.feature_spec_id != (2 if counted else 1):
+            raise ValueError("进化特征版本与预算单位不符")
         for value in (self.evolution_seed, self.panel_seed, *self.validation_seeds):
             if type(value) is not int or not 0 <= value <= 0xFFFFFFFFFFFFFFFF:
                 raise ValueError("训练、面板和验证seed必须为uint64")
@@ -90,13 +96,15 @@ class TrainingSettings:
                 or type(v[1]) not in (int, float)
                 or not math.isfinite(v[1])
                 or v[1] < 0
+                or (counted and type(v[1]) is not int)
                 for v in self.budgets
             )
             or len({v[0] for v in self.budgets}) != len(self.budgets)
         ):
             raise ValueError("规模预算必须非负有限且规模不得重复")
         if (
-            self.preparation_mode not in ("cached_charged", "end_to_end")
+            self.preparation_mode
+            not in (("cached", "end_to_end") if counted else ("cached_charged", "end_to_end"))
             or type(self.infrastructure_retries) is not int
             or not 0 <= self.infrastructure_retries <= 3
             or type(self.experiment_mask) is not int
@@ -168,6 +176,11 @@ def training_manifest(settings: TrainingSettings, protocol: WorkerProtocol, data
         raise ValueError("数据、预算与worker规模不符")
     if settings.instances_per_panel * settings.solver_seeds_per_instance != protocol.colonies:
         raise ValueError("每个程序必须使用worker的完整固定形状")
+    if settings.budget_kind == "search_tour_evaluations" and any(
+        limit % protocol.settings.ants or limit // protocol.settings.ants > 0xFFFFFFFF
+        for _, limit in settings.budgets
+    ):
+        raise ValueError("训练FE必须为完整ants批次，且批次数不超出uint32")
     for n in n_values:
         train_count, val_count = len(data.training[n]), len(data.validation[n])
         if train_count < settings.instances_per_panel or val_count % settings.instances_per_panel:
@@ -306,6 +319,7 @@ class TrainingRun:
                         "evaluator_seconds": 0.0,
                         "charged_seconds": 0.0,
                         "native_actual_seconds": 0.0,
+                        "search_tour_evaluations": 0,
                         "overrun_seconds": 0.0,
                         "infrastructure_failures": 0,
                         "unobserved_terminated_attempts": 0,
@@ -522,6 +536,9 @@ class TrainingRun:
             costs["failed_solves"] += int(record["checked"]["error"] is not None)
             costs["valid_members"] += len(record["checked"]["members"])
             native = record["outcome"].get("native_result", {})
+            evaluations = native.get("total_tour_evaluations", 0)
+            if type(evaluations) is int and evaluations >= 0:
+                costs["search_tour_evaluations"] += evaluations
             for field, origin in (
                 ("charged_seconds", "charged_seconds"),
                 ("native_actual_seconds", "actual_seconds"),
@@ -609,10 +626,15 @@ class TrainingRun:
             program,
             problems,
             tuple((p.instance_id, seed) for p in problems for seed in panel["seeds"]),
-            dict(self.settings.budgets)[panel["dimension"]],
+            dict(self.settings.budgets)[panel["dimension"]]
+            if self.settings.budget_kind == "wall_clock"
+            else None,
             self.settings.preparation_mode,
             self.settings.experiment_mask,
             charges,
+            dict(self.settings.budgets)[panel["dimension"]]
+            if self.settings.budget_kind == "search_tour_evaluations"
+            else None,
         )
 
     def _evaluate(self, program, occurrence, panels):

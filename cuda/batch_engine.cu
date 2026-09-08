@@ -181,9 +181,15 @@ BatchEvaluation FacoBatchEngine::evaluate_program_diagnostic(const std::vector<B
     return evaluate_impl(tasks, seconds, 2, mode, controls, &program, experiment_mask);
 }
 
+BatchEvaluation FacoBatchEngine::evaluate_program_evaluations(const std::vector<BatchTask>& tasks,
+    std::uint64_t evaluations, const Program& program, PreparationMode mode,
+    std::uint32_t experiment_mask, BatchDiagnosticControls controls) {
+    return evaluate_impl(tasks, 0, 2, mode, controls, &program, experiment_mask, true, evaluations);
+}
+
 BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tasks, double seconds,
     Node mne_target, PreparationMode mode, BatchDiagnosticControls controls, const Program* program,
-    std::uint32_t experiment_mask) {
+    std::uint32_t experiment_mask, bool count_limited, std::uint64_t evaluation_limit) {
     const auto started = Clock::now();
     auto& p = *impl_;
     std::unique_lock<std::mutex> lock(p.mutex, std::try_to_lock);
@@ -191,14 +197,20 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     require(tasks.size() == p.colonies && mne_target > 0 && controls.completion_delay_ms <= 2000,
             "任务数量、MNE或诊断延迟无效");
     require(mode == PreparationMode::CachedCharged || mode == PreparationMode::EndToEnd, "未知准备模式");
+    require(!count_limited || (evaluation_limit % p.config.ants == 0 &&
+            evaluation_limit / p.config.ants <= UINT32_MAX && controls.fixed_batches == 0 &&
+            controls.fixed_elapsed_ratio == -1),
+            "次数限额须为完整蚂蚁批次，不允许另设批次或固定进度覆盖");
     require(std::isfinite(controls.fixed_elapsed_ratio) &&
             (controls.fixed_elapsed_ratio == -1 || (controls.fixed_batches > 0 &&
              controls.fixed_elapsed_ratio >= 0 && controls.fixed_elapsed_ratio <= 1)),
             "固定elapsed特征只能用于固定批次诊断且须在[0,1]");
-    require(!controls.profile || (controls.fixed_batches > 0 && controls.fixed_elapsed_ratio >= 0),
+    require(!controls.profile || count_limited || (controls.fixed_batches > 0 && controls.fixed_elapsed_ratio >= 0),
             "profile必须固定批次数与elapsed特征，不能混入主fitness");
     if (program) {
         validate_program(*program);
+        require(program->feature_spec_id == (count_limited ? 2 : 1),
+                "程序进度特征版本与时间/评价次数入口不符");
         require((experiment_mask & 0xffffu) != 0, "实验mask必须保留至少一个保持模式动作");
         require(!controls.force_fingerprint_collisions || controls.capture_control,
                 "强制指纹碰撞必须同时收集诊断轨迹");
@@ -206,9 +218,12 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     int device = -1; checked(cudaGetDevice(&device));
     require(device == p.device, "Engine必须在创建它的CUDA设备上评价");
     const auto actual_elapsed = [&]() { return std::chrono::duration<double>(Clock::now() - started).count(); };
-    DeadlineLedger budget(seconds, actual_elapsed);
+    DeadlineLedger budget = count_limited ? DeadlineLedger(std::nullopt, actual_elapsed)
+                                         : DeadlineLedger(seconds, actual_elapsed);
     BatchEvaluation result;
     result.budget_seconds = seconds;
+    result.count_limited = count_limited;
+    result.evaluation_limit_per_colony = evaluation_limit;
     result.allocated_device_bytes = p.allocated_bytes;
     if (controls.profile) {
         const auto setup = Clock::now();
@@ -235,7 +250,9 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     const auto finish = [&]() {
         result.actual_seconds = actual_elapsed(); result.charged_seconds = budget.charged();
         result.elapsed_seconds = result.actual_seconds + result.charged_seconds;
-        result.overrun_seconds = std::max(0.0, result.elapsed_seconds - seconds);
+        result.overrun_seconds = count_limited ? 0 : std::max(0.0, result.elapsed_seconds - seconds);
+        result.completed_tour_evaluations_per_colony = result.completed_batches * p.config.ants;
+        result.total_tour_evaluations = result.completed_tour_evaluations_per_colony * p.colonies;
         return std::move(result);
     };
     std::map<std::uint64_t, PreparedProblem> fresh;
@@ -253,7 +270,7 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         const auto& cached = p.registry.at(key);
         if (mode == PreparationMode::CachedCharged) {
             const auto fixed = p.preparation_charges.find(key);
-            budget.charge(fixed == p.preparation_charges.end() ? cached.cheap_seconds : fixed->second.cheap_seconds);
+            if (!count_limited) budget.charge(fixed == p.preparation_charges.end() ? cached.cheap_seconds : fixed->second.cheap_seconds);
             offer(ids, cached.cheap_tour, cached.cheap_cost);
         } else {
             auto prepared = make_cheap_problem(cached.coordinates, p.config);
@@ -267,7 +284,7 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         if (mode == PreparationMode::CachedCharged) {
             const auto& cached = p.registry.at(key);
             const auto fixed = p.preparation_charges.find(key);
-            budget.charge(fixed == p.preparation_charges.end() ? cached.preparation_seconds : fixed->second.preparation_seconds);
+            if (!count_limited) budget.charge(fixed == p.preparation_charges.end() ? cached.preparation_seconds : fixed->second.preparation_seconds);
             offer(ids, cached.initial_tour, cached.initial_cost);
         } else {
             auto& prepared = fresh.at(key);
@@ -338,6 +355,7 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     if (program) result.completed_control_states = initial_control;
 
     for (Node batch = 0; budget.can_start(); ++batch) {
+        if (count_limited && result.completed_batches == evaluation_limit / p.config.ants) break;
         if (controls.fixed_batches && batch >= controls.fixed_batches) break;
         ++result.launched_batches;
         const auto batch_started = profile_now();
@@ -347,7 +365,10 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         if (program) {
             trace.batch = batch;
             if (controls.capture_control) trace.before = p.snapshot();
-            trace.elapsed_ratio = controls.fixed_elapsed_ratio >= 0 ? controls.fixed_elapsed_ratio : budget.elapsed() / seconds;
+            // feature_spec=2的进度只依赖已完成FE；计时插桩和主机调度不改变动作输入。
+            trace.elapsed_ratio = count_limited ?
+                static_cast<double>(result.completed_batches * c.ants) / evaluation_limit :
+                (controls.fixed_elapsed_ratio >= 0 ? controls.fixed_elapsed_ratio : budget.elapsed() / seconds);
             event_begin(GpuProfileStage::Features);
             cuda_detail::build_control_features<<<p.colonies, 128>>>(p.n, c.primary_width, p.colonies,
                 p.xy.data(), p.primary.data(), p.local_scale.data(), p.epsilons.data(), p.samples.data(),

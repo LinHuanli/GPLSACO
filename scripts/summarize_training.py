@@ -87,6 +87,7 @@ def summarize(directory):
                 "数据成员表摘要不符",
             )
     settings = manifest["settings"]
+    counted = settings.get("budget_kind") == "search_tour_evaluations"
     width = settings["instances_per_panel"]
     fixed_validation = [
         {
@@ -184,11 +185,15 @@ def summarize(directory):
                 d["budget_seconds"],
                 d["preparation_mode"],
                 d["experiment_mask"],
-                tuple(tuple(v) for v in d["preparation_charges"]),
+                None
+                if d["preparation_charges"] is None
+                else tuple(tuple(v) for v in d["preparation_charges"]),
+                d.get("evaluation_limit_per_colony"),
             )
             require(json_value(task.manifest(protocol)) == d, "重建任务manifest不符")
             require(
-                task.preparation_charges
+                (counted and task.preparation_charges is None)
+                or task.preparation_charges
                 == tuple(
                     sorted(
                         (
@@ -240,7 +245,8 @@ def summarize(directory):
                 == tuple((name, seed) for name in panel["ids"] for seed in panel["seeds"]),
                 "同代或统一验证面板不符",
             )
-            require(task.budget_seconds == dict(settings["budgets"])[task.dimension], "预算改变")
+            actual_limit = task.evaluation_limit_per_colony if counted else task.budget_seconds
+            require(actual_limit == dict(settings["budgets"])[task.dimension], "预算或次数限额改变")
             require(task.experiment_mask == settings["experiment_mask"], "mask改变")
             tasks.append(task)
             scores.append(score)
@@ -322,11 +328,42 @@ def summarize(directory):
         state["costs"]["solve_jobs"] == len(solves) and state["costs"]["valid_members"] == members,
         "累计任务/成员账目不符",
     )
-    checks = PROJECT / "artifacts/gpu/gp-training"
+    search_evaluations = sum(
+        r["outcome"]["native_result"].get("total_tour_evaluations", 0) for r in solves
+    )
+    if counted:
+        require(
+            search_evaluations == state["costs"]["search_tour_evaluations"], "实际FE总数账目不符"
+        )
+    # 蚂蚁tour次数与内部工作量分别汇总；准备资源不混入搜索FE，也不伪称扣费。
+    work_fields = (
+        "total_tour_evaluations",
+        "completed_construction_steps",
+        "completed_ls_evaluations",
+        "completed_batches",
+    )
+    work_by_phase = {}
+    for phase, marker in (("training", ":generation"), ("validation", ":validation:")):
+        phase_solves = [r for r in solves if marker in r["description"]["occurrence_id"]]
+        work_by_phase[phase] = {
+            "solve_jobs": len(phase_solves),
+            **{
+                field: sum(r["outcome"]["native_result"].get(field, 0) for r in phase_solves)
+                for field in work_fields
+            },
+        }
+    require(
+        sum(v["solve_jobs"] for v in work_by_phase.values()) == len(solves),
+        "训练/验证工作量分组有遗漏",
+    )
+    checks = PROJECT / (
+        "artifacts/gpu/evaluation-count" if counted else "artifacts/gpu/gp-training"
+    )
     pytest_log, ctest_log = checks / "pytest.log", checks / "ctest.log"
     pytest_count = int(re.search(r"(\d+) passed", pytest_log.read_text()).group(1))
+    match = re.search(r"100% tests passed, 0 tests failed out of (\d+)", ctest_log.read_text())
     require(
-        "100% tests passed, 0 tests failed out of 8" in ctest_log.read_text(), "原生8项检查未通过"
+        match is not None and int(match.group(1)) >= (10 if counted else 8), "原生检查未完整通过"
     )
     return {
         "status": "passed",
@@ -341,6 +378,8 @@ def summarize(directory):
         "solve_jobs": len(solves),
         "validation_candidates": len(shortlist),
         "valid_members": members,
+        "search_tour_evaluations": search_evaluations,
+        "work_by_phase": work_by_phase,
         "max_independent_cost_error": max_cost_error,
         "completed_restarts": total_restarts,
         "completed_batches": sum(
@@ -355,20 +394,32 @@ def summarize(directory):
         ],
         "worker_pids": pids,
         "preserved_completed_records_after_pause": len(paused["completed"]),
-        "instances_with_changed_actual_measurements_but_fixed_charges": sum(
+        "instances_with_changed_actual_preparation_measurements": sum(
             len(v) > 1 for v in actual_measurements.values()
+        ),
+        "preparation_accounting": (
+            "original resource history preserved; no charges or search-FE deductions"
+            if counted
+            else "original fixed charges preserved despite remeasured actual costs"
         ),
         "costs": state["costs"],
         "selected": state["selected"],
         "variation_counts": replay.variation_counts,
         "verified": [
-            "all 24 individual occurrences actually reevaluated",
+            f"all {settings['evolution']['population'] * settings['evolution']['generations']} "
+            "individual occurrences actually reevaluated",
             "common full panels and budgets",
             "DEAP evolution and panel RNG replay from original seeds",
             "final evaluated population",
             "exact champions plus final population shortlist",
             "fixed validation and external macro fitness",
-            "original completed results and frozen fees preserved after real worker restart",
+            (
+                "original completed results and preparation resource history preserved "
+                "after real worker restart; no wall-clock limit or fee deduction"
+                if counted
+                else "original completed results and frozen fees preserved "
+                "after real worker restart"
+            ),
         ],
         "limits": [
             (
@@ -376,13 +427,15 @@ def summarize(directory):
                 if len(shortlist) == 1
                 else "small pilot is insufficient for an efficacy conclusion"
             ),
-            "wall-clock stopping is not bitwise reproducible",
-            "worker/evaluator costs recorded; full coordinator and feature profiling pending",
+            "FE excludes internal LS move checks, which are reported separately"
+            if counted
+            else "wall-clock stopping is not bitwise reproducible",
+            "worker/evaluator costs recorded; previous profiling retains its own identity",
             "no formal budgets, five-seed E1, Hard/Escape Engine or E4 evidence",
         ],
         "checks": {
             "gpu_python_passed": pytest_count,
-            "gpu_ctest_passed": 8,
+            "gpu_ctest_passed": int(match.group(1)),
             "pytest_log_sha256": file_hash(pytest_log),
             "ctest_log_sha256": file_hash(ctest_log),
         },

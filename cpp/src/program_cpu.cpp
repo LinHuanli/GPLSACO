@@ -9,7 +9,8 @@
 namespace gp_faco {
 
 void validate_program(const Program& p) {
-    if (p.ir_version != 1 || p.numeric_spec_id != 1 || p.feature_spec_id != 1 ||
+    if (p.ir_version != 1 || p.numeric_spec_id != 1 ||
+        (p.feature_spec_id != 1 && p.feature_spec_id != 2) ||
         p.length == 0 || p.length > 63 || p.constants_count > 63) {
         throw std::invalid_argument("未知版本或程序大小超限");
     }

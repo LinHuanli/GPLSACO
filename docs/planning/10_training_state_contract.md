@@ -2,6 +2,8 @@
 
 本文件将v4 Algorithm 2及11.8–11.9转成状态机要求。开发pilot可以减少种群/代数并使用预登记开发数据，但每个个体仍使用同一完整精度、同一固定形状和同一预算。pilot不是正式E1训练；正式参数和费用仍需G4冻结。
 
+**2026-09-08更新：默认训练已采用[评价次数协议](12_evaluation_count_protocol.md)。** 进化按种群/代数完成全部fitness评价，ACO按每colony完整tour次数停止，无求解秒数上限；feature_spec_id=2使用`progress`。下文固定秒数扣费约定仅用于显式旧时间模式。次数模式的准备实测记录进入checkpoint作资源历史，恢复仍保留原记录，同时记录新worker的实际重新准备成本，不从搜索次数中扣除。
+
 ## 基本代际与随机数
 
 演化使用DEAP `genHalfAndHalf`、`cxOnePoint`、`mutUniform`和真实 `algorithms.varAnd`。初始深度1–3，子树变异表达式为 `genFull` 深度0–2；都作为配置保存。联合深度≤5、节点≤63谓词交给一次 `gp.staticLimit`，超限时均匀选原父代完整回退，不修剪。装饰器只能收到个体位置参数，计数器名称/算子函数不得预绑定成位置参数，否则DEAP会把它们加入候选父代。
@@ -42,4 +44,6 @@ shortlist是各代冠军和最终已评种群按IR hash去重后的集合。所�
 
 验收以实际测试/运行报告为准，不能由本契约或仅使用假evaluator的测试推断训练已经完成。
 
-当前`train_gp.py`只开放显式开发池pilot，配置见`configs/training_pilot.json`。开发训练池每规模48实例，独立开发验证池16实例；两者均属于已暴露development，不读取正式测试成绩。主研究128×50、至少五个演化seed保持原计划，预算和共享准备费用协议待G4校准。现有成本累计涵盖worker、外部evaluator、原生调用/扣费/超限和启动记录；完整协调开销、十二特征/档案分项剖析还需补齐。
+当前`train_gp.py`只开放开发池pilot，默认配置为`configs/training_counts_pilot.json`，旧时间配置需显式选择`configs/training_pilot.json`。开发训练池每规模48实例，独立开发验证池16实例；两者均属于已暴露development，不读取正式测试成绩。主研究128×50、至少五个演化seed保持原计划，正式次数档和共同准备配置待G4校准。
+
+次数模式的实际50任务、409,600 FE、暂停/恢复及原始RNG重放已通过[验收](../reports/2026-09-08_evaluation_counts.md)。成本累计分别记录搜索FE、worker、外部evaluator与原生实际时间，LS移动检查工作量由逐任务记录另行汇总；分层成本的完整矩阵见[成本报告](../reports/2026-09-08_profiling.md)。

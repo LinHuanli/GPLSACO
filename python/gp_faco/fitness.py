@@ -71,9 +71,11 @@ def score_panel(
             abs_tol=1e-12,
         ):
             return failed("预算账目不平")
+        counted = task.evaluation_limit_per_colony is not None
+        expected_overrun = 0 if counted else max(0, result["elapsed_seconds"] - task.budget_seconds)
         if not math.isclose(
             result["overrun_seconds"],
-            max(0, result["elapsed_seconds"] - task.budget_seconds),
+            expected_overrun,
             abs_tol=1e-12,
         ) or (task.preparation_mode == "end_to_end" and result["charged_seconds"] != 0):
             return failed("超限或端到端扣费账目不符")
@@ -95,6 +97,22 @@ def score_panel(
             or counts[2] > 1
         ):
             return failed("批次账目不平")
+        if counted:
+            limit = task.evaluation_limit_per_colony
+            for key, expected in (
+                ("evaluation_limit_per_colony", limit),
+                ("completed_tour_evaluations_per_colony", limit),
+                ("total_tour_evaluations", limit * protocol.colonies),
+            ):
+                if type(result.get(key)) is not int or result[key] != expected:
+                    return failed("返回FE计数未完整覆盖预定限额")
+            if (
+                result.get("budget_kind") != "search_tour_evaluations"
+                or counts != [limit // protocol.settings.ants, limit // protocol.settings.ants, 0]
+                or result["charged_seconds"] != 0
+                or result["preparation_completed"] is not True
+            ):
+                return failed("次数任务出现时间扣费、丢弃、未准备或未完成批次")
         members = []
         for (name, seed), item in zip(task.replicas, result["items"], strict=True):
             if item["has_incumbent"] is not True:
@@ -102,7 +120,9 @@ def score_panel(
             completed, reported = item["completed_seconds"], item["cost"]
             if (
                 not math.isfinite(completed)
-                or not 0 <= completed <= task.budget_seconds
+                or not 0
+                <= completed
+                <= (result["actual_seconds"] if counted else task.budget_seconds)
                 or not math.isfinite(reported)
                 or reported <= 0
             ):

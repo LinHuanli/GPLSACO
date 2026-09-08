@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from gp_faco.primitives import FEATURE_IDS, FUNCTIONS
+from gp_faco.primitives import FUNCTIONS, feature_names
 
 OPERATORS = {opcode: (arity, function) for opcode, arity, function in FUNCTIONS.values()}
 
@@ -28,9 +28,10 @@ class Program:
         # 防止外部 list 在校验后被原地改写而绕过冻结契约。
         for name in ("opcode", "operand", "constant_bits"):
             object.__setattr__(self, name, tuple(getattr(self, name)))
-        if any(
-            type(v) is not int or v != 1
-            for v in (self.ir_version, self.numeric_spec_id, self.feature_spec_id)
+        if (
+            any(type(v) is not int or v != 1 for v in (self.ir_version, self.numeric_spec_id))
+            or type(self.feature_spec_id) is not int
+            or self.feature_spec_id not in (1, 2)
         ):
             raise ValueError("未知 IR/数值/特征版本")
         if not 1 <= len(self.opcode) <= 63 or len(self.opcode) != len(self.operand):
@@ -111,10 +112,14 @@ class Program:
         return hashlib.sha256(self.to_json().encode()).hexdigest()
 
 
-def export_tree(tree) -> Program:
+def export_tree(tree, *, feature_spec_id: int | None = None) -> Program:
     """DEAP 前缀树按原左右顺序导出；不代数化简或重新编号。"""
     if not 1 <= len(tree) <= 63:
         raise ValueError("树大小超限")
+    version = getattr(tree, "feature_spec_id", 1) if feature_spec_id is None else feature_spec_id
+    if hasattr(tree, "feature_spec_id") and tree.feature_spec_id != version:
+        raise ValueError("不能在导出时静默修改个体的特征语义版本")
+    feature_ids = {name: index for index, name in enumerate(feature_names(version))}
     opcode, operand, constants = [], [], []
 
     def visit(index: int, depth: int) -> int:
@@ -131,10 +136,10 @@ def export_tree(tree) -> Program:
             operand.append(0)
             return next_index
         if isinstance(node.value, str):
-            if node.value not in FEATURE_IDS:
+            if node.value not in feature_ids:
                 raise ValueError("未知 symbolic terminal")
             opcode.append(0)
-            operand.append(FEATURE_IDS[node.value])
+            operand.append(feature_ids[node.value])
         else:
             constant = float(node.value)
             if not math.isfinite(constant) or not -2 <= constant <= 2:
@@ -148,7 +153,7 @@ def export_tree(tree) -> Program:
 
     if visit(0, 0) != len(tree):
         raise ValueError("树有多余节点")
-    return Program(tuple(opcode), tuple(operand), tuple(constants))
+    return Program(tuple(opcode), tuple(operand), tuple(constants), feature_spec_id=version)
 
 
 def evaluate(program: Program, features: np.ndarray) -> np.ndarray:

@@ -155,6 +155,16 @@ class WorkerFarm:
                         "completed_batches": 1,
                         "discarded_batches": 0,
                     }
+                    if task.evaluation_limit_per_colony is not None:
+                        limit = task.evaluation_limit_per_colony
+                        result.update(
+                            budget_kind="search_tour_evaluations",
+                            evaluation_limit_per_colony=limit,
+                            completed_tour_evaluations_per_colony=limit,
+                            total_tour_evaluations=limit * protocol.colonies,
+                            launched_batches=limit // protocol.settings.ants,
+                            completed_batches=limit // protocol.settings.ants,
+                        )
                     if farm.invalid == "missing":
                         items[0]["has_incumbent"] = False
                     elif farm.invalid == "nan":
@@ -199,6 +209,53 @@ def setup():
         maximum_registered_per_dimension=16,
     )
     return settings, protocol, Source()
+
+
+def test_count_mode_resume_preserves_limits_and_full_fitness_evaluations(tmp_path, setup):
+    settings, protocol, source = setup
+    settings = replace(
+        settings,
+        evolution=replace(settings.evolution, feature_spec_id=2),
+        budget_kind="search_tour_evaluations",
+        budgets=((5, 16), (7, 32)),
+        preparation_mode="cached",
+    )
+    baseline_farm, resumed_farm = WorkerFarm(), WorkerFarm(timeout=True)
+    baseline = TrainingRun(
+        tmp_path / "counts-full", settings, protocol, source.data(), worker_factory=baseline_farm
+    )
+    expected = baseline.run()
+    paused = TrainingRun(
+        tmp_path / "counts-resume", settings, protocol, source.data(), worker_factory=resumed_farm
+    )
+    assert paused.run(stop_after_tasks=5)["status"] == "paused"
+    before = load_checkpoint(paused.path)
+    resumed = TrainingRun(
+        paused.directory,
+        settings,
+        protocol,
+        source.data(),
+        worker_factory=resumed_farm,
+        resume=True,
+    )
+    result = resumed.run()
+    assert result["status"] == "complete" and result["selected"] == expected["selected"]
+    assert resumed.evolution.state_dict() == baseline.evolution.state_dict()
+    assert [t.task_id(protocol) for t in baseline_farm.submissions] == [
+        t.task_id(protocol) for t in resumed_farm.submissions
+    ]
+    assert all(resumed.state["completed"][k] == v for k, v in before["completed"].items())
+    assert all(
+        t.budget_seconds is None
+        and t.program.feature_spec_id == 2
+        and t.preparation_charges is None
+        and t.evaluation_limit_per_colony == dict(settings.budgets)[t.dimension]
+        for t in resumed_farm.submissions
+    )
+    assert result["costs"]["charged_seconds"] == result["costs"]["overrun_seconds"] == 0
+    assert result["costs"]["search_tour_evaluations"] == sum(
+        t.evaluation_limit_per_colony * protocol.colonies for t in resumed_farm.submissions
+    )
 
 
 def test_every_occurrence_common_panels_and_all_validation_candidates(tmp_path, setup):

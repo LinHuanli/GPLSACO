@@ -2,7 +2,7 @@
 
 本组文档将 [v4 研究方案](design/GP_ACO_TSP_Research_Proposal_v4.md) 转换为可以实现、测试和预注册的工作包。原方案中的建议参数不自动成为已验证配置；本组文档中标注为“开发候选”的定义须在正式测试前冻结。
 
-**最新用户指示：进化与ACO主实验按evaluation次数终止，尽量不设时间上限。** [次数协议](planning/12_evaluation_count_protocol.md)优先于前序wall-clock主预算描述；历史计时结果作为工程/资源证据保留。
+**最新用户指示：进化与ACO主实验按evaluation次数终止，尽量不设时间上限。** [次数协议](planning/12_evaluation_count_protocol.md)优先于前序wall-clock主预算描述；次数入口与实际训练恢复已有[开发验收](reports/2026-09-08_evaluation_counts.md)，历史计时结果作为工程/资源证据保留。
 
 | 顺序 | 文档 | 解决的问题 |
 |---|---|---|

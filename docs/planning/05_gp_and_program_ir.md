@@ -1,5 +1,7 @@
 # GP、稳定程序格式与演化协议
 
+**最新主协议使用评价次数。** feature_spec_id=2将终端0命名为`progress`，取已完成search-tour evaluations/限额；其余11个终端、opcode和数值规范保持原编号。详见[次数协议](12_evaluation_count_protocol.md)与`configs/program_spec_v2.json`。以下v1的elapsed定义属于旧时间入口，两者不得静默混用。
+
 ## 1. 程序契约 v1
 
 固定 global feature IDs：0 elapsed、1 stagnation、2 return_rate、3 ls_work、4 restart、5 mne_level、6 ref_gap、7 ref_diff、8 region_excess、9 archive_disagreement、10 pheromone_strength、11 region_dispersion。NoFeedback 删除 1/2/3 的注册入口，但其余编号不移动。城市号、区域号、原始 n、最优 gap 均不进入 grammar。

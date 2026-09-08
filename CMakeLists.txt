@@ -65,6 +65,11 @@ if(GP_FACO_CUDA)
     target_link_libraries(profiling_semantics PRIVATE gp_faco_cuda)
     add_test(NAME profiling_semantics COMMAND profiling_semantics
         "${CMAKE_CURRENT_BINARY_DIR}/profiling_semantics.json")
+    add_executable(evaluation_count_semantics tests/cpp/test_evaluation_count.cpp)
+    target_compile_options(evaluation_count_semantics PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
+    target_link_libraries(evaluation_count_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME evaluation_count_semantics COMMAND evaluation_count_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/evaluation_count_semantics.json")
 endif()
 
 if(GP_FACO_PYTHON)

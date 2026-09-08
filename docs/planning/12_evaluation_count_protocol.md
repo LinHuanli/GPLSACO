@@ -4,7 +4,7 @@
 
 ## 计数口径
 
-ACO暂按以下口径实施：一只蚂蚁完成构造、局部搜索和最终tour核验，计一个search-tour evaluation。问题已向用户提出，可在正式冻结前根据回复调整。每次LS候选移动检查的move-evaluations、构造步数、初始准备工作量另列，不把search-tour evaluations称为所有底层目标函数调用次数。
+ACO暂按以下口径实施：一只蚂蚁完成构造和局部搜索，产出带成本的完整候选tour，计一个search-tour evaluation；提交前独立核验面板返回路线。问题已向用户提出，可在正式冻结前根据回复调整。每次LS候选移动检查的move-evaluations、构造步数、初始准备工作量另列，不把search-tour evaluations称为所有底层目标函数调用次数。
 
 评价限额属于每个实例/求解seed的colony；相同限额在所有Static、Rule、GP-Full、GP-NoFeedback间共享。32-colony是16实例×2seed，不能拿整面板总数当作单实例限额。每colony固定32 ants，首版限额要求为ants的整数倍，按完整批次提交；不隐式向上取整。
 
@@ -16,13 +16,16 @@ ACO暂按以下口径实施：一只蚂蚁完成构造、局部搜索和最终to
 - 完成一整批后更新精确的已用search-tour evaluations；到达限额即返回。次数入口不得复用一个“足够大”的秒数当作隐藏截止，也不得保留按墙钟的迟到整批丢弃。
 - 保持共同初始化，缓存只减少重复准备的实际成本，不扣减搜索次数。候选准备、初始tour/LS的成本另列，所有方法使用同样初始化。
 - GP feature 0改为已用评价次数/评价限额。显式版本化该语义，不能把旧模型的elapsed秒数终端静默改义；旧计时模型与新次数模型分别标识。
+- 当前代码定义为feature_spec_id=2的`progress`终端，IR与numeric版本仍为1，见`configs/program_spec_v2.json`。次数/时间入口互相拒绝对方版本；DEAP初始化、交叉、变异、IR导出和JSON恢复均保留特征版本。
 - 同实例/seed/程序/FE限额在不同主机速度、诊断延迟、调用次序下应有相同轨迹。固定形状内各colony达到相同FE限额；独立核验与失败保留继续适用。
 - 原有单次LS的move-evaluation与接受移动上限继续作为所有方法共享的有限工作量限制，不引入时间早停。算例/参数错误仍计为失败；基础设施恢复保留同一任务身份和已完成记录。
 
 ## 后续验收与正式冻结
 
-先接通原生次数入口、worker任务身份、DEAP导出/恢复与训练配置，验证精确计数、零限额、非整批限额拒绝、无隐藏wall-clock截止、单实例/批量一致和新旧特征版本分离。再按development池统一底座的评价次数确定短/中/长档，完成Static/Rule配置与五演化seed/测试manifest冻结。
+原生次数入口、worker任务身份、DEAP导出/恢复与训练配置已通过[开发验收](../reports/2026-09-08_evaluation_counts.md)：精确计数、零限额、非整批限额拒绝、无隐藏wall-clock截止、单实例/批量一致和新旧特征版本分离均有测试证据。实际8×3训练及固定验证完成409,600次tour evaluation，第5次任务暂停后成功恢复。下一步按development池统一底座的评价次数确定短/中/长档，完成Static/Rule配置与五演化seed/测试manifest冻结。
 
 已完成的1,156条件成本剖析用于资源估计，424项截止校准用于旧时间入口的工程边界证据。其0.5/1.0/1.3/2.7秒等候选不作为正式主预算。等时间结果若后续作为补充，须与按评价次数的主终点清楚分列，不能据补充成绩改变主配置。
+
+`scripts/train_gp.py`默认配置已切换为`configs/training_counts_pilot.json`：8个体×3代、两规模各256 search-tour evaluations/colony，仅用于新协议的完整训练/验证/恢复验收。正式128×50与短/中/长FE限额仍需G4冻结。缓存模式名为`cached`，不附带秒数扣费；实际CPU注册成本继续记录。旧`training_pilot.json`保留原时间入口身份，仅在显式选择时使用。
 
 主比较限于共同ACO底座上定义一致的search-tour evaluations。外部LKH等算法须按可复核的自身工作量与实际时间单列，不能把不同语义的内部调用数机械视为相等计算资源。

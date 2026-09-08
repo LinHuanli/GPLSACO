@@ -4,7 +4,7 @@
 
 ## 1. 处理与主要终点
 
-在同一FACO-Control、候选、LS、档案、动作空间和硬件上比较Static-Control、Rule-Control、GP-NoFeedback、GP-Full。NoFeedback删除stagnation/return_rate/ls_work后独立重训，elapsed和当前结构/信息素仍保留；结论限定为显式LS后反馈的额外价值。
+在同一FACO-Control、候选、LS、档案、动作空间和硬件上比较Static-Control、Rule-Control、GP-NoFeedback、GP-Full。NoFeedback删除stagnation/return_rate/ls_work后独立重训，评价次数`progress`和当前结构/信息素仍保留；结论限定为显式LS后反馈的额外价值。主预算按[次数协议](../planning/12_evaluation_count_protocol.md)，不设置求解秒数上限。
 
 每个GP条件至少5个演化seed；500/1K共同面板、统一验证选择。Static固定MNE、区域规则、重启周期/概率的开发搜索需记录覆盖和成本；Rule只用预声明的停滞阈值族，不在测试后追加规则。
 

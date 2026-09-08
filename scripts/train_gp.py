@@ -19,7 +19,9 @@ from gp_faco.worker import SolverSettings, WorkerProtocol, file_hash  # noqa: E4
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=PROJECT / "configs/training_pilot.json")
+    parser.add_argument(
+        "--config", type=Path, default=PROJECT / "configs/training_counts_pilot.json"
+    )
     parser.add_argument("--gpu-uuid", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")

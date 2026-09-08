@@ -11,7 +11,7 @@ from typing import ClassVar
 
 from deap import algorithms, base, gp
 
-from gp_faco.primitives import FEATURE_NAMES, FUNCTIONS, make_primitive_set
+from gp_faco.primitives import FUNCTIONS, feature_names, make_primitive_set
 from gp_faco.program_ir import Program, export_tree
 
 
@@ -20,8 +20,9 @@ class MinimizeFitness(base.Fitness):
 
 
 class Individual(gp.PrimitiveTree):
-    def __init__(self, content):
+    def __init__(self, content, feature_spec_id: int = 1):
         super().__init__(content)
+        self.feature_spec_id = feature_spec_id
         self.fitness = MinimizeFitness()
         self.evaluated_panel = None
 
@@ -41,6 +42,7 @@ class EvolutionSettings:
     mutation_depth_min: int = 0
     mutation_depth_max: int = 2
     no_feedback: bool = False
+    feature_spec_id: int = 1
 
     def __post_init__(self) -> None:
         integers = {
@@ -59,6 +61,7 @@ class EvolutionSettings:
             and 0 <= self.mutation_depth_min <= self.mutation_depth_max <= self.max_depth
             and 1 <= self.max_nodes <= 63
             and type(self.no_feedback) is bool
+            and self.feature_spec_id in (1, 2)
         ):
             raise ValueError("演化参数范围无效")
         for value in (self.crossover_probability, self.mutation_probability):
@@ -94,10 +97,12 @@ def ranking_key(individual: Individual) -> tuple:
 def individual_from_program(program: Program, pset) -> Individual:
     """从验证后的postfix重建前缀树；不eval字符串，不作代数化简。"""
     names = {opcode: name for name, (opcode, _, _) in FUNCTIONS.items()}
+    if program.feature_spec_id != getattr(pset, "feature_spec_id", 1):
+        raise ValueError("checkpoint程序与当前grammar特征版本不符")
     stack = []
     for op, operand in zip(program.opcode, program.operand, strict=True):
         if op == 0:
-            name = FEATURE_NAMES[operand]
+            name = feature_names(program.feature_spec_id)[operand]
             if name not in pset.mapping:
                 raise ValueError("程序使用了当前grammar已删除的反馈终端")
             stack.append([copy.deepcopy(pset.mapping[name])])
@@ -108,7 +113,7 @@ def individual_from_program(program: Program, pset) -> Individual:
             children = stack[-primitive.arity :]
             del stack[-primitive.arity :]
             stack.append([primitive] + [node for child in children for node in child])
-    individual = Individual(stack[0])
+    individual = Individual(stack[0], program.feature_spec_id)
     if export_tree(individual) != program:
         raise ValueError("checkpoint程序不是本项目规范化导出的IR")
     return individual
@@ -120,7 +125,7 @@ class Evolution:
             raise ValueError("演化seed必须为uint64")
         self.settings = settings
         self.rng = random.Random(seed)
-        self.pset = make_primitive_set(settings.no_feedback)
+        self.pset = make_primitive_set(settings.no_feedback, settings.feature_spec_id)
         self.generation = 0
         self.population: list[Individual] = []
         self.panel_id: str | None = None
@@ -168,7 +173,8 @@ class Evolution:
                 Individual(
                     gp.genHalfAndHalf(
                         self.pset, self.settings.initial_depth_min, self.settings.initial_depth_max
-                    )
+                    ),
+                    self.settings.feature_spec_id,
                 )
                 for _ in range(self.settings.population)
             ]

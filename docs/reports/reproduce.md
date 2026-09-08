@@ -169,7 +169,9 @@ PYTHONPATH="$PWD/python" .venv/bin/python scripts/summarize_worker.py
 
 `worker_smoke.py` 拒绝覆盖任何已有任务目录，重新运行须给新的 `--output`。其协调进程不导入 `gp_faco_ext`，GPU选择在spawn子进程内完成。Future超时后保持原句柄，不据共享文件系统日志可见性重新提交。当前正式准备费用表、DEAP代际及checkpoint仍待实现；普通任务错误会原样保存，初始化/进程故障通过Future显式报错。
 
-## 标准DEAP训练、固定费用与恢复
+## 旧时间模式DEAP训练、固定费用与恢复
+
+以下显式选择历史时间配置。当前默认已改为次数模式，见下一节；旧`pilot-v2`的精确重审计须恢复其原版本Python源码和二进制。
 
 ```bash
 # 在GPLSACO目录内执行；CPU状态机测试的临时产物也留在项目内。
@@ -180,12 +182,14 @@ TMPDIR="$PWD/.tmp" .venv/bin/python -m pytest -q \
 bash scripts/run_training_checks.sh GPU-da4490c9-1c09-49b2-00dc-b175417ae7bb
 # 使用新的输出目录；不要覆盖历史pilot-v1/v2。
 TMPDIR="$PWD/.tmp" .venv/bin/python scripts/train_gp.py \
+  --config configs/training_pilot.json \
   --gpu-uuid GPU-da4490c9-1c09-49b2-00dc-b175417ae7bb \
   --output artifacts/gpu/gp-training/reproduce-new --stop-after-tasks 5
 cp artifacts/gpu/gp-training/reproduce-new/checkpoint.json \
   artifacts/gpu/gp-training/reproduce-new/paused-checkpoint.json
 # 上一命令终态已确认、同一GPU再次空闲后，继续同一配置和任务身份。
 TMPDIR="$PWD/.tmp" .venv/bin/python scripts/train_gp.py \
+  --config configs/training_pilot.json \
   --gpu-uuid GPU-da4490c9-1c09-49b2-00dc-b175417ae7bb \
   --output artifacts/gpu/gp-training/reproduce-new --resume
 TMPDIR="$PWD/.tmp" .venv/bin/python scripts/summarize_training.py \
@@ -193,9 +197,38 @@ TMPDIR="$PWD/.tmp" .venv/bin/python scripts/summarize_training.py \
   --output artifacts/gpu/gp-training/reproduce-new/audit.json
 ```
 
-这关闭了上节worker阶段的代际/恢复待办；正式共享准备费用校准仍未完成。默认配置为 `configs/training_pilot.json`，只读取开发池；正式128×50配置和E1参数未冻结。归档包含带版本/hash的JSON envelope，实际IR位于 `selected_program.json` 的 `state.program`，其内容可直接用于 `Program.from_dict` 后传给原生Engine。`programs/` 保存全部出现过的IR，`generations/` 保存完整已评种群，`tasks/` 保存逐任务返回与外部核验，checkpoint保存RNG、费用和完成表。
+这关闭了上节worker阶段的代际/恢复待办。旧配置 `configs/training_pilot.json`只读取开发池；正式128×50配置和E1参数未冻结。归档包含带版本/hash的JSON envelope，实际IR位于 `selected_program.json` 的 `state.program`，其内容可直接用于 `Program.from_dict` 后传给对应版本的原生Engine。`programs/` 保存全部出现过的IR，`generations/` 保存完整已评种群，`tasks/` 保存逐任务返回与外部核验，checkpoint保存RNG、准备记录和完成表。
 
 摘要校验拒绝源码、配置、软件、数据或GPU身份变化；不能换GPU后把旧成绩继续拼入当前run。占用检查在提交前失败则保留待办，确认该句柄已终止且设备空闲后才恢复。运行中Future超时保持原句柄，不另起同一任务。当前真实恢复验收是 `pilot-v2`，`pilot-v1` 的归档摘要失败证据保留在训练报告中。
+
+## 评价次数主入口与训练恢复
+
+默认配置`configs/training_counts_pilot.json`使用8个体×3代、500/1K各256 search-tour evaluations/colony、32 colonies×32 ants；缓存模式为`cached`，无求解秒数上限、缓存扣费或迟到批丢弃。次数IR要求feature_spec_id=2；程序终端0为`progress`。这里的256次数档只用于开发验收。
+
+```bash
+# 完成当前CUDA构建后，在实时空闲GPU所在host的共享项目目录执行。
+# 本轮实际host为cuda04；UUID只记录历史身份，启动时仍须检查占用。
+bash scripts/run_evaluation_count_checks.sh GPU-34b223c6-7502-b097-19e0-a411b1708f06
+# 用新目录保留独立运行，不覆盖已经验收的training-v1。
+TMPDIR="$PWD/.tmp" .venv/bin/python scripts/train_gp.py \
+  --config configs/training_counts_pilot.json \
+  --gpu-uuid GPU-34b223c6-7502-b097-19e0-a411b1708f06 \
+  --output artifacts/gpu/evaluation-count/reproduce-new --stop-after-tasks 5
+cp artifacts/gpu/evaluation-count/reproduce-new/checkpoint.json \
+  artifacts/gpu/evaluation-count/reproduce-new/paused-checkpoint.json
+# 确认原句柄正常结束且目标UUID空闲后恢复同一任务。
+TMPDIR="$PWD/.tmp" .venv/bin/python scripts/train_gp.py \
+  --config configs/training_counts_pilot.json \
+  --gpu-uuid GPU-34b223c6-7502-b097-19e0-a411b1708f06 \
+  --output artifacts/gpu/evaluation-count/reproduce-new --resume
+TMPDIR="$PWD/.tmp" .venv/bin/python scripts/summarize_training.py \
+  --input artifacts/gpu/evaluation-count/reproduce-new \
+  --output artifacts/gpu/evaluation-count/reproduce-new/audit.json
+```
+
+当前次数验收为GPU CTest 10项、Python 110项、三个CUDA工具；完整日志位于`artifacts/gpu/evaluation-count`。脚本使用固定检查日志路径，后续不同版本复现检查前先归档该目录内已有日志及hash，避免覆盖历史证据。本轮负FE参数异常类型修复前的108通过/2失败、二进制及绑定源码位于`initial-checks/`。
+
+真实`training-v1`的暂停及恢复命令外层使用GNU time记录CLI实际墙钟/CPU/max RSS，不设置时间截止。独立摘要重算全部1,600条路线和fitness，重放三代DEAP与面板RNG，验证原7条完成记录、准备资源历史和409,600 FE账目。训练与验证FE、LS移动检查工作量分别汇总；重新准备的实际成本不替换原记录，也不扣搜索次数。原二进制SHA256为`2269faaafd558e2ec5e0f8ec770fc89c357cc231ae9a69092c9391a6fb747b66`；后续代码变化后重审计仍需其对应源码和环境，不能绕过身份检查。
 
 ## 分层成本与旧时间入口工程校准
 

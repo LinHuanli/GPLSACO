@@ -22,6 +22,12 @@ FEATURE_NAMES = (
 FEATURE_IDS = {name: index for index, name in enumerate(FEATURE_NAMES)}
 
 
+def feature_names(feature_spec_id: int = 1) -> tuple[str, ...]:
+    if type(feature_spec_id) is not int or feature_spec_id not in (1, 2):
+        raise ValueError("未知特征版本")
+    return FEATURE_NAMES if feature_spec_id == 1 else ("progress", *FEATURE_NAMES[1:])
+
+
 def clip(value):
     return np.clip(np.asarray(value, dtype=np.float32), np.float32(-8), np.float32(8))
 
@@ -73,13 +79,14 @@ def ephemeral_constant() -> float:
     return float(np.float32(random.uniform(-2, 2)))
 
 
-def make_primitive_set(no_feedback: bool = False) -> gp.PrimitiveSet:
+def make_primitive_set(no_feedback: bool = False, feature_spec_id: int = 1) -> gp.PrimitiveSet:
     names = [
         name
-        for index, name in enumerate(FEATURE_NAMES)
+        for index, name in enumerate(feature_names(feature_spec_id))
         if not no_feedback or index not in (1, 2, 3)
     ]
     pset = gp.PrimitiveSet("MAIN", len(names))
+    pset.feature_spec_id = feature_spec_id
     pset.renameArguments(**{f"ARG{i}": name for i, name in enumerate(names)})
     for name, (_, arity, function) in FUNCTIONS.items():
         pset.addPrimitive(function, arity, name=name)

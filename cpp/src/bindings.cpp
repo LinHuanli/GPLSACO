@@ -110,7 +110,13 @@ py::dict batch_output(const gp_faco::BatchEvaluation& result, const std::string&
         items.append(entry);
     }
     output["items"] = items;
-    output["budget_seconds"] = result.budget_seconds;
+    output["budget_seconds"] = result.count_limited ? py::none() : py::cast(result.budget_seconds);
+    if (result.count_limited) {
+        output["budget_kind"] = "search_tour_evaluations";
+        output["evaluation_limit_per_colony"] = result.evaluation_limit_per_colony;
+        output["completed_tour_evaluations_per_colony"] = result.completed_tour_evaluations_per_colony;
+        output["total_tour_evaluations"] = result.total_tour_evaluations;
+    }
     output["elapsed_seconds"] = result.elapsed_seconds;
     output["actual_seconds"] = result.actual_seconds;
     output["charged_seconds"] = result.charged_seconds;
@@ -284,6 +290,33 @@ PYBIND11_MODULE(gp_faco_ext, module) {
         }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
            py::arg("budget_seconds"), py::arg("program"),
            py::arg("preparation_mode") = "cached_charged", py::arg("experiment_mask") = UINT32_MAX)
+        .def("evaluate_program_evaluations", [](gp_faco::FacoBatchEngine& engine,
+                const Keys& keys, const Keys& seeds, const py::object& evaluations,
+                const py::dict& dictionary, const std::string& mode, const py::object& mask) {
+            if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size() ||
+                !PyLong_CheckExact(evaluations.ptr()) || !PyLong_CheckExact(mask.ptr()))
+                throw std::invalid_argument("次数入口需要整数限额与完整任务数组");
+            if (mode != "cached" && mode != "end_to_end")
+                throw std::invalid_argument("次数入口只接受cached或end_to_end准备");
+            const auto program = read_program(dictionary);
+            const auto limit = PyLong_AsUnsignedLongLong(evaluations.ptr());
+            if (PyErr_Occurred()) {
+                PyErr_Clear();
+                throw std::invalid_argument("FE限额必须在uint64非负整数范围内");
+            }
+            const auto experiment_mask = py::cast<std::uint32_t>(mask);
+            const auto preparation = preparation_mode(mode == "cached" ? "cached_charged" : mode);
+            std::vector<gp_faco::BatchTask> tasks;
+            for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            gp_faco::BatchEvaluation result;
+            {
+                py::gil_scoped_release release;
+                result = engine.evaluate_program_evaluations(tasks, limit, program, preparation, experiment_mask);
+            }
+            return batch_output(result, mode);
+        }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
+           py::arg("evaluation_limit_per_colony"), py::arg("program"),
+           py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX)
         .def("run_program_diagnostic", [](gp_faco::FacoBatchEngine& engine, const Keys& keys,
                 const Keys& seeds, const py::dict& dictionary, const py::object& batches,
                 const py::object& ratio, const py::object& enabled, const py::object& mask,

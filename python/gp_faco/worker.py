@@ -155,8 +155,8 @@ class WorkerProtocol:
     def manifest(self) -> dict:
         return {
             **asdict(self),
-            "protocol_version": 2,
-            "preparation_fee_policy": "explicit_task_charges_or_measured_registration",
+            "protocol_version": 3,
+            "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
             "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
             "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
             "submission_boundary": "native_whole_panel_completed_and_verified",
@@ -173,10 +173,11 @@ class SolveTask:
     program: Program
     problems: tuple[Instance, ...]
     replicas: tuple[tuple[str, int], ...]
-    budget_seconds: float
+    budget_seconds: float | None = None
     preparation_mode: str = "cached_charged"
     experiment_mask: int = 0xFFFFFFFF
     preparation_charges: tuple[tuple[str, float, float], ...] | None = None
+    evaluation_limit_per_colony: int | None = None
 
     def __post_init__(self) -> None:
         if type(self.occurrence_id) is not str or not self.occurrence_id:
@@ -198,13 +199,25 @@ class SolveTask:
             row[0] for row in self.replicas
         } != set(ids):
             raise ValueError("replica有遗漏、未知实例或重复实例/seed")
-        if (
+        counted = self.evaluation_limit_per_colony is not None
+        if counted:
+            if (
+                type(self.evaluation_limit_per_colony) is not int
+                or not 0 <= self.evaluation_limit_per_colony <= 128 * 0xFFFFFFFF
+                or self.budget_seconds is not None
+                or self.program.feature_spec_id != 2
+                or self.preparation_mode not in ("cached", "end_to_end")
+                or self.preparation_charges is not None
+            ):
+                raise ValueError("次数任务需要整数FE限额、特征v2，不能附带时间上限或扣费")
+        elif (
             type(self.budget_seconds) not in (int, float)
             or not math.isfinite(self.budget_seconds)
             or self.budget_seconds < 0
+            or self.program.feature_spec_id != 1
         ):
-            raise ValueError("预算必须有限且非负")
-        if self.preparation_mode not in ("cached_charged", "end_to_end"):
+            raise ValueError("时间任务需要非负有限秒数与特征v1")
+        if not counted and self.preparation_mode not in ("cached_charged", "end_to_end"):
             raise ValueError("未知准备模式")
         if self.preparation_charges is not None:
             charges = tuple(tuple(row) for row in self.preparation_charges)
@@ -250,6 +263,11 @@ class SolveTask:
     def manifest(self, protocol: WorkerProtocol) -> dict:
         if self.dimension not in protocol.dimensions or len(self.replicas) != protocol.colonies:
             raise ValueError("任务与worker固定规模/形状不符")
+        if self.evaluation_limit_per_colony is not None and (
+            self.evaluation_limit_per_colony % protocol.settings.ants
+            or self.evaluation_limit_per_colony // protocol.settings.ants > 0xFFFFFFFF
+        ):
+            raise ValueError("次数限额必须为ants整批且批次数不超出uint32")
         return {
             "occurrence_id": self.occurrence_id,
             "program_sha256": self.program.sha256,
@@ -258,6 +276,7 @@ class SolveTask:
             "problems": [(p.instance_id, coordinate_hash(p)) for p in self.problems],
             "replicas": self.replicas,
             "budget_seconds": self.budget_seconds,
+            "evaluation_limit_per_colony": self.evaluation_limit_per_colony,
             "preparation_mode": self.preparation_mode,
             "experiment_mask": self.experiment_mask,
             "preparation_charges": self.preparation_charges,
@@ -436,14 +455,24 @@ def _execute(task: SolveTask) -> dict:
             raise ValueError("该实例已有冻结费用，任务必须显式携带同一费用")
         keys = np.asarray([problem_keys[name] for name, _ in task.replicas], dtype=np.uint64)
         seeds = np.asarray([seed for _, seed in task.replicas], dtype=np.uint64)
-        native_result = _engines[n].evaluate_program(
-            keys,
-            seeds,
-            task.budget_seconds,
-            task.program.to_dict(),
-            task.preparation_mode,
-            task.experiment_mask,
-        )
+        if task.evaluation_limit_per_colony is not None:
+            native_result = _engines[n].evaluate_program_evaluations(
+                keys,
+                seeds,
+                task.evaluation_limit_per_colony,
+                task.program.to_dict(),
+                task.preparation_mode,
+                task.experiment_mask,
+            )
+        else:
+            native_result = _engines[n].evaluate_program(
+                keys,
+                seeds,
+                task.budget_seconds,
+                task.program.to_dict(),
+                task.preparation_mode,
+                task.experiment_mask,
+            )
         output.update(
             {
                 "status": "completed",

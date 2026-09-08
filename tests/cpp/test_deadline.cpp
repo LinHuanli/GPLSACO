@@ -26,6 +26,15 @@ int main() {
         check(reversed, "没有拒绝倒退时钟");
         gp_faco::DeadlineLedger empty(0, []() { return 0.0; });
         check(!empty.can_start(), "零预算启动工作");
+        gp_faco::DeadlineLedger resource_only(std::nullopt, []() { return 1e100; });
+        check(resource_only.can_start() && !resource_only.expired() &&
+              resource_only.completed_on_time(resource_only.elapsed()), "无截止入口存在隐藏秒数上限");
+        gp_faco::TimedIncumbent untimed;
+        check(untimed.offer({0, 1, 2, 3}, 10, resource_only.elapsed(), resource_only),
+              "次数入口按耗时拒绝了合法结果");
+        bool charged = false;
+        try { resource_only.charge(0.1); } catch (const std::logic_error&) { charged = true; }
+        check(charged, "次数入口接受了墙钟扣费");
 
         auto p = gp_faco::make_cheap_problem({0, 0, 1, 0, 1, 1, 0, 1}, {});
         check(!p.ready && p.cheap_cost == 4, "昂贵准备前没有正确廉价解");

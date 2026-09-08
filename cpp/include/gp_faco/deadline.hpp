@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -17,20 +18,25 @@ public:
     DeadlineLedger(double budget, Clock clock) : budget_(budget), clock_(std::move(clock)) {
         if (!std::isfinite(budget_) || budget_ < 0 || !clock_) throw std::invalid_argument("预算或时钟无效");
     }
+    // 次数入口只记录单调时间，不以一个很大的秒数伪装为无限截止。
+    DeadlineLedger(std::nullopt_t, Clock clock) : budget_(0), clock_(std::move(clock)), enforced_(false) {
+        if (!clock_) throw std::invalid_argument("记录资源仍需要有效时钟");
+    }
     double elapsed() const {
         const double now = clock_();
         if (!std::isfinite(now) || now < last_) throw std::runtime_error("时钟必须非负且单调");
         last_ = now;
         return now + charged_;
     }
-    bool expired() const { return elapsed() > budget_; }
-    bool can_start() const { return elapsed() < budget_; }
+    bool expired() const { return enforced_ && elapsed() > budget_; }
+    bool can_start() const { return !enforced_ || elapsed() < budget_; }
     void charge(double seconds) {
+        if (!enforced_) throw std::logic_error("次数入口不能扣除墙钟费用");
         if (!std::isfinite(seconds) || seconds < 0) throw std::invalid_argument("缓存费用无效");
         charged_ += seconds;
     }
     bool completed_on_time(double completed) const {
-        return std::isfinite(completed) && completed >= 0 && completed <= budget_;
+        return std::isfinite(completed) && completed >= 0 && (!enforced_ || completed <= budget_);
     }
     double charged() const { return charged_; }
     double budget() const { return budget_; }
@@ -38,6 +44,7 @@ private:
     double budget_, charged_ = 0;
     mutable double last_ = 0;
     Clock clock_;
+    bool enforced_ = true;
 };
 
 struct TimedIncumbent {
