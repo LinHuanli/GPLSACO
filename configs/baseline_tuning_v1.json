@@ -18,7 +18,7 @@
     "initial_ls_evaluation_limit": 100000
   },
   "scope": "development_tuning",
-  "evidence_limit": "Predeclared exhaustive Static/Rule grid; candidate 4096 FE pending development calibration",
+  "evidence_limit": "Predeclared exhaustive Static/Rule grid; 4096 FE confirmed by independently audited development calibration",
   "data_pools": {
     "search": {
       "offset": 0,
