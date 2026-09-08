@@ -49,6 +49,7 @@ def implementation_hash() -> str:
                 "primitives.py",
                 "baseline_policy.py",
                 "factorial_policy.py",
+                "behavior.py",
             )
         }
     )
@@ -217,6 +218,7 @@ def _task_manifest(task, protocol):
         "preparation_mode": task.preparation_mode,
         "experiment_mask": task.experiment_mask,
         "preparation_charges": task.preparation_charges,
+        **({"behavior_spec_id": 1} if type(task) is FactorialTask and task.record_behavior else {}),
     }
 
 
@@ -317,6 +319,7 @@ class FactorialTask(SolveTask):
     """同时绑定程序与M00规则，不能用相同IR冒充另一格的评价。"""
 
     factorial_policy: FactorialPolicy = field(kw_only=True)
+    record_behavior: bool = field(default=False, kw_only=True)
 
     def __post_init__(self):
         super().__post_init__()
@@ -325,6 +328,8 @@ class FactorialTask(SolveTask):
         if type(self.factorial_policy) is not FactorialPolicy:
             raise TypeError("析因任务需要已验证的FactorialPolicy")
         self.factorial_policy.validate_mask(self.experiment_mask)
+        if type(self.record_behavior) is not bool:
+            raise TypeError("record_behavior必须是bool")
 
     @property
     def controller_sha256(self):
@@ -566,6 +571,7 @@ def _execute(task: SolveTask | BaselineTask | FactorialTask) -> dict:
                 task.factorial_policy.to_dict(),
                 task.preparation_mode,
                 task.experiment_mask,
+                record_behavior=task.record_behavior,
             )
         elif type(task) is BaselineTask:
             native_result = _engines[n].evaluate_baseline_evaluations(

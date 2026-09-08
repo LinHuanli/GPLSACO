@@ -33,6 +33,8 @@ struct ControlBatchTrace {
     std::vector<std::uint32_t> legal_masks;
     std::vector<std::int32_t> actions;
     std::vector<Node> alternatives;
+    // 仅同时开启完整诊断与行为记录时填充，用于独立边集oracle。
+    std::vector<Node> construction_tours;
     std::vector<StartRegions> regions;
     ControlDeviceSnapshot before, after_restart, after_batch;
 };

@@ -7,6 +7,7 @@
 #include "gp_faco/profiling.hpp"
 #include "gp_faco/baseline_policy.hpp"
 #include "gp_faco/factorial_policy.hpp"
+#include "gp_faco/behavior.hpp"
 
 #include <memory>
 
@@ -31,6 +32,9 @@ struct BatchEvaluation {
     std::vector<double> discarded_costs;
     std::vector<ControllerState> completed_control_states;
     std::vector<ControlBatchTrace> control_trace;
+    bool behavior_recorded = false;
+    std::size_t behavior_device_bytes = 0;
+    std::vector<BatchBehaviorRow> behavior_rows;
     EvaluationProfile profile;  // 仅显式诊断返回，生产Python输出不暴露。
 };
 
@@ -40,6 +44,7 @@ struct BatchDiagnosticControls {
     unsigned completion_delay_ms = 0;
     bool capture_discarded = false;
     bool capture_control = false;
+    bool record_behavior = false;  // 次数入口的可选轻量记录，不改变控制器输入。
     bool force_fingerprint_collisions = false;  // 只供C++诊断检验完整邻接去重。
     bool profile = false;
     double fixed_elapsed_ratio = -1;  // 固定批次对照专用；负一表示正常wall-clock特征。

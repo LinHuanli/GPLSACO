@@ -66,6 +66,22 @@ def score_panel(
             and result.get("factorial_policy") != task.factorial_policy.to_dict()
         ):
             return failed("原生实际析因配置与预定任务不符")
+        if type(task) is FactorialTask:
+            if task.record_behavior:
+                from gp_faco.behavior import validate_behavior
+
+                validate_behavior(
+                    result,
+                    dimension=task.dimension,
+                    colonies=protocol.colonies,
+                    ants=protocol.settings.ants,
+                    evaluation_limit=task.evaluation_limit_per_colony,
+                    ls_evaluation_limit=protocol.settings.ls_evaluation_limit,
+                    policy=task.factorial_policy,
+                    experiment_mask=task.experiment_mask,
+                )
+            elif "behavior" in result:
+                return failed("未请求的行为记录进入结果")
         if (
             result["budget_seconds"] != task.budget_seconds
             or result["preparation_mode"] != task.preparation_mode

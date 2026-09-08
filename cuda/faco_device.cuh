@@ -1,6 +1,8 @@
 // 共同FACO构造/LS设备实现；诊断与真实选点共享此内核。
 // 原始Route/LS语义 Copyright (c) 2024 RSkinderowicz，MIT许可见provenance。
 #pragma once
+
+#include "edge_observation.cuh"
 #include "gp_faco/faco_cuda_diagnostic.hpp"
 #include "gp_faco/edge_constraints.hpp"
 #include "gp_faco/profiling.hpp"
@@ -73,7 +75,8 @@ __global__ void construct_and_search(
     std::uint64_t evaluation_limit, Node* all_tours, Node* all_positions,
     Node* all_parent_positions, Node* all_scratch, Node* all_pending,
     double* all_gains, Node* construction_tours, FacoDiagnosticInfo* output,
-    std::uint8_t* all_visited, Allowed all_allowed = {}, AntPhaseCycles* profile_cycles = nullptr) {
+    std::uint8_t* all_visited, Allowed all_allowed = {}, AntPhaseCycles* profile_cycles = nullptr,
+    Node* construction_new_edges = nullptr) {
     std::uint64_t tick0 = 0, tick1 = 0, tick2 = 0, tick3 = 0;
     if constexpr (Profile) { if (threadIdx.x == 0) tick0 = clock64(); }
     const auto ant = blockIdx.x;
@@ -174,6 +177,10 @@ __global__ void construct_and_search(
     }
     if (construction_tours) {
         for (Node i = threadIdx.x; i < n; i += blockDim.x) construction_tours[base + i] = tour[i];
+    }
+    if (construction_new_edges) {
+        const Node count = observed_new_edges(tour, parent_position, n);
+        if (threadIdx.x == 0) construction_new_edges[ant] = count;
     }
     if (threadIdx.x == 0) output[ant].construction_cost = state.cost;
     __syncthreads();
