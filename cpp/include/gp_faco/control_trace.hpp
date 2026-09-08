@@ -27,6 +27,7 @@ struct ControlBatchTrace {
     Node batch;
     double elapsed_ratio;
     std::vector<float> features, scores;
+    std::vector<double> baseline_uniforms;  // 仅基线诊断，生产入口不复制。
     std::vector<std::uint32_t> masks;
     std::vector<std::int32_t> actions;
     std::vector<Node> alternatives;

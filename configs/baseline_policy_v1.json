@@ -1,0 +1,58 @@
+{
+  "policy_spec_id": 1,
+  "status": "native policy semantics; examples are not tuned or frozen methods",
+  "budget_kind": "search_tour_evaluations",
+  "wall_clock_limit": null,
+  "entrypoint": "FacoBatchEngine.evaluate_baseline_evaluations",
+  "action_id": "16 * restart + 4 * region + mne_level",
+  "mne_targets": [2, 4, 8, 16],
+  "static": {
+    "restart_modes": ["none", "periodic", "bernoulli"],
+    "periodic": "request restart before positive batch indices divisible by restart_period; masked requests are skipped, not queued",
+    "bernoulli": "request when an independent uniform53 draw is strictly less than restart_probability",
+    "rng_domain": "Philox with the colony solve key, current batch, ant UINT32_MAX and step 1; source selection uses step 0"
+  },
+  "rule": {
+    "mne": "mne_level + min(max_mne_level - mne_level, global_stagnant_batches // stagnation_step); fixed when stagnation_step is zero",
+    "restart": "request when global_stagnant_batches >= restart_stagnation and completed_epoch_batches >= restart_cooldown; disabled when both thresholds are zero",
+    "restart_cooldown": "positive completed-batch count; prevents a preserved global stagnation count from forcing restart after every batch",
+    "global_stagnation": "reset only on strict global-best improvement, preserved across epoch restart"
+  },
+  "mask_policy": "every potentially selected keep action must be enabled in the experiment mask; an unavailable restart falls back to the same region and MNE in keep mode",
+  "common_base": [
+    "initial preparation and initial tour",
+    "all reference regions and twelve-feature construction",
+    "archive eligibility, alternative selection and update",
+    "complete epoch restart transaction",
+    "construction, checklist LS, sparse pheromone and source RNG",
+    "complete FE stopping and independent result verification"
+  ],
+  "examples": [
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 1,
+      "max_mne_level": 1,
+      "region": 0,
+      "restart_mode": "periodic",
+      "restart_period": 16,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "rule",
+      "mne_level": 0,
+      "max_mne_level": 3,
+      "region": 0,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 8,
+      "restart_stagnation": 32,
+      "restart_cooldown": 16
+    }
+  ]
+}

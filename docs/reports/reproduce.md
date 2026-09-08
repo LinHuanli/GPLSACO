@@ -230,6 +230,19 @@ TMPDIR="$PWD/.tmp" .venv/bin/python scripts/summarize_training.py \
 
 真实`training-v1`的暂停及恢复命令外层使用GNU time记录CLI实际墙钟/CPU/max RSS，不设置时间截止。独立摘要重算全部1,600条路线和fitness，重放三代DEAP与面板RNG，验证原7条完成记录、准备资源历史和409,600 FE账目。训练与验证FE、LS移动检查工作量分别汇总；重新准备的实际成本不替换原记录，也不扣搜索次数。原二进制SHA256为`2269faaafd558e2ec5e0f8ec770fc89c357cc231ae9a69092c9391a6fb747b66`；后续代码变化后重审计仍需其对应源码和环境，不能绕过身份检查。
 
+## Static/Rule原生共同底座检查
+
+```bash
+TMPDIR="$PWD/.tmp" cmake --build build/cpu -j 4
+OMP_NUM_THREADS=1 ctest --test-dir build/cpu --output-on-failure
+TMPDIR="$PWD/.tmp" cmake --build build/cuda -j 6
+# 目标host的GPU实时空闲时执行；每次要求新的输出目录，拒绝覆盖。
+bash scripts/run_baseline_checks.sh GPU-34b223c6-7502-b097-19e0-a411b1708f06 \
+  artifacts/gpu/baselines/reproduce-new
+```
+
+本轮实际使用cuda04，输出为`artifacts/gpu/baselines/checks-v1`。CTest 12项、Python 114项通过，三个CUDA工具执行`baseline_engine_semantics`的完整基线对照。CPU新增`baseline_policy_semantics`手算策略边界，Release及ASan/UBSan各5项通过。原生接口的11字段配置示例见`configs/baseline_policy_v1.json`；示例不代表完成调优。
+
 ## 分层成本与旧时间入口工程校准
 
 历史GPU运行命令如下；当时使用空目录和cuda04的空闲A5000。本轮配置与秒数只保留为工程证据，新主实验使用评价次数。再次运行需新输出目录及与新计时报告对应的新校准配置，不覆盖现有报告或恢复已完成矩阵。

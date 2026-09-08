@@ -21,9 +21,10 @@
 - [真实DEAP训练、固定验证与checkpoint恢复](docs/reports/2026-09-08_training.md)
 - [完整动作成本剖析与旧时间入口校准](docs/reports/2026-09-08_profiling.md)
 - [评价次数入口、progress版本与实际训练恢复](docs/reports/2026-09-08_evaluation_counts.md)
+- [Static/Rule原生共同底座验收](docs/reports/2026-09-08_baselines.md)
 - [构建、CPU/GPU 检查与原生试跑命令](docs/reports/reproduce.md)
 
-已完整核验500/1K主池128,416条记录并发布划分。主底座GP Engine已接通区域/十二特征、实际动作、档案和完整重启。RTX A5000次数模式开发训练8×3的50任务完成409,600次tour evaluation，1,600条路线及恢复通过独立核验。成本矩阵1,156条件、13,056条路线和旧时间入口424任务、5,136条路线另保留原身份。正式次数档、Static/Rule调参、G4冻结及E1–E4仍待完成。
+已完整核验500/1K主池128,416条记录并发布划分。主底座GP Engine已接通区域/十二特征、实际动作、档案和完整重启。RTX A5000次数模式开发训练8×3的50任务完成409,600次tour evaluation，1,600条路线及恢复通过独立核验。Static/Rule原生接口已接入同一底座，32组等动作GP轨迹一致；最新回归为12项CTest和114项Python。成本矩阵及旧计时结果另保留原身份。正式次数档、Static/Rule调参、G4冻结及E1–E4仍待完成。
 
 ## 目录
 

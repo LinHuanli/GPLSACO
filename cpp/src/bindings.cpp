@@ -9,6 +9,7 @@
 #include <string>
 
 #ifdef GPFACO_CUDA
+
 #include <cuda_runtime.h>
 #include "gp_faco/fixed_faco_gpu.hpp"
 #include "gp_faco/batch_engine.hpp"
@@ -92,6 +93,64 @@ py::dict score(const py::dict& dictionary, const FeatureArray& features,
 }
 
 #ifdef GPFACO_CUDA
+std::uint64_t read_unsigned(const py::handle& value) {
+    if (!PyLong_CheckExact(value.ptr())) throw std::invalid_argument("参数必须为非负整数，不能是布尔值");
+    const auto result = PyLong_AsUnsignedLongLong(value.ptr());
+    if (PyErr_Occurred()) {
+        PyErr_Clear();
+        throw std::invalid_argument("整数参数超出uint64范围");
+    }
+    return result;
+}
+
+gp_faco::Node read_node(const py::handle& value) {
+    const auto result = read_unsigned(value);
+    if (result > UINT32_MAX) throw std::invalid_argument("整数参数超出uint32范围");
+    return static_cast<gp_faco::Node>(result);
+}
+
+gp_faco::BaselinePolicy read_baseline(const py::dict& dictionary) {
+    if (dictionary.size() != 11 || read_unsigned(dictionary["policy_spec_id"]) != 1)
+        throw std::invalid_argument("基线配置字段或规格版本无效");
+    gp_faco::BaselinePolicy p;
+    const auto kind = py::cast<std::string>(dictionary["kind"]);
+    if (kind == "static") p.kind = gp_faco::BaselineKind::Static;
+    else if (kind == "rule") p.kind = gp_faco::BaselineKind::Rule;
+    else throw std::invalid_argument("未知基线类别");
+    const auto mode = py::cast<std::string>(dictionary["restart_mode"]);
+    if (mode == "none") p.restart_mode = gp_faco::StaticRestart::None;
+    else if (mode == "periodic") p.restart_mode = gp_faco::StaticRestart::Periodic;
+    else if (mode == "bernoulli") p.restart_mode = gp_faco::StaticRestart::Bernoulli;
+    else throw std::invalid_argument("未知静态重启模式");
+    p.mne_level = read_node(dictionary["mne_level"]);
+    p.max_mne_level = read_node(dictionary["max_mne_level"]);
+    p.region = read_node(dictionary["region"]);
+    p.restart_period = read_node(dictionary["restart_period"]);
+    p.stagnation_step = read_node(dictionary["stagnation_step"]);
+    p.restart_stagnation = read_node(dictionary["restart_stagnation"]);
+    p.restart_cooldown = read_node(dictionary["restart_cooldown"]);
+    const auto probability = dictionary["restart_probability"];
+    if (!PyFloat_CheckExact(probability.ptr()) && !PyLong_CheckExact(probability.ptr()))
+        throw std::invalid_argument("重启概率需要实数，不能是布尔值");
+    p.restart_probability = py::cast<double>(probability);
+    gp_faco::validate_baseline(p);
+    return p;
+}
+
+py::dict baseline_output(const gp_faco::BaselinePolicy& p) {
+    py::dict result;
+    result["policy_spec_id"] = 1;
+    result["kind"] = p.kind == gp_faco::BaselineKind::Static ? "static" : "rule";
+    result["mne_level"] = p.mne_level; result["max_mne_level"] = p.max_mne_level;
+    result["region"] = p.region;
+    result["restart_mode"] = p.restart_mode == gp_faco::StaticRestart::None ? "none" :
+        p.restart_mode == gp_faco::StaticRestart::Periodic ? "periodic" : "bernoulli";
+    result["restart_period"] = p.restart_period; result["restart_probability"] = p.restart_probability;
+    result["stagnation_step"] = p.stagnation_step; result["restart_stagnation"] = p.restart_stagnation;
+    result["restart_cooldown"] = p.restart_cooldown;
+    return result;
+}
+
 gp_faco::PreparationMode preparation_mode(const std::string& mode) {
     if (mode == "cached_charged") return gp_faco::PreparationMode::CachedCharged;
     if (mode == "end_to_end") return gp_faco::PreparationMode::EndToEnd;
@@ -316,6 +375,30 @@ PYBIND11_MODULE(gp_faco_ext, module) {
             return batch_output(result, mode);
         }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
            py::arg("evaluation_limit_per_colony"), py::arg("program"),
+           py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX)
+        .def("evaluate_baseline_evaluations", [](gp_faco::FacoBatchEngine& engine,
+                const Keys& keys, const Keys& seeds, const py::object& evaluations,
+                const py::dict& dictionary, const std::string& mode, const py::object& mask) {
+            if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size())
+                throw std::invalid_argument("基线次数入口需要完整任务数组");
+            if (mode != "cached" && mode != "end_to_end")
+                throw std::invalid_argument("次数入口只接受cached或end_to_end准备");
+            const auto policy = read_baseline(dictionary);
+            const auto limit = read_unsigned(evaluations);
+            const auto experiment_mask = read_node(mask);
+            const auto preparation = preparation_mode(mode == "cached" ? "cached_charged" : mode);
+            std::vector<gp_faco::BatchTask> tasks;
+            for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            gp_faco::BatchEvaluation result;
+            {
+                py::gil_scoped_release release;
+                result = engine.evaluate_baseline_evaluations(tasks, limit, policy, preparation, experiment_mask);
+            }
+            auto output = batch_output(result, mode);
+            output["baseline_policy"] = baseline_output(policy);
+            return output;
+        }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
+           py::arg("evaluation_limit_per_colony"), py::arg("policy"),
            py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX)
         .def("run_program_diagnostic", [](gp_faco::FacoBatchEngine& engine, const Keys& keys,
                 const Keys& seeds, const py::dict& dictionary, const py::object& batches,

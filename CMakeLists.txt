@@ -24,6 +24,10 @@ add_executable(control_cpu_semantics tests/cpp/test_control_cpu.cpp)
 target_link_libraries(control_cpu_semantics PRIVATE gp_faco_core)
 add_test(NAME control_cpu_semantics COMMAND control_cpu_semantics
     "${CMAKE_CURRENT_BINARY_DIR}/control_cpu_results.json")
+add_executable(baseline_policy_semantics tests/cpp/test_baseline_policy.cpp)
+target_link_libraries(baseline_policy_semantics PRIVATE gp_faco_core)
+add_test(NAME baseline_policy_semantics COMMAND baseline_policy_semantics
+    "${CMAKE_CURRENT_BINARY_DIR}/baseline_policy_results.json")
 
 if(GP_FACO_CUDA)
     enable_language(CUDA)
@@ -70,6 +74,11 @@ if(GP_FACO_CUDA)
     target_link_libraries(evaluation_count_semantics PRIVATE gp_faco_cuda)
     add_test(NAME evaluation_count_semantics COMMAND evaluation_count_semantics
         "${CMAKE_CURRENT_BINARY_DIR}/evaluation_count_semantics.json")
+    add_executable(baseline_engine_semantics tests/cpp/test_baseline_engine.cpp)
+    target_compile_options(baseline_engine_semantics PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
+    target_link_libraries(baseline_engine_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME baseline_engine_semantics COMMAND baseline_engine_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/baseline_engine_results.json")
 endif()
 
 if(GP_FACO_PYTHON)

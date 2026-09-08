@@ -64,3 +64,5 @@ CPU 单元/差异测试优先在本地执行；CUDA 测试在空闲目标 GPU �
 [次数报告](../reports/2026-09-08_evaluation_counts.md)补齐原生完整FE提交、延迟/插桩/准备模式不改变轨迹、feature_spec_id=2及真实DEAP恢复。GPU CTest 10项、Python 110项、memcheck/synccheck/racecheck和CPU Release/ASan各4项通过。两规模各256 FE/colony的8×3开发运行完成50任务、400批、409,600 FE，1,600条路线独立核验通过；实际暂停/恢复保持已完成结果和准备资源记录，扣费为零。
 
 G3次数路径已有当前变更范围内的验收。G4仍须开发次数档校准、Static/Rule充分调参、五演化seed和测试manifest冻结；此小规模训练不构成E1结论。
+
+[基线报告](../reports/2026-09-08_baselines.md)进一步补齐Static/Rule原生动作选择、独立重启随机流、停滞升级及epoch冷却。32组等动作GP完整轨迹、1,168次实际动作和12组单/批量结果一致；GPU CTest 12/Python 114、CPU Release/ASan各5项及三个CUDA工具通过。基线配置搜索/完整development调参仍未执行，G4状态不变。
