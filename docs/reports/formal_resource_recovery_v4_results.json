@@ -1,0 +1,1295 @@
+{
+  "schema_version": 1,
+  "status": "audited_prefixes_and_resource_waiters_established",
+  "scope": "operational resource recovery; no completed E1/E3 GP or formal TEST claim",
+  "created_at_utc": "2026-09-08T23:42:44.462155+00:00",
+  "formal_test_released": false,
+  "wall_clock_limit": null,
+  "budget_kind": "search_tour_evaluations",
+  "formal_scope_preserved": {
+    "E1": "5 seeds per condition, 128 x 50, all validation",
+    "baseline": "all 776 policies, 6208 search calls, all fixed validation",
+    "E3": "all 20 GP runs, 128 x 50, all validation; four Static already complete"
+  },
+  "main_orchestration_commit": "7db7892107ae6ecdb92872d05237bc944b2eb851",
+  "e3_orchestration_commit": "d80e8e1f794cf08ecdd48417584f7a9c16495b59",
+  "unchanged_native_sha256": {
+    "main": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+    "E3": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd"
+  },
+  "checks": {
+    "baseline_waiter_cpu": {
+      "passed": 4,
+      "seconds": 0.59
+    },
+    "e3_unsubmitted_waiter_cpu": {
+      "passed": 4,
+      "seconds": 0.63
+    },
+    "e1_waiter_cpu": {
+      "passed": 4,
+      "seconds": 0.56
+    },
+    "e3_startup_waiter_cpu": {
+      "passed": 1,
+      "seconds": 0.38
+    }
+  },
+  "audited_prefix_totals": {
+    "runs": 11,
+    "calls": 24269,
+    "FE": 3180986368,
+    "failed_solves": 0,
+    "new_native_submissions_to_repair_prefixes": 0,
+    "note": "Previously executed prefixes; do not add again to formal cumulative work."
+  },
+  "runs": [
+    {
+      "name": "GP-Full-2207",
+      "family": "E1",
+      "kind": "pre_submission_resource_pause",
+      "run_id": "f63b75d2755d060f565aa2415f99e7c8eb3961590120b6839457a9cd3f4a3a14",
+      "original_tool_session_id": 22028,
+      "original_tool_exit_code": 1,
+      "current_tool_session_id": 43391,
+      "current_tool_exit_code": null,
+      "host": "cuda02.sms.vuw.ac.nz",
+      "gpu_uuid": "GPU-b78cc880-5f61-6e66-d09c-e91cbe6e94a0",
+      "gpu_model": "NVIDIA RTX A5000",
+      "before_calls": 3050,
+      "audited_calls": 3050,
+      "audited_FE": 399769600,
+      "audited_failed_solves": 0,
+      "new_native_submissions_to_repair_prefix": 0,
+      "checkpoint_sha256": "3e4cfa452b72220c30c663f25443094e760f153ef9fead4daa4cdff08c57f6f2",
+      "original_resources": {
+        "wall_seconds": 32838.43,
+        "user_seconds": 31984.12,
+        "system_seconds": 214.97,
+        "maximum_rss_kib": 381072,
+        "exit_status": 1
+      },
+      "audit": {
+        "path": "artifacts/e1/resource-recovery-v3/GP-Full-2207/original-audit.json",
+        "sha256": "3979749c9b1a004ef3c6719acea2b4e9d1797fca69933de88f2f2019ba273cc4",
+        "status": "snapshot_passed",
+        "run_id": "f63b75d2755d060f565aa2415f99e7c8eb3961590120b6839457a9cd3f4a3a14",
+        "resources": {
+          "wall_seconds": 415.7,
+          "user_seconds": 388.64,
+          "system_seconds": 7.54,
+          "max_rss_kib": 2816884,
+          "exit_code": 0
+        },
+        "resource_deviations": null,
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 390400,
+            "completed_construction_steps": 28310081130,
+            "completed_ls_evaluations": 2025282555604,
+            "failed_solves": 0,
+            "native_actual_seconds": 30753.858387440916,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 399769600,
+            "solve_jobs": 3050
+          },
+          "validation": {}
+        },
+        "max_independent_cost_error": 8.171241461241152e-14
+      },
+      "request_path": "artifacts/e1/resource-recovery-v3/GP-Full-2207/wait-request.json",
+      "request_sha256": "556e9102e3a0681130250e2de4cf4947c0ffbffd0bdff18a0ec91e813775c495",
+      "receipt": {
+        "cli_attempts": [
+          {
+            "child_pid": 1437622,
+            "exit_code": 1,
+            "log": "artifacts/e1/resource-recovery-v3/GP-Full-2207/resume-1.log",
+            "number": 1,
+            "resources": "artifacts/e1/resource-recovery-v3/GP-Full-2207/resume-1-resources.json"
+          },
+          {
+            "child_pid": 1440344,
+            "exit_code": 1,
+            "log": "artifacts/e1/resource-recovery-v3/GP-Full-2207/resume-2.log",
+            "number": 2,
+            "resources": "artifacts/e1/resource-recovery-v3/GP-Full-2207/resume-2-resources.json"
+          }
+        ],
+        "gpu_uuid": "GPU-b78cc880-5f61-6e66-d09c-e91cbe6e94a0",
+        "host": "cuda02.sms.vuw.ac.nz",
+        "native_submissions_while_waiting": 0,
+        "observation": {
+          "driver_version": "610.43.02",
+          "gpu_model": "NVIDIA RTX A5000",
+          "memory_used_mib": 2751,
+          "processes": 1,
+          "utilization_percent": 81
+        },
+        "observed_at_utc": "2026-09-08T23:42:40.127909+00:00",
+        "request_sha256": "556e9102e3a0681130250e2de4cf4947c0ffbffd0bdff18a0ec91e813775c495",
+        "run_id": "f63b75d2755d060f565aa2415f99e7c8eb3961590120b6839457a9cd3f4a3a14",
+        "status": "waiting_for_original_gpu",
+        "waiting_samples": 640
+      },
+      "artifacts": "artifacts/e1/resource-recovery-v3/GP-Full-2207"
+    },
+    {
+      "name": "GP-Full-5519",
+      "family": "E1",
+      "kind": "pre_submission_resource_pause",
+      "run_id": "bc64264ea4b3045183f672bed44b20a350d560b850b28c3ab6592fb1587ed91f",
+      "original_tool_session_id": 29529,
+      "original_tool_exit_code": 1,
+      "current_tool_session_id": 83776,
+      "current_tool_exit_code": null,
+      "host": "cuda10.ecs.vuw.ac.nz",
+      "gpu_uuid": "GPU-dc3f37e9-bc9b-dd69-60e8-a77365d836db",
+      "gpu_model": "NVIDIA RTX A5000",
+      "before_calls": 3056,
+      "audited_calls": 3056,
+      "audited_FE": 400556032,
+      "audited_failed_solves": 0,
+      "new_native_submissions_to_repair_prefix": 0,
+      "checkpoint_sha256": "7dc15613251cc92aff02c070abae57b454e3e0c734605822f4e26cae709d01f1",
+      "original_resources": {
+        "wall_seconds": 32920.58,
+        "user_seconds": 31981.23,
+        "system_seconds": 313.64,
+        "maximum_rss_kib": 426164,
+        "exit_status": 1
+      },
+      "audit": {
+        "path": "artifacts/e1/resource-recovery-v3/GP-Full-5519/original-audit.json",
+        "sha256": "9faa8deab1a704af6f04965da3030495d0ad13039875185f0a276be7d6f61876",
+        "status": "snapshot_passed",
+        "run_id": "bc64264ea4b3045183f672bed44b20a350d560b850b28c3ab6592fb1587ed91f",
+        "resources": {
+          "wall_seconds": 321.06,
+          "user_seconds": 293.75,
+          "system_seconds": 8.62,
+          "max_rss_kib": 2821960,
+          "exit_code": 0
+        },
+        "resource_deviations": null,
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 391168,
+            "completed_construction_steps": 32536472319,
+            "completed_ls_evaluations": 2008675938431,
+            "failed_solves": 0,
+            "native_actual_seconds": 30503.18246131104,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 400556032,
+            "solve_jobs": 3056
+          },
+          "validation": {}
+        },
+        "max_independent_cost_error": 8.526512829121202e-14
+      },
+      "request_path": "artifacts/e1/resource-recovery-v3/GP-Full-5519/wait-request.json",
+      "request_sha256": "2abcfdbe39af22d8a7927699c4167dd0538a9d1e755d96d9d667f67b303ad656",
+      "receipt": {
+        "cli_attempts": [
+          {
+            "child_pid": 702585,
+            "exit_code": 1,
+            "log": "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-1.log",
+            "number": 1,
+            "resources": "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-1-resources.json"
+          },
+          {
+            "child_pid": 708852,
+            "exit_code": 1,
+            "log": "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-2.log",
+            "number": 2,
+            "resources": "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-2-resources.json"
+          },
+          {
+            "child_pid": 709905,
+            "exit_code": null,
+            "log": "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-3.log",
+            "number": 3,
+            "resources": "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-3-resources.json"
+          }
+        ],
+        "gpu_uuid": "GPU-dc3f37e9-bc9b-dd69-60e8-a77365d836db",
+        "host": "cuda10.ecs.vuw.ac.nz",
+        "native_submissions_while_waiting": 0,
+        "observation": {
+          "driver_version": "610.43.02",
+          "gpu_model": "NVIDIA RTX A5000",
+          "memory_used_mib": 1,
+          "processes": 0,
+          "utilization_percent": 0
+        },
+        "observed_at_utc": "2026-09-08T23:17:58.818001+00:00",
+        "request_sha256": "2abcfdbe39af22d8a7927699c4167dd0538a9d1e755d96d9d667f67b303ad656",
+        "run_id": "bc64264ea4b3045183f672bed44b20a350d560b850b28c3ab6592fb1587ed91f",
+        "status": "original_full_cli_resuming",
+        "waiting_samples": 52
+      },
+      "artifacts": "artifacts/e1/resource-recovery-v3/GP-Full-5519"
+    },
+    {
+      "name": "GP-NoFeedback-2207",
+      "family": "E1",
+      "kind": "pre_submission_resource_pause",
+      "run_id": "edd671e58e6e849eebee01d96f5cb28a61874d40c401c3b630b02386fed76fe1",
+      "original_tool_session_id": 62556,
+      "original_tool_exit_code": 1,
+      "current_tool_session_id": 15281,
+      "current_tool_exit_code": null,
+      "host": "cuda13.ecs.vuw.ac.nz",
+      "gpu_uuid": "GPU-da4490c9-1c09-49b2-00dc-b175417ae7bb",
+      "gpu_model": "NVIDIA RTX A5000",
+      "before_calls": 3008,
+      "audited_calls": 3008,
+      "audited_FE": 394264576,
+      "audited_failed_solves": 0,
+      "new_native_submissions_to_repair_prefix": 0,
+      "checkpoint_sha256": "1ef478cbe46500531363143d9f24f4209faae56ea16b96d1a0ac29a512d8b89d",
+      "original_resources": {
+        "wall_seconds": 32825.49,
+        "user_seconds": 32001.52,
+        "system_seconds": 293.61,
+        "maximum_rss_kib": 376852,
+        "exit_status": 1
+      },
+      "audit": {
+        "path": "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/original-audit.json",
+        "sha256": "90b975121c3509838be916cb0d6cf645c77079493b1a337326626160aae72c31",
+        "status": "snapshot_passed",
+        "run_id": "edd671e58e6e849eebee01d96f5cb28a61874d40c401c3b630b02386fed76fe1",
+        "resources": {
+          "wall_seconds": 400.32,
+          "user_seconds": 370.75,
+          "system_seconds": 10.54,
+          "max_rss_kib": 2780280,
+          "exit_code": 0
+        },
+        "resource_deviations": null,
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 385024,
+            "completed_construction_steps": 33489096931,
+            "completed_ls_evaluations": 2011147657029,
+            "failed_solves": 0,
+            "native_actual_seconds": 30646.329034206054,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 394264576,
+            "solve_jobs": 3008
+          },
+          "validation": {}
+        },
+        "max_independent_cost_error": 8.881784197001252e-14
+      },
+      "request_path": "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/wait-request.json",
+      "request_sha256": "5895773c97b326646454083d16950e88026fe11a7cf2066e3ce9241601aa45e5",
+      "receipt": {
+        "cli_attempts": [
+          {
+            "child_pid": 2214991,
+            "exit_code": null,
+            "log": "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/resume-1.log",
+            "number": 1,
+            "resources": "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/resume-1-resources.json"
+          }
+        ],
+        "gpu_uuid": "GPU-da4490c9-1c09-49b2-00dc-b175417ae7bb",
+        "host": "cuda13.ecs.vuw.ac.nz",
+        "native_submissions_while_waiting": 0,
+        "observation": {
+          "driver_version": "610.43.02",
+          "gpu_model": "NVIDIA RTX A5000",
+          "memory_used_mib": 4,
+          "processes": 0,
+          "utilization_percent": 0
+        },
+        "observed_at_utc": "2026-09-08T22:42:54.489040+00:00",
+        "request_sha256": "5895773c97b326646454083d16950e88026fe11a7cf2066e3ce9241601aa45e5",
+        "run_id": "edd671e58e6e849eebee01d96f5cb28a61874d40c401c3b630b02386fed76fe1",
+        "status": "original_full_cli_resuming",
+        "waiting_samples": 0
+      },
+      "artifacts": "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207"
+    },
+    {
+      "name": "GP-Full-1103",
+      "family": "E1",
+      "kind": "pre_submission_resource_pause",
+      "run_id": "a2b087f40cf0150ad5a035837725bece422d5d7f7811cef956b4f676a022a2c9",
+      "original_tool_session_id": 62115,
+      "original_tool_exit_code": 1,
+      "current_tool_session_id": 9890,
+      "current_tool_exit_code": null,
+      "host": "cuda04.sms.vuw.ac.nz",
+      "gpu_uuid": "GPU-e6ff64f9-0724-b0be-cb54-23a6e7f5d065",
+      "gpu_model": "NVIDIA RTX A5000",
+      "before_calls": 3277,
+      "audited_calls": 3277,
+      "audited_FE": 429522944,
+      "audited_failed_solves": 0,
+      "new_native_submissions_to_repair_prefix": 0,
+      "checkpoint_sha256": "559f264c82694221a16e1feab49a4a9cc4dbe54db49d04bbd676469be71d07e7",
+      "original_resources": {
+        "wall_seconds": 35207.96,
+        "cpu_user_seconds": 34342.44,
+        "cpu_system_seconds": 243.07,
+        "maximum_rss_kib": 416068,
+        "exit_status": 1
+      },
+      "audit": {
+        "path": "artifacts/e1/resource-recovery-v3/GP-Full-1103/original-audit.json",
+        "sha256": "e95b67c9b2d6d3bca0ed73d6a50b3ec45d3dd9dbfaff840d03a420cabaa1da45",
+        "status": "snapshot_passed",
+        "run_id": "a2b087f40cf0150ad5a035837725bece422d5d7f7811cef956b4f676a022a2c9",
+        "resources": {
+          "wall_seconds": 420.4,
+          "user_seconds": 393.71,
+          "system_seconds": 7.29,
+          "max_rss_kib": 3020692,
+          "exit_code": 0
+        },
+        "resource_deviations": null,
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 419456,
+            "completed_construction_steps": 27683961192,
+            "completed_ls_evaluations": 2187198922744,
+            "failed_solves": 0,
+            "native_actual_seconds": 33083.93774724511,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 429522944,
+            "solve_jobs": 3277
+          },
+          "validation": {}
+        },
+        "max_independent_cost_error": 8.881784197001252e-14
+      },
+      "request_path": "artifacts/e1/resource-recovery-v3/GP-Full-1103/wait-request.json",
+      "request_sha256": "98bfe7d5cec3019d3910c46b06eda5f4a8fe97034b7cf3a0bf0b2108f7ce5e25",
+      "receipt": {
+        "cli_attempts": [],
+        "gpu_uuid": "GPU-e6ff64f9-0724-b0be-cb54-23a6e7f5d065",
+        "host": "cuda04.sms.vuw.ac.nz",
+        "native_submissions_while_waiting": 0,
+        "observation": {
+          "driver_version": "610.43.02",
+          "gpu_model": "NVIDIA RTX A5000",
+          "memory_used_mib": 1629,
+          "processes": 1,
+          "utilization_percent": 0
+        },
+        "observed_at_utc": "2026-09-08T23:42:42.984260+00:00",
+        "request_sha256": "98bfe7d5cec3019d3910c46b06eda5f4a8fe97034b7cf3a0bf0b2108f7ce5e25",
+        "run_id": "a2b087f40cf0150ad5a035837725bece422d5d7f7811cef956b4f676a022a2c9",
+        "status": "waiting_for_original_gpu",
+        "waiting_samples": 227
+      },
+      "artifacts": "artifacts/e1/resource-recovery-v3/GP-Full-1103"
+    },
+    {
+      "name": "main-baseline",
+      "family": "baseline",
+      "kind": "pre_submission_resource_pause",
+      "run_id": "3553662824eab5f6da26fccdabc5bc816dac29e591df796436170ef3926365e7",
+      "original_tool_session_id": 38709,
+      "original_tool_exit_code": 1,
+      "current_tool_session_id": 15598,
+      "current_tool_exit_code": null,
+      "host": "cuda04.sms.vuw.ac.nz",
+      "gpu_uuid": "GPU-34b223c6-7502-b097-19e0-a411b1708f06",
+      "gpu_model": "NVIDIA RTX A5000",
+      "before_calls": 3467,
+      "audited_calls": 3467,
+      "audited_FE": 454426624,
+      "audited_failed_solves": 0,
+      "new_native_submissions_to_repair_prefix": 0,
+      "checkpoint_sha256": "27dbabbe4a5f7ed7465076071fe57f97ff971e6c6e4fbd7d7a1693a9fed6ba2b",
+      "original_resources": {
+        "wall_seconds": 36564.5,
+        "cpu_user_seconds": 35594.88,
+        "cpu_system_seconds": 261.87,
+        "maximum_rss_kib": 287132,
+        "exit_status": 1
+      },
+      "audit": {
+        "path": "artifacts/gpu/baseline-tuning/resource-recovery-v1/original-audit.json",
+        "sha256": "fc631dca3cd2ddc925ebbed8794081e09429b90317fd43fb0d642123318ad6ef",
+        "status": "snapshot_passed",
+        "run_id": "3553662824eab5f6da26fccdabc5bc816dac29e591df796436170ef3926365e7",
+        "resources": {
+          "wall_seconds": 743.38,
+          "user_seconds": 477.5,
+          "system_seconds": 17.44,
+          "max_rss_kib": 194968,
+          "exit_code": 0
+        },
+        "resource_deviations": null,
+        "work_by_phase": null,
+        "max_independent_cost_error": 8.171241461241152e-14
+      },
+      "request_path": "artifacts/gpu/baseline-tuning/resource-recovery-v1/wait-request.json",
+      "request_sha256": "bc905503d6a2fe98f19a18a6255d880565d53761aa20d7156f7c6f2a670c6719",
+      "receipt": {
+        "cli_attempts": [],
+        "gpu_uuid": "GPU-34b223c6-7502-b097-19e0-a411b1708f06",
+        "host": "cuda04.sms.vuw.ac.nz",
+        "native_submissions_while_waiting": 0,
+        "observation": {
+          "driver_version": "610.43.02",
+          "gpu_model": "NVIDIA RTX A5000",
+          "memory_used_mib": 347,
+          "processes": 1,
+          "utilization_percent": 0
+        },
+        "observed_at_utc": "2026-09-08T23:42:42.857211+00:00",
+        "request_sha256": "bc905503d6a2fe98f19a18a6255d880565d53761aa20d7156f7c6f2a670c6719",
+        "run_id": "3553662824eab5f6da26fccdabc5bc816dac29e591df796436170ef3926365e7",
+        "status": "waiting_for_original_gpu",
+        "waiting_samples": 182
+      },
+      "artifacts": "artifacts/gpu/baseline-tuning/resource-recovery-v1"
+    },
+    {
+      "name": "GP-alpha-Hard-2207",
+      "family": "E3",
+      "kind": "already_returned_resource_observation",
+      "run_id": "4a6be8411d80d99adc03222a377ffc6555d4d69a4afb9e8c7213d456961b7aab",
+      "original_tool_session_id": 42390,
+      "original_tool_exit_code": 1,
+      "current_tool_session_id": 99716,
+      "current_tool_exit_code": null,
+      "host": "red-tomatoes.ecs.vuw.ac.nz",
+      "gpu_uuid": "GPU-a81ef6ba-4710-26e5-9f7b-606a17c1dbdd",
+      "gpu_model": "NVIDIA RTX A6000",
+      "before_calls": 1177,
+      "audited_calls": 1178,
+      "audited_FE": 154402816,
+      "audited_failed_solves": 0,
+      "new_native_submissions_to_repair_prefix": 0,
+      "audit": {
+        "path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/prefix-audit.json",
+        "sha256": "e4b62d05745814de5ae108737471cb4c492d547494b45c562413cb11aab62b40",
+        "status": "snapshot_passed",
+        "run_id": "4a6be8411d80d99adc03222a377ffc6555d4d69a4afb9e8c7213d456961b7aab",
+        "resources": {
+          "wall_seconds": 287.87,
+          "user_seconds": 262.9,
+          "system_seconds": 7.51,
+          "max_rss_kib": 1250720,
+          "exit_code": 0
+        },
+        "resource_deviations": {
+          "completed_resource_deviations": 1,
+          "implementation_sha256": "ee611849869d86bd6314a3ee677bd249a310c4f8519123b4cd8e41aba31e53c9",
+          "policy_sha256": "bd6473d180a5f91e19f2c3717ebdb1e49f1fec88060cfca9171d998cc98ce53c",
+          "pre_submission_wait_samples": 0,
+          "resource_recovery_file_sha256": "6350f1d57df9faed6b1acd0b79633527fa9b9dd962c07828b5153eaf2a051955",
+          "task_keys": [
+            "c46e7970150a6dfbc95faae43826ed30e0d438bac5cf1088b87104949c4bcc16"
+          ],
+          "timing_class": "recorded_contention_or_unknown; exclude aggregate clean-speed comparison"
+        },
+        "work_by_phase": null,
+        "max_independent_cost_error": null
+      },
+      "original_resources": {
+        "wall_seconds": 11486.14,
+        "user_seconds": 11174.38,
+        "system_seconds": 108.16,
+        "max_rss_kib": 396076,
+        "exit_code": 1
+      },
+      "request_path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/wait-request.json",
+      "request_sha256": "cb88e8d534a87d405b4fc845ba4f5a8879256da3aac7c47ec67bb0a293b106c6",
+      "receipt": {
+        "gpu_uuid": "GPU-a81ef6ba-4710-26e5-9f7b-606a17c1dbdd",
+        "host": "red-tomatoes.ecs.vuw.ac.nz",
+        "native_submissions_while_waiting": 0,
+        "observation": {
+          "driver_version": "610.43.02",
+          "foreign_processes": 1,
+          "gpu_model": "NVIDIA RTX A6000",
+          "memory_used_mib": 17978,
+          "utilization_percent": 74
+        },
+        "observed_at_utc": "2026-09-08T23:42:42.883490+00:00",
+        "request_sha256": "cb88e8d534a87d405b4fc845ba4f5a8879256da3aac7c47ec67bb0a293b106c6",
+        "run_id": "4a6be8411d80d99adc03222a377ffc6555d4d69a4afb9e8c7213d456961b7aab",
+        "status": "waiting_for_idle_gpu",
+        "waiting_samples": 664,
+        "wrapper_sha256": "c8414cfa5bf4eeedd55fa08b262f2a52ad38b9a845d150ac676009614964deaf"
+      },
+      "artifacts": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207",
+      "prefix_transition": {
+        "after_FE": 154402816,
+        "after_calls": 1178,
+        "before_calls": 1177,
+        "new_worker_starts": 0,
+        "run_id": "4a6be8411d80d99adc03222a377ffc6555d4d69a4afb9e8c7213d456961b7aab",
+        "snapshot_checkpoint_sha256": "6a96dc694b79194c05c37e71a05842b9a8d28173b9dee4a9cfbac35b25c9bc98",
+        "status": "returned_task_accounted_without_native_submission"
+      }
+    },
+    {
+      "name": "GP-alpha-Escape-5519",
+      "family": "E3",
+      "kind": "already_returned_resource_observation",
+      "run_id": "7dfb336e87050db54bacc9ff629113565660bc84de4ad69f2e5dc3ee0e738929",
+      "original_tool_session_id": 8613,
+      "original_tool_exit_code": 1,
+      "current_tool_session_id": 11350,
+      "current_tool_exit_code": null,
+      "host": "cuda24.ecs.vuw.ac.nz",
+      "gpu_uuid": "GPU-c2cde103-a3fe-1e5d-ec16-8bc6ccda401a",
+      "gpu_model": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+      "before_calls": 1724,
+      "audited_calls": 1725,
+      "audited_FE": 226099200,
+      "audited_failed_solves": 0,
+      "new_native_submissions_to_repair_prefix": 0,
+      "audit": {
+        "path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/prefix-audit.json",
+        "sha256": "2523153eb145e6cde54b76ef43c40546fbc8c65df07f18ac9f76d53a7317bc57",
+        "status": "snapshot_passed",
+        "run_id": "7dfb336e87050db54bacc9ff629113565660bc84de4ad69f2e5dc3ee0e738929",
+        "resources": {
+          "wall_seconds": 306.86,
+          "user_seconds": 275.51,
+          "system_seconds": 9.55,
+          "max_rss_kib": 1664396,
+          "exit_code": 0
+        },
+        "resource_deviations": {
+          "completed_resource_deviations": 1,
+          "implementation_sha256": "ee611849869d86bd6314a3ee677bd249a310c4f8519123b4cd8e41aba31e53c9",
+          "policy_sha256": "bd6473d180a5f91e19f2c3717ebdb1e49f1fec88060cfca9171d998cc98ce53c",
+          "pre_submission_wait_samples": 0,
+          "resource_recovery_file_sha256": "c7836191b106a3aa55ec260065844fd066694253df2d60e3b60e172e4240f893",
+          "task_keys": [
+            "4606b6312808781091a1eda74ad4b91c0f9f81f940c94f9400917f01ece9d462"
+          ],
+          "timing_class": "recorded_contention_or_unknown; exclude aggregate clean-speed comparison"
+        },
+        "work_by_phase": null,
+        "max_independent_cost_error": null
+      },
+      "original_resources": {
+        "wall_seconds": 10755.87,
+        "user_seconds": 10454.58,
+        "system_seconds": 70.14,
+        "max_rss_kib": 485848,
+        "exit_code": 1
+      },
+      "request_path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/wait-request.json",
+      "request_sha256": "1acf3b64b4c9c05f74bd6e996dcd235c916457a6f7f18cc852026e105792eb99",
+      "receipt": {
+        "child_pid": 1262999,
+        "gpu_uuid": "GPU-c2cde103-a3fe-1e5d-ec16-8bc6ccda401a",
+        "host": "cuda24.ecs.vuw.ac.nz",
+        "native_submissions_while_waiting": 0,
+        "observation": {
+          "driver_version": "610.43.02",
+          "foreign_processes": 0,
+          "gpu_model": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+          "memory_used_mib": 2,
+          "utilization_percent": 0
+        },
+        "observed_at_utc": "2026-09-08T22:57:22.402713+00:00",
+        "request_sha256": "1acf3b64b4c9c05f74bd6e996dcd235c916457a6f7f18cc852026e105792eb99",
+        "run_id": "7dfb336e87050db54bacc9ff629113565660bc84de4ad69f2e5dc3ee0e738929",
+        "status": "original_run_resuming",
+        "waiting_samples": 131,
+        "wrapper_sha256": "c8414cfa5bf4eeedd55fa08b262f2a52ad38b9a845d150ac676009614964deaf"
+      },
+      "artifacts": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519",
+      "prefix_transition": {
+        "after_FE": 226099200,
+        "after_calls": 1725,
+        "before_calls": 1724,
+        "new_worker_starts": 0,
+        "run_id": "7dfb336e87050db54bacc9ff629113565660bc84de4ad69f2e5dc3ee0e738929",
+        "snapshot_checkpoint_sha256": "949913a69ed085194e89ad356c1663582d2eb71aeae30d30746455d6033e4e2b",
+        "status": "returned_task_accounted_without_native_submission"
+      }
+    },
+    {
+      "name": "GP-POPMUSIC-Escape-3313",
+      "family": "E3",
+      "kind": "already_returned_resource_observation",
+      "run_id": "8d503d265d35973e65f091475396ce566d1a6cff06da415753c5a63ec1ad1d57",
+      "original_tool_session_id": 31789,
+      "original_tool_exit_code": 1,
+      "current_tool_session_id": 55665,
+      "current_tool_exit_code": null,
+      "host": "cuda03.sms.vuw.ac.nz",
+      "gpu_uuid": "GPU-cc91c3d0-a556-edeb-c53f-b64bf8bbe1f7",
+      "gpu_model": "NVIDIA RTX A5000",
+      "before_calls": 1138,
+      "audited_calls": 1139,
+      "audited_FE": 149291008,
+      "audited_failed_solves": 0,
+      "new_native_submissions_to_repair_prefix": 0,
+      "audit": {
+        "path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/prefix-audit.json",
+        "sha256": "3dc2f375caa7fa5a8d532b8fa37c853e200ffcf85963cb58a92edfe908ee9424",
+        "status": "snapshot_passed",
+        "run_id": "8d503d265d35973e65f091475396ce566d1a6cff06da415753c5a63ec1ad1d57",
+        "resources": {
+          "wall_seconds": 223.1,
+          "user_seconds": 200.17,
+          "system_seconds": 5.88,
+          "max_rss_kib": 1140236,
+          "exit_code": 0
+        },
+        "resource_deviations": {
+          "completed_resource_deviations": 1,
+          "implementation_sha256": "ee611849869d86bd6314a3ee677bd249a310c4f8519123b4cd8e41aba31e53c9",
+          "policy_sha256": "bd6473d180a5f91e19f2c3717ebdb1e49f1fec88060cfca9171d998cc98ce53c",
+          "pre_submission_wait_samples": 0,
+          "resource_recovery_file_sha256": "b9f08d7efe7ae8f74b66cec5d55496f68e4f33593d80e48f17e72897905aa582",
+          "task_keys": [
+            "04cb67b315b937520a8efc50db572c00b5fd403350e362d3e9d537ab87431145"
+          ],
+          "timing_class": "recorded_contention_or_unknown; exclude aggregate clean-speed comparison"
+        },
+        "work_by_phase": null,
+        "max_independent_cost_error": null
+      },
+      "original_resources": {
+        "wall_seconds": 12318.21,
+        "user_seconds": 12054.58,
+        "system_seconds": 81.84,
+        "max_rss_kib": 404568,
+        "exit_code": 1
+      },
+      "request_path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/startup-wait-request.json",
+      "request_sha256": "e0d22713c615b4d55c7be73f797a6c4e070433ae62cf2fe0f2099225d2d5fd03",
+      "receipt": {
+        "gpu_uuid": "GPU-cc91c3d0-a556-edeb-c53f-b64bf8bbe1f7",
+        "host": "cuda03.sms.vuw.ac.nz",
+        "native_submissions_while_waiting": 0,
+        "observation": {
+          "driver_version": "610.43.02",
+          "foreign_processes": 1,
+          "gpu_model": "NVIDIA RTX A5000",
+          "memory_used_mib": 387,
+          "utilization_percent": 0
+        },
+        "observed_at_utc": "2026-09-08T23:42:39.823569+00:00",
+        "request_sha256": "e0d22713c615b4d55c7be73f797a6c4e070433ae62cf2fe0f2099225d2d5fd03",
+        "run_id": "8d503d265d35973e65f091475396ce566d1a6cff06da415753c5a63ec1ad1d57",
+        "status": "waiting_for_idle_gpu",
+        "waiting_samples": 548,
+        "wrapper_sha256": "e67a9146d2eaec7863bc8ae043bccbe4c935e6fe12fdf45a5725986528534bb9"
+      },
+      "artifacts": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313",
+      "prefix_transition": {
+        "after_FE": 149291008,
+        "after_calls": 1139,
+        "before_calls": 1138,
+        "new_worker_starts": 0,
+        "run_id": "8d503d265d35973e65f091475396ce566d1a6cff06da415753c5a63ec1ad1d57",
+        "snapshot_checkpoint_sha256": "8b71a7062a2a8ffa0fb5b2a4a3f3251b05b390cb58504c7885865d4e75a72d7e",
+        "status": "returned_task_accounted_without_native_submission"
+      },
+      "startup_incident": {
+        "all_original_completed_and_costs_unchanged": true,
+        "checkpoint_sha256": "76f0db2d643816c213ee306e4af182d4f235e772b32f638f1a1585516e23c335",
+        "initializer_process_attempts": 1,
+        "log": "artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/full.log",
+        "log_sha256": "65907d2aa67eb9383e16afa565b33b6ea5acbad57430a7a6ed6f981d62860ce5",
+        "new_native_submissions": 0,
+        "new_ready_worker_starts": 0,
+        "pending_key": "01577e1879da3e8d95f5c05c810d69d308fd3d312f9ec4fef6f35936bbaf43e4",
+        "prefix_checkpoint_sha256": "8b71a7062a2a8ffa0fb5b2a4a3f3251b05b390cb58504c7885865d4e75a72d7e",
+        "resources": "artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/full-resources.json",
+        "resources_sha256": "bc7f72d61abb4085841d7cad8fa54d2fd271d28e405b571c6b17d5c306718dc1",
+        "run_id": "8d503d265d35973e65f091475396ce566d1a6cff06da415753c5a63ec1ad1d57",
+        "status": "worker_initialization_resource_race; no native submission",
+        "tool_exit_code": 1,
+        "tool_session_id": 86253
+      },
+      "startup_audit": {
+        "path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/startup-audit.json",
+        "sha256": "b325165147d894d167bfe85bd3b7fdfda9c140fe3c0d2f3c3ffddc52b0944abd",
+        "status": "snapshot_passed",
+        "run_id": "8d503d265d35973e65f091475396ce566d1a6cff06da415753c5a63ec1ad1d57",
+        "resources": {
+          "wall_seconds": 178.97,
+          "user_seconds": 162.58,
+          "system_seconds": 2.85,
+          "max_rss_kib": 1140664,
+          "exit_code": 0
+        },
+        "resource_deviations": {
+          "completed_resource_deviations": 1,
+          "implementation_sha256": "ee611849869d86bd6314a3ee677bd249a310c4f8519123b4cd8e41aba31e53c9",
+          "policy_sha256": "bd6473d180a5f91e19f2c3717ebdb1e49f1fec88060cfca9171d998cc98ce53c",
+          "pre_submission_wait_samples": 0,
+          "resource_recovery_file_sha256": "b9f08d7efe7ae8f74b66cec5d55496f68e4f33593d80e48f17e72897905aa582",
+          "task_keys": [
+            "04cb67b315b937520a8efc50db572c00b5fd403350e362d3e9d537ab87431145"
+          ],
+          "timing_class": "recorded_contention_or_unknown; exclude aggregate clean-speed comparison"
+        },
+        "work_by_phase": null,
+        "max_independent_cost_error": null
+      }
+    },
+    {
+      "name": "GP-alpha-Hard-1103",
+      "family": "E3",
+      "kind": "pre_submission_resource_pause",
+      "run_id": "d1f7645471673d989edc5aff2d1a6974890d59f5d879565c1fd87f0722e79a55",
+      "original_tool_session_id": 44356,
+      "original_tool_exit_code": 1,
+      "current_tool_session_id": 74899,
+      "current_tool_exit_code": null,
+      "host": "cuda21.ecs.vuw.ac.nz",
+      "gpu_uuid": "GPU-f8dc50c8-d1e3-9a03-0d33-84d37569efcd",
+      "gpu_model": "NVIDIA RTX 6000 Ada Generation",
+      "before_calls": 2736,
+      "audited_calls": 2736,
+      "audited_FE": 358612992,
+      "audited_failed_solves": 0,
+      "new_native_submissions_to_repair_prefix": 0,
+      "audit": {
+        "path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-alpha-Hard-1103/original-audit.json",
+        "sha256": "e6698c72d2fdde5351272ee8acf587d37734c164544066ac3459e61c11b97bc9",
+        "status": "snapshot_passed",
+        "run_id": "d1f7645471673d989edc5aff2d1a6974890d59f5d879565c1fd87f0722e79a55",
+        "resources": {
+          "wall_seconds": 579.19,
+          "user_seconds": 543.37,
+          "system_seconds": 7.22,
+          "max_rss_kib": 2713272,
+          "exit_code": 0
+        },
+        "resource_deviations": null,
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 350208,
+            "completed_construction_steps": 52028763402,
+            "completed_ls_evaluations": 1439586309764,
+            "failed_solves": 0,
+            "native_actual_seconds": 13800.900973159009,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 358612992,
+            "solve_jobs": 2736
+          },
+          "validation": {}
+        },
+        "max_independent_cost_error": 7.815970093361102e-14
+      },
+      "original_resources": {
+        "wall_seconds": 15704.1,
+        "user_seconds": 15108.79,
+        "system_seconds": 163.75,
+        "max_rss_kib": 569924,
+        "exit_code": 1
+      },
+      "request_path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-alpha-Hard-1103/wait-request.json",
+      "request_sha256": "bacf1801e3b66b00425d5a915f534f2aa193dc0e2ec7a5a35aa7335805aeef3b",
+      "receipt": {
+        "cli_attempts": [],
+        "gpu_uuid": "GPU-f8dc50c8-d1e3-9a03-0d33-84d37569efcd",
+        "host": "cuda21.ecs.vuw.ac.nz",
+        "native_submissions_while_waiting": 0,
+        "observation": {
+          "driver_version": "610.43.02",
+          "gpu_model": "NVIDIA RTX 6000 Ada Generation",
+          "memory_used_mib": 2802,
+          "processes": 1,
+          "utilization_percent": 94
+        },
+        "observed_at_utc": "2026-09-08T23:42:41.569603+00:00",
+        "request_sha256": "bacf1801e3b66b00425d5a915f534f2aa193dc0e2ec7a5a35aa7335805aeef3b",
+        "run_id": "d1f7645471673d989edc5aff2d1a6974890d59f5d879565c1fd87f0722e79a55",
+        "status": "waiting_for_original_gpu",
+        "waiting_samples": 45
+      },
+      "artifacts": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-alpha-Hard-1103"
+    },
+    {
+      "name": "GP-POPMUSIC-Escape-4409",
+      "family": "E3",
+      "kind": "pre_submission_resource_pause",
+      "run_id": "a722ad897c7bcb3de0e05454af1b30d8a8231d563688f2fd833e6ef378460b27",
+      "original_tool_session_id": 24035,
+      "original_tool_exit_code": 1,
+      "current_tool_session_id": 67624,
+      "current_tool_exit_code": null,
+      "host": "cuda-small0.ecs.vuw.ac.nz",
+      "gpu_uuid": "GPU-4371d9c8-a13c-0d24-6a7c-c11089ab69c2",
+      "gpu_model": "NVIDIA RTX A4000",
+      "before_calls": 1196,
+      "audited_calls": 1196,
+      "audited_FE": 156762112,
+      "audited_failed_solves": 0,
+      "new_native_submissions_to_repair_prefix": 0,
+      "audit": {
+        "path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/original-audit.json",
+        "sha256": "4deda6393338fd0e3c7960ae88ce7787455db9411c6d34f278c2f5c4e01f19a1",
+        "status": "snapshot_passed",
+        "run_id": "a722ad897c7bcb3de0e05454af1b30d8a8231d563688f2fd833e6ef378460b27",
+        "resources": {
+          "wall_seconds": 204.41,
+          "user_seconds": 185.02,
+          "system_seconds": 5.47,
+          "max_rss_kib": 1169432,
+          "exit_code": 0
+        },
+        "resource_deviations": null,
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 153088,
+            "completed_construction_steps": 5582590067,
+            "completed_ls_evaluations": 485346930066,
+            "failed_solves": 0,
+            "native_actual_seconds": 14448.620549855004,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 156762112,
+            "solve_jobs": 1196
+          },
+          "validation": {}
+        },
+        "max_independent_cost_error": 6.750155989720952e-14
+      },
+      "original_resources": {
+        "wall_seconds": 15549.14,
+        "user_seconds": 15023.33,
+        "system_seconds": 204.59,
+        "max_rss_kib": 384704,
+        "exit_code": 1
+      },
+      "request_path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/wait-request.json",
+      "request_sha256": "bcc7445613e90764cfc18673e92f184bcdefe9ae71211b076533bad89a750090",
+      "receipt": {
+        "cli_attempts": [
+          {
+            "child_pid": 2350697,
+            "exit_code": null,
+            "log": "artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/resume-1.log",
+            "number": 1,
+            "resources": "artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/resume-1-resources.json"
+          }
+        ],
+        "gpu_uuid": "GPU-4371d9c8-a13c-0d24-6a7c-c11089ab69c2",
+        "host": "cuda-small0.ecs.vuw.ac.nz",
+        "native_submissions_while_waiting": 0,
+        "observation": {
+          "driver_version": "610.43.02",
+          "gpu_model": "NVIDIA RTX A4000",
+          "memory_used_mib": 1,
+          "processes": 0,
+          "utilization_percent": 0
+        },
+        "observed_at_utc": "2026-09-08T23:32:37.702671+00:00",
+        "request_sha256": "bcc7445613e90764cfc18673e92f184bcdefe9ae71211b076533bad89a750090",
+        "run_id": "a722ad897c7bcb3de0e05454af1b30d8a8231d563688f2fd833e6ef378460b27",
+        "status": "original_full_cli_resuming",
+        "waiting_samples": 0
+      },
+      "artifacts": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409"
+    },
+    {
+      "name": "GP-POPMUSIC-Hard-3313",
+      "family": "E3",
+      "kind": "initializer_resource_race",
+      "run_id": "c09176ce43402eeb7ca0f4a0d648fddd052636cd60f1f94b5a156f235501e3f8",
+      "original_tool_session_id": 76972,
+      "original_tool_exit_code": 1,
+      "current_tool_session_id": 55201,
+      "current_tool_exit_code": null,
+      "host": "cuda10.ecs.vuw.ac.nz",
+      "gpu_uuid": "GPU-00ccd67e-cb18-e37e-938e-a6339356c950",
+      "gpu_model": "NVIDIA RTX A5000",
+      "before_calls": 437,
+      "audited_calls": 437,
+      "audited_FE": 57278464,
+      "audited_failed_solves": 0,
+      "new_native_submissions_to_repair_prefix": 0,
+      "audit": {
+        "path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/original-audit.json",
+        "sha256": "5aaba5e6253ddd8fe709caa20a7e5c557738f686efc121f30a858e16afa5cc5b",
+        "status": "snapshot_passed",
+        "run_id": "c09176ce43402eeb7ca0f4a0d648fddd052636cd60f1f94b5a156f235501e3f8",
+        "resources": {
+          "wall_seconds": 104.55,
+          "user_seconds": 94.18,
+          "system_seconds": 2.33,
+          "max_rss_kib": 543804,
+          "exit_code": 0
+        },
+        "resource_deviations": {
+          "completed_resource_deviations": 1,
+          "implementation_sha256": "ee611849869d86bd6314a3ee677bd249a310c4f8519123b4cd8e41aba31e53c9",
+          "policy_sha256": "bd6473d180a5f91e19f2c3717ebdb1e49f1fec88060cfca9171d998cc98ce53c",
+          "pre_submission_wait_samples": 0,
+          "resource_recovery_file_sha256": "544e43dadb4ac0f78addd57cf50511fbfd639aa4b81736cdb828d917379544b9",
+          "task_keys": [
+            "28be507e2cfea29a9ebf0512ba7a3f403a9125c9f426b6aea151b7cda39727a7"
+          ],
+          "timing_class": "recorded_contention_or_unknown; exclude aggregate clean-speed comparison"
+        },
+        "work_by_phase": null,
+        "max_independent_cost_error": null
+      },
+      "original_resources": {
+        "wall_seconds": 11.29,
+        "user_seconds": 4.13,
+        "system_seconds": 0.67,
+        "max_rss_kib": 191016,
+        "exit_code": 1
+      },
+      "request_path": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/startup-wait-request.json",
+      "request_sha256": "870e28d70e052fc19940225b9ed4c4f889d023a9030471ed8577e1d5ba46b18f",
+      "receipt": {
+        "gpu_uuid": "GPU-00ccd67e-cb18-e37e-938e-a6339356c950",
+        "host": "cuda10.ecs.vuw.ac.nz",
+        "native_submissions_while_waiting": 0,
+        "observation": {
+          "driver_version": "610.43.02",
+          "foreign_processes": 1,
+          "gpu_model": "NVIDIA RTX A5000",
+          "memory_used_mib": 3055,
+          "utilization_percent": 95
+        },
+        "observed_at_utc": "2026-09-08T23:42:42.625792+00:00",
+        "request_sha256": "870e28d70e052fc19940225b9ed4c4f889d023a9030471ed8577e1d5ba46b18f",
+        "run_id": "c09176ce43402eeb7ca0f4a0d648fddd052636cd60f1f94b5a156f235501e3f8",
+        "status": "waiting_for_idle_gpu",
+        "waiting_samples": 119,
+        "wrapper_sha256": "e67a9146d2eaec7863bc8ae043bccbe4c935e6fe12fdf45a5725986528534bb9"
+      },
+      "artifacts": ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313",
+      "startup_incident": {
+        "checkpoint_sha256": "cc7485af9dc5b96647fa5429013842e349ad1d9f6fe53490eb1a54ea60f4010c",
+        "completed_FE": 57278464,
+        "completed_calls": 437,
+        "copied_prefix_scope": "checkpoint only; full previously audited snapshot remains at prior v2 path",
+        "initializer_process_attempts": 1,
+        "log": "artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/original.log",
+        "log_sha256": "65907d2aa67eb9383e16afa565b33b6ea5acbad57430a7a6ed6f981d62860ce5",
+        "new_native_submissions": 0,
+        "new_ready_worker_starts": 0,
+        "original_wait_session_id": 76972,
+        "pending_key": "c70596063d9477a6ee7d1df76e7b693fff36fa2263ea7928cadee09dbe568a10",
+        "prefix_checkpoint_sha256": "1a7bfded18ec9070fd8583be3a50ff42e8320d993b779f24ae193bd56161754f",
+        "prior_prefix_audit": "artifacts/e3/resource-recovery-v2/GP-POPMUSIC-Hard-3313/prefix-audit-v2.json",
+        "prior_prefix_audit_sha256": "d26524b423de858672ab131ab2fe08d00c34b02e09844a4465f94a10e218f633",
+        "resources": "artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/original-resources.json",
+        "resources_sha256": "5def2a190e0f8677dfd4da3c8c2d8feb070219e9e1b83fe7423a4f6033949579",
+        "run_id": "c09176ce43402eeb7ca0f4a0d648fddd052636cd60f1f94b5a156f235501e3f8",
+        "tool_exit_code": 1
+      }
+    }
+  ],
+  "latest_observation": {
+    "path": "docs/reports/formal_runs_observation_20260909_234009.json",
+    "sha256": "e18479b5016c033eb022cdf307ca2deb341e98282158bed827a035e305e008f8",
+    "report": {
+      "E1": {
+        "FE": 4888461312,
+        "calls": 37296,
+        "failures": 0,
+        "generations": [
+          12,
+          12,
+          13,
+          13,
+          13,
+          14,
+          12,
+          14,
+          14,
+          24
+        ],
+        "observed_gpu_groups": 8,
+        "resource_paused_or_waiting": [
+          "GP-Full-1103",
+          "GP-Full-2207"
+        ]
+      },
+      "E3": {
+        "static": {
+          "FE": 692060160,
+          "calls": 5280,
+          "failures": 0,
+          "registered_runs": 4,
+          "terminal_runs": 4
+        },
+        "train": {
+          "FE": 4505731072,
+          "calls": 34376,
+          "failures": 0,
+          "registered_runs": 20,
+          "terminal_runs": 0
+        }
+      },
+      "E3_completed": [
+        "Static-alpha-Hard",
+        "Static-alpha-Escape",
+        "Static-POPMUSIC-Hard",
+        "Static-POPMUSIC-Escape"
+      ],
+      "E3_pending": [],
+      "E3_terminal_audits_available": [
+        "Static-alpha-Hard",
+        "Static-alpha-Escape",
+        "Static-POPMUSIC-Hard",
+        "Static-POPMUSIC-Escape"
+      ],
+      "E3_waiting": [
+        {
+          "name": "GP-alpha-Hard-1103",
+          "observation": {
+            "driver_version": "610.43.02",
+            "gpu_model": "NVIDIA RTX 6000 Ada Generation",
+            "memory_used_mib": 2802,
+            "processes": 1,
+            "utilization_percent": 94
+          },
+          "session_id": 74899
+        },
+        {
+          "name": "GP-alpha-Hard-2207",
+          "observation": {
+            "driver_version": "610.43.02",
+            "foreign_processes": 1,
+            "gpu_model": "NVIDIA RTX A6000",
+            "memory_used_mib": 17978,
+            "utilization_percent": 61
+          },
+          "session_id": 99716
+        },
+        {
+          "name": "GP-POPMUSIC-Hard-3313",
+          "observation": {
+            "driver_version": "610.43.02",
+            "foreign_processes": 1,
+            "gpu_model": "NVIDIA RTX A5000",
+            "memory_used_mib": 3055,
+            "utilization_percent": 96
+          },
+          "session_id": 55201
+        },
+        {
+          "name": "GP-POPMUSIC-Escape-3313",
+          "observation": {
+            "driver_version": "610.43.02",
+            "foreign_processes": 1,
+            "gpu_model": "NVIDIA RTX A5000",
+            "memory_used_mib": 387,
+            "utilization_percent": 0
+          },
+          "session_id": 55665
+        }
+      ],
+      "active_E3_gpu_groups": 16,
+      "baseline": {
+        "FE": 454426624,
+        "calls": 3467,
+        "failures": 0,
+        "process_status": "waiting_for_original_gpu",
+        "session_id": 15598,
+        "tool_exit_code": null
+      },
+      "formal_test_released": false,
+      "main_native_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+      "observed_at_utc": "2026-09-08T23:40:09.334459+00:00"
+    }
+  },
+  "archives": [
+    {
+      "file": "artifacts/runtimes/7db7892107ae6ecdb92872d05237bc944b2eb851/main-resource-wait-source.tar",
+      "sha256": "bfd7f31584f71453335f17978f6807e4b3ec7ed57b05e749b17d9ba59817cb56",
+      "bytes": 2877440,
+      "commit": "7db7892107ae6ecdb92872d05237bc944b2eb851"
+    },
+    {
+      "file": "artifacts/runtimes/7db7892107ae6ecdb92872d05237bc944b2eb851/e3-resource-wait-source.tar",
+      "sha256": "09816cdf40a8260867266b0318a122d84045d54134dd70a79750c3a647ccbd32",
+      "bytes": 3491840,
+      "commit": "d80e8e1f794cf08ecdd48417584f7a9c16495b59"
+    },
+    {
+      "file": "artifacts/runtimes/7db7892107ae6ecdb92872d05237bc944b2eb851/formal-resource-evidence-v3.tar.zst",
+      "sha256": "3fbba212a248f579397e2d8235b99fb0c19682c9e24393a23c4ec6acb6e37b2b",
+      "bytes": 839137637,
+      "scope": "immutable original/prefix/startup snapshots, completed logs/audits/requests; waiting receipts captured separately at archive time; ongoing full runs excluded; available live resume logs are archive-time prefixes, and their resource files can be empty until CLI exit; full ongoing task directories are excluded",
+      "content_paths": [
+        "artifacts/e1/resource-recovery-v3/GP-Full-1103/audit-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-1103/incident.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-1103/original-audit.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-1103/original-audit.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-1103/original-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-1103/original-snapshot",
+        "artifacts/e1/resource-recovery-v3/GP-Full-1103/original.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-1103/wait-request.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/audit-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/incident.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/original-GP-Full-2207-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/original-GP-Full-2207.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/original-audit.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/original-audit.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/original-snapshot",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/resume-1-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/resume-1.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/resume-2-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/resume-2.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/wait-request.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/audit-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/incident.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/original-GP-Full-5519-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/original-GP-Full-5519.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/original-audit.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/original-audit.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/original-snapshot",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-1-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-1.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-2-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-2.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-3-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-3.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/wait-request.json",
+        "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/audit-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/incident.json",
+        "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/original-GP-NoFeedback-2207-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/original-GP-NoFeedback-2207.log",
+        "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/original-audit.json",
+        "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/original-audit.log",
+        "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/original-snapshot",
+        "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/resume-1-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/resume-1.log",
+        "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/wait-request.json",
+        "artifacts/gpu/baseline-tuning/resource-recovery-v1/audit-resources.json",
+        "artifacts/gpu/baseline-tuning/resource-recovery-v1/incident.json",
+        "artifacts/gpu/baseline-tuning/resource-recovery-v1/original-audit.json",
+        "artifacts/gpu/baseline-tuning/resource-recovery-v1/original-audit.log",
+        "artifacts/gpu/baseline-tuning/resource-recovery-v1/original-resources.json",
+        "artifacts/gpu/baseline-tuning/resource-recovery-v1/original-snapshot",
+        "artifacts/gpu/baseline-tuning/resource-recovery-v1/original.log",
+        "artifacts/gpu/baseline-tuning/resource-recovery-v1/wait-request.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/audit-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/full-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/full.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/incident.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/original-GP-POPMUSIC-Escape-3313-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/original-GP-POPMUSIC-Escape-3313.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/original-snapshot",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/prefix-audit.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/prefix-audit.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/prefix-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/prefix-snapshot",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/prefix-transition.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/prefix.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/startup-audit-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/startup-audit.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/startup-audit.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/startup-incident.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/startup-snapshot",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/startup-wait-request.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-POPMUSIC-Escape-3313/wait-request.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/audit-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/full-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/full.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/incident.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/original-GP-alpha-Escape-5519-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/original-GP-alpha-Escape-5519.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/original-snapshot",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/prefix-audit.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/prefix-audit.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/prefix-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/prefix-snapshot",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/prefix-transition.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/prefix.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Escape-5519/wait-request.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/audit-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/incident.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/original-GP-alpha-Hard-2207-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/original-GP-alpha-Hard-2207.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/original-snapshot",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/prefix-audit.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/prefix-audit.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/prefix-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/prefix-snapshot",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/prefix-transition.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/prefix.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v3/GP-alpha-Hard-2207/wait-request.json",
+        "artifacts/runtimes/7db7892107ae6ecdb92872d05237bc944b2eb851/resource-receipts-at-archive-time-v1"
+      ]
+    },
+    {
+      "file": "artifacts/runtimes/7db7892107ae6ecdb92872d05237bc944b2eb851/formal-resource-evidence-v4.tar.zst",
+      "sha256": "d5ee6851c7c9b7f03505d6e744caf25e1db880b877340af693fe8d08e3b9390c",
+      "bytes": 194329956,
+      "scope": "v4 immutable snapshots/requests/audits; completed follow-up E1 logs; receipt snapshots; report/observer scripts and actual tool observations; available live resume logs are archive-time prefixes, and their resource files can be empty until CLI exit; full ongoing task directories are excluded",
+      "content_paths": [
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/audit-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/incident.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/original-audit.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/original-audit.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/original-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/original-snapshot",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/original.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/resume-1-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/resume-1.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Escape-4409/wait-request.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/audit-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/incident.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/original-audit.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/original-audit.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/original-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/original-snapshot",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/original.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/prefix-snapshot",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/startup-incident.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-POPMUSIC-Hard-3313/startup-wait-request.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-alpha-Hard-1103/audit-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-alpha-Hard-1103/incident.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-alpha-Hard-1103/original-audit.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-alpha-Hard-1103/original-audit.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-alpha-Hard-1103/original-resources.json",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-alpha-Hard-1103/original-snapshot",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-alpha-Hard-1103/original.log",
+        ".tmp/worktrees/e3-candidate-export/artifacts/e3/resource-recovery-v4/GP-alpha-Hard-1103/wait-request.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/resume-1-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/resume-1.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/resume-2-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-2207/resume-2.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-1-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-1.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-2-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-2.log",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-3-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-Full-5519/resume-3.log",
+        "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/resume-1-resources.json",
+        "artifacts/e1/resource-recovery-v3/GP-NoFeedback-2207/resume-1.log",
+        "artifacts/runtimes/7db7892107ae6ecdb92872d05237bc944b2eb851/resource-receipts-at-archive-time-v4",
+        ".tmp/build_formal_resource_report_v4.py",
+        ".tmp/observe_formal_jobs_e2_v1.py",
+        "artifacts/environment/formal-resource-tool-observations-v4.json",
+        ".tmp/baseline-resource-wait-tests-v1.log",
+        ".tmp/worktrees/e3-candidate-export/.tmp/e3-unsubmitted-wait-tests-v1.log",
+        ".tmp/worktrees/e3-candidate-export/.tmp/e3-unsubmitted-wait-tests-v2.log"
+      ]
+    },
+    {
+      "file": "artifacts/runtimes/7db7892107ae6ecdb92872d05237bc944b2eb851/report-generator-v2.py",
+      "sha256": "e405bed18d873a2d24d212855f2ebb8e982fbe26e7de84327bcbe6d9b5833c05",
+      "bytes": 9130,
+      "scope": "report-only generator correction: original resource filename variants and timestamp ordering; no scientific audit or GPU repetition"
+    }
+  ],
+  "timing_note": "Original resource observations and exits retained. Contended aggregate timings excluded from clean-speed comparison; observation timeouts are not algorithm budgets."
+}
