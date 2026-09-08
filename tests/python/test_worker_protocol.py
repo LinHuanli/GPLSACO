@@ -182,3 +182,36 @@ def test_bad_labels_abort_instead_of_random_training(protocol):
     labels[key] = replace(labels[key], cost=100)
     with pytest.raises(ValueError):
         score_panel(t, protocol, outcome, labels)
+
+
+def test_frozen_fee_table_is_complete_and_part_of_task_identity(protocol):
+    original = task()
+    charges = tuple((p.instance_id, 0.001, 0.02) for p in original.problems)
+    frozen = replace(original, preparation_charges=charges)
+    assert frozen.task_id(protocol) != original.task_id(protocol)
+    assert replace(frozen, preparation_charges=tuple(reversed(charges))).task_id(
+        protocol
+    ) == frozen.task_id(protocol)
+    for invalid in (
+        charges[:1],
+        charges + charges[:1],
+        ((original.problems[0].instance_id, True, 0.2), charges[1]),
+        ((original.problems[0].instance_id, 0.1, float("nan")), charges[1]),
+    ):
+        with pytest.raises(ValueError):
+            replace(original, preparation_charges=invalid)
+    with pytest.raises(ValueError):
+        replace(frozen, preparation_mode="end_to_end")
+
+
+def test_external_evaluator_checks_declared_fee_total(protocol):
+    original = task()
+    frozen = replace(
+        original, preparation_charges=tuple((p.instance_id, 0.001, 0.02) for p in original.problems)
+    )
+    outcome, labels = valid_outcome(frozen, protocol)
+    outcome["native_result"]["preparation_completed"] = True
+    assert score_panel(frozen, protocol, outcome, labels).failed
+    result = outcome["native_result"]
+    result["charged_seconds"], result["elapsed_seconds"] = 0.042, 0.642
+    assert not score_panel(frozen, protocol, outcome, labels).failed

@@ -49,6 +49,24 @@ def coordinate_hash(instance: Instance) -> str:
     return hashlib.sha256(b"ordered-continuous-fp64-v1\0" + xy.tobytes()).hexdigest()
 
 
+def freeze_problems(values) -> tuple[Instance, ...]:
+    problems = []
+    for value in values:
+        if type(value) is not Instance:
+            raise TypeError("worker问题必须是无标签Instance")
+        if type(value.instance_id) is not str or not value.instance_id:
+            raise ValueError("实例身份必须为非空字符串")
+        xy = tuple(tuple(0.0 if x == 0 else float(x) for x in point) for point in value.coordinates)
+        problems.append(Instance(value.instance_id, xy, value.distance_spec))
+    problems.sort(key=lambda p: p.instance_id)
+    ids = [problem.instance_id for problem in problems]
+    if not ids or len(set(ids)) != len(ids) or len({p.dimension for p in problems}) != 1:
+        raise ValueError("面板必须包含同规模且身份不同的问题")
+    if len({coordinate_hash(p) for p in problems}) != len(ids):
+        raise ValueError("一个面板不得重复登记同一有序点集")
+    return tuple(problems)
+
+
 @dataclass(frozen=True)
 class SolverSettings:
     ants: int = 32
@@ -137,8 +155,8 @@ class WorkerProtocol:
     def manifest(self) -> dict:
         return {
             **asdict(self),
-            "protocol_version": 1,
-            "preparation_fee_policy": "development_measured_registration",
+            "protocol_version": 2,
+            "preparation_fee_policy": "explicit_task_charges_or_measured_registration",
             "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
             "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
             "submission_boundary": "native_whole_panel_completed_and_verified",
@@ -158,29 +176,16 @@ class SolveTask:
     budget_seconds: float
     preparation_mode: str = "cached_charged"
     experiment_mask: int = 0xFFFFFFFF
+    preparation_charges: tuple[tuple[str, float, float], ...] | None = None
 
     def __post_init__(self) -> None:
         if type(self.occurrence_id) is not str or not self.occurrence_id:
             raise ValueError("每个实际评价位置必须有身份，重复树也不能共用fitness缓存")
         if type(self.program) is not Program:
             raise TypeError("任务只接受验证后的Program")
-        problems = []
-        for value in self.problems:
-            if type(value) is not Instance:
-                raise TypeError("worker问题必须是无标签Instance")
-            if type(value.instance_id) is not str or not value.instance_id:
-                raise ValueError("实例身份必须为非空字符串")
-            xy = tuple(
-                tuple(0.0 if x == 0 else float(x) for x in point) for point in value.coordinates
-            )
-            problems.append(Instance(value.instance_id, xy, value.distance_spec))
-        object.__setattr__(self, "problems", tuple(sorted(problems, key=lambda p: p.instance_id)))
+        object.__setattr__(self, "problems", freeze_problems(self.problems))
         object.__setattr__(self, "replicas", tuple(tuple(row) for row in self.replicas))
         ids = [problem.instance_id for problem in self.problems]
-        if not ids or len(set(ids)) != len(ids) or len({p.dimension for p in self.problems}) != 1:
-            raise ValueError("面板必须包含同规模且身份不同的问题")
-        if len({coordinate_hash(p) for p in self.problems}) != len(ids):
-            raise ValueError("一个面板不得重复登记同一有序点集")
         if any(
             len(row) != 2
             or type(row[0]) is not str
@@ -201,6 +206,36 @@ class SolveTask:
             raise ValueError("预算必须有限且非负")
         if self.preparation_mode not in ("cached_charged", "end_to_end"):
             raise ValueError("未知准备模式")
+        if self.preparation_charges is not None:
+            charges = tuple(tuple(row) for row in self.preparation_charges)
+            if self.preparation_mode != "cached_charged" or any(
+                len(row) != 3
+                or type(row[0]) is not str
+                or any(
+                    type(value) not in (int, float) or not math.isfinite(value) or value < 0
+                    for value in row[1:]
+                )
+                for row in charges
+            ):
+                raise ValueError("冻结费用必须为cached_charged任务中的有限非负两阶段费用")
+            if len(charges) != len(ids) or {row[0] for row in charges} != set(ids):
+                raise ValueError("冻结费用必须精确覆盖全部问题，不能重复或遗漏")
+            try:
+                total = math.fsum(value for row in charges for value in row[1:])
+            except OverflowError:
+                raise ValueError("冻结费用总和超出有限范围") from None
+            if not math.isfinite(total):
+                raise ValueError("冻结费用总和超出有限范围")
+            object.__setattr__(
+                self,
+                "preparation_charges",
+                tuple(
+                    sorted(
+                        (name, float(cheap) + 0.0, float(preparation) + 0.0)
+                        for name, cheap, preparation in charges
+                    )
+                ),
+            )
         if (
             type(self.experiment_mask) is not int
             or not 0 < self.experiment_mask <= 0xFFFFFFFF
@@ -225,6 +260,7 @@ class SolveTask:
             "budget_seconds": self.budget_seconds,
             "preparation_mode": self.preparation_mode,
             "experiment_mask": self.experiment_mask,
+            "preparation_charges": self.preparation_charges,
         }
 
     def task_id(self, protocol: WorkerProtocol) -> str:
@@ -236,6 +272,7 @@ _runtime: dict = {}
 _engines: dict = {}
 _registered: dict = {}
 _engine_generations: dict = {}
+_assigned_charges: dict = {}
 _protocol: WorkerProtocol | None = None
 _native = None
 _lease = None
@@ -253,6 +290,7 @@ def _replace_engine(dimension: int) -> None:
     _engines.pop(dimension, None)
     _engines[dimension] = _native.FacoBatchEngine(dimension, _protocol.colonies, _settings_object())
     _registered[dimension] = {}
+    _assigned_charges[dimension] = {}
     _engine_generations[dimension] = _engine_generations.get(dimension, -1) + 1
 
 
@@ -325,6 +363,54 @@ def _ready() -> dict:
     return dict(_runtime)
 
 
+def _register(problems: tuple[Instance, ...]) -> tuple[dict, dict]:
+    n = problems[0].dimension
+    problem_keys = {p.instance_id: int(coordinate_hash(p)[:16], 16) for p in problems}
+    new_keys = set(problem_keys.values()) - _registered[n].keys()
+    if len(_registered[n]) + len(new_keys) > _protocol.maximum_registered_per_dimension:
+        _replace_engine(n)
+    fees = {}
+    for problem in problems:
+        key, fingerprint = problem_keys[problem.instance_id], coordinate_hash(problem)
+        old = _registered[n].get(key)
+        if old is not None and old != fingerprint:
+            raise ValueError("不同坐标的实例key发生64位碰撞")
+        fees[problem.instance_id] = _engines[n].register_problem(
+            key, np.asarray(problem.coordinates, dtype=np.float64)
+        )
+        _registered[n][key] = fingerprint
+    return problem_keys, fees
+
+
+def _prepare(problems: tuple[Instance, ...]) -> dict:
+    started = time.perf_counter()
+    n = problems[0].dimension
+    description = {
+        "protocol_sha256": _protocol.sha256,
+        "dimension": n,
+        "problems": [(p.instance_id, coordinate_hash(p)) for p in problems],
+    }
+    output = {
+        **description,
+        "kind": "preparation",
+        "preparation_id": content_hash(description),
+        "worker_pid": os.getpid(),
+    }
+    try:
+        _, fees = _register(problems)
+        output.update(
+            {
+                "status": "completed",
+                "registration_fees": fees,
+                "engine_generation": _engine_generations[n],
+            }
+        )
+    except Exception as error:
+        output.update({"status": "failed", "error": f"{type(error).__name__}: {error}"})
+    output["worker_seconds"] = time.perf_counter() - started
+    return output
+
+
 def _execute(task: SolveTask) -> dict:
     started = time.perf_counter()
     identity = task.task_id(_protocol)
@@ -338,21 +424,16 @@ def _execute(task: SolveTask) -> dict:
     }
     try:
         n = task.dimension
-        # 使用完整有序坐标身份核查64位key碰撞，不能将碰撞当成同一实例。
-        problem_keys = {p.instance_id: int(coordinate_hash(p)[:16], 16) for p in task.problems}
-        new_keys = set(problem_keys.values()) - _registered[n].keys()
-        if len(_registered[n]) + len(new_keys) > _protocol.maximum_registered_per_dimension:
-            _replace_engine(n)
-        fees = {}
-        for problem in task.problems:
-            key, fingerprint = problem_keys[problem.instance_id], coordinate_hash(problem)
-            old = _registered[n].get(key)
-            if old is not None and old != fingerprint:
-                raise ValueError("不同坐标的实例key发生64位碰撞")
-            fees[problem.instance_id] = _engines[n].register_problem(
-                key, np.asarray(problem.coordinates, dtype=np.float64)
-            )
-            _registered[n][key] = fingerprint
+        problem_keys, fees = _register(task.problems)
+        if task.preparation_charges is not None:
+            for name, cheap, preparation in task.preparation_charges:
+                key = problem_keys[name]
+                _engines[n].set_preparation_charges(key, cheap, preparation)
+                _assigned_charges[n][key] = (cheap, preparation)
+        elif task.preparation_mode == "cached_charged" and any(
+            key in _assigned_charges[n] for key in problem_keys.values()
+        ):
+            raise ValueError("该实例已有冻结费用，任务必须显式携带同一费用")
         keys = np.asarray([problem_keys[name] for name, _ in task.replicas], dtype=np.uint64)
         seeds = np.asarray([seed for _, seed in task.replicas], dtype=np.uint64)
         native_result = _engines[n].evaluate_program(
@@ -400,13 +481,27 @@ class PersistentGpuWorker:
         return self._ready_future.result(timeout=timeout)
 
     def submit(self, task: SolveTask) -> Future:
-        if self._closed:
-            raise RuntimeError("worker已关闭")
         task.manifest(self.protocol)
-        if self._active is not None and not self._active.done():
-            raise RuntimeError("同一worker已有活动任务；继续等待该Future，不得重复启动")
+        self._check_idle()
         self._active = self._executor.submit(_execute, task)
         return self._active
+
+    def prepare(self, problems: tuple[Instance, ...]) -> Future:
+        frozen = freeze_problems(problems)
+        if (
+            frozen[0].dimension not in self.protocol.dimensions
+            or len(frozen) > self.protocol.colonies
+        ):
+            raise ValueError("准备问题超出固定worker规模或容量")
+        self._check_idle()
+        self._active = self._executor.submit(_prepare, frozen)
+        return self._active
+
+    def _check_idle(self) -> None:
+        if self._closed:
+            raise RuntimeError("worker已关闭")
+        if self._active is not None and not self._active.done():
+            raise RuntimeError("同一worker已有活动任务；继续等待该Future，不得重复启动")
 
     def close(self) -> None:
         if not self._closed:

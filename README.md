@@ -2,7 +2,7 @@
 
 研究局部搜索之上的结构控制：用一棵遗传编程树选择 FACO 的重启、扰动起始区域和原生 MNE 阈值。研究依据为 [v4 方案](docs/design/GP_ACO_TSP_Research_Proposal_v4.md)，不预设 GP、重启或图外探索一定有收益。
 
-**状态：主底座GP求解器与worker链路已通过当前工程核验。尚无正式训练结果或 E1–E4 结论。**
+**状态：主底座GP、worker和完整DEAP训练/验证/恢复已通过当前开发验收。尚无正式训练结果或 E1–E4 结论。**
 
 - [详细研究计划与阅读顺序](docs/README.md)
 - [准备情况、实际证据和下一步](docs/reports/progress.md)
@@ -16,9 +16,10 @@
 - [Hard全新增边与受限CPU/CUDA操作核验](docs/reports/2026-09-08_hard_operations.md)
 - [主底座GP控制、档案、完整重启与开发计时](docs/reports/2026-09-08_control_engine.md)
 - [常驻GPU worker、任务身份与外部fitness](docs/reports/2026-09-08_worker.md)
+- [真实DEAP训练、固定验证与checkpoint恢复](docs/reports/2026-09-08_training.md)
 - [构建、CPU/GPU 检查与原生试跑命令](docs/reports/reproduce.md)
 
-已完整核验500/1K主池128,416条记录并发布划分。主底座GP Engine已接通区域/十二特征、实际动作、档案和完整重启，支持固定并发预算扣费与截止前提交。RTX A5000上24个控制开发计时面板、768条路线全部通过独立重算与完成时间检查；spawn worker另完成64个开发成员的外部fitness核验。真实DEAP演化、验证选择/checkpoint和E1–E4仍在后续工作中。
+已完整核验500/1K主池128,416条记录并发布划分。主底座GP Engine已接通区域/十二特征、实际动作、档案和完整重启，支持固定并发预算扣费与截止前提交。最新RTX A5000开发训练为8个体×3代，共50求解任务、1,600条截止前合法路线；实际暂停/恢复后原费用与完成结果保留，并从原始seed重放了完整代际。分项成本、正式预算冻结和E1–E4仍待完成。
 
 ## 目录
 

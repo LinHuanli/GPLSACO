@@ -13,6 +13,7 @@
 | 7 | [公共实验与统计](planning/07_evaluation_and_statistics.md) | 预算、失败、推断单位和结果格式 |
 | 8 | [资源与执行顺序](planning/08_execution_and_resources.md) | 环境、GPU、训练成本、Git 与里程碑 |
 | 9 | [主底座控制层契约](planning/09_control_contract.md) | 档案、区域、十二特征、完整重启和碰撞边界 |
+| 10 | [代际训练、费用与恢复契约](planning/10_training_state_contract.md) | 标准DEAP、固定面板/费用、可信checkpoint、验证与导出 |
 | E1 | [反馈价值](experiments/E1_feedback.md) | 完整程序、去反馈重训及状态分叉 |
 | E2 | [两尺度关系](experiments/E2_factorial.md) | 2×2 析因与交互 |
 | E3 | [候选与出口](experiments/E3_candidates_and_escape.md) | Hard/Escape 的可执行定义与公平性 |

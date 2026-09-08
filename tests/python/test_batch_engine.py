@@ -84,3 +84,39 @@ def test_registered_identity_is_immutable(panel):
     assert engine.register_problem(11, points[11]) == fees[11]
     with pytest.raises(ValueError):
         engine.register_problem(11, points[11] + 0.1)
+
+
+def test_frozen_preparation_fees_preserve_measurements_and_modes(panel):
+    engine, points, measured, keys, seeds = panel
+    engine.set_preparation_charges(11, 0.001, 0.02)
+    engine.set_preparation_charges(19, 0.002, 0.03)
+    engine.set_preparation_charges(11, 0.001, 0.02)
+    assert engine.register_problem(11, points[11]) == measured[11]
+    for mode in ("cached_charged", "end_to_end", "cached_charged"):
+        result = engine.evaluate(keys, seeds, 0.12, 8, mode)
+        assert result["preparation_completed"]
+        assert result["charged_seconds"] == pytest.approx(0.053 if mode == "cached_charged" else 0)
+    with pytest.raises(ValueError):
+        engine.set_preparation_charges(11, 0.001, 0.020001)
+
+
+def test_frozen_preparation_cutoff_keeps_cheap_incumbents(panel):
+    engine, _, _, keys, seeds = panel
+    for key in (11, 19):
+        engine.set_preparation_charges(key, 0.02, 0.2)
+    result = engine.evaluate(keys, seeds, 0.05, 8)
+    assert result["charged_seconds"] == pytest.approx(0.24)
+    assert not result["preparation_completed"] and result["launched_batches"] == 0
+    assert all(
+        item["tour"] == list(range(31)) and item["completed_seconds"] <= 0.05
+        for item in result["items"]
+    )
+
+
+@pytest.mark.parametrize(
+    "values",
+    [(11, True, 0), (11, -0.1, 0), (11, 0, float("nan")), (11, 0, float("inf")), (999, 0.1, 0.2)],
+)
+def test_invalid_frozen_fees_rejected(panel, values):
+    with pytest.raises((ValueError, TypeError)):
+        panel[0].set_preparation_charges(*values)

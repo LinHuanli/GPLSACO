@@ -34,6 +34,7 @@ struct FacoBatchEngine::Impl {
     int device = 0;
     std::mutex mutex;
     std::map<std::uint64_t, PreparedProblem> registry;
+    std::map<std::uint64_t, RegistrationInfo> preparation_charges;
     std::size_t allocated_bytes = 0;
     DeviceArray<double> xy, costs, heuristic, trails, products, gains;
     DeviceArray<Node> primary, backup, ls, initial, parent, parent_position, epoch, global,
@@ -129,6 +130,20 @@ RegistrationInfo FacoBatchEngine::register_problem(std::uint64_t key, std::vecto
     return info;
 }
 
+void FacoBatchEngine::set_preparation_charges(std::uint64_t key, RegistrationInfo charges) {
+    auto& p = *impl_;
+    std::unique_lock<std::mutex> lock(p.mutex, std::try_to_lock);
+    require(lock.owns_lock(), "同一Engine的费用登记与评价不能重叠");
+    require(p.registry.find(key) != p.registry.end(), "费用对应实例尚未注册");
+    require(std::isfinite(charges.cheap_seconds) && charges.cheap_seconds >= 0 &&
+            std::isfinite(charges.preparation_seconds) && charges.preparation_seconds >= 0,
+            "冻结准备费用必须有限且非负");
+    const auto [entry, inserted] = p.preparation_charges.emplace(key, charges);
+    require(inserted || (entry->second.cheap_seconds == charges.cheap_seconds &&
+                        entry->second.preparation_seconds == charges.preparation_seconds),
+            "同一Engine中的冻结准备费用不能改变");
+}
+
 BatchEvaluation FacoBatchEngine::evaluate(const std::vector<BatchTask>& tasks, double seconds,
                                         Node mne_target, PreparationMode mode) {
     return evaluate_diagnostic(tasks, seconds, mne_target, mode, {});
@@ -201,7 +216,8 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         if (!budget.can_start()) return finish();
         const auto& cached = p.registry.at(key);
         if (mode == PreparationMode::CachedCharged) {
-            budget.charge(cached.cheap_seconds);
+            const auto fixed = p.preparation_charges.find(key);
+            budget.charge(fixed == p.preparation_charges.end() ? cached.cheap_seconds : fixed->second.cheap_seconds);
             offer(ids, cached.cheap_tour, cached.cheap_cost);
         } else {
             auto prepared = make_cheap_problem(cached.coordinates, p.config);
@@ -214,7 +230,8 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         if (!budget.can_start()) return finish();
         if (mode == PreparationMode::CachedCharged) {
             const auto& cached = p.registry.at(key);
-            budget.charge(cached.preparation_seconds);
+            const auto fixed = p.preparation_charges.find(key);
+            budget.charge(fixed == p.preparation_charges.end() ? cached.preparation_seconds : fixed->second.preparation_seconds);
             offer(ids, cached.initial_tour, cached.initial_cost);
         } else {
             auto& prepared = fresh.at(key);

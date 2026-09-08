@@ -44,6 +44,8 @@ public:
     FacoBatchEngine(const FacoBatchEngine&) = delete;
     FacoBatchEngine& operator=(const FacoBatchEngine&) = delete;
     RegistrationInfo register_problem(std::uint64_t key, std::vector<double> coordinates);
+    // 实测准备耗时保持不变；指定用于评价扣费的冻结值，同一实例只能赋一次。
+    void set_preparation_charges(std::uint64_t key, RegistrationInfo charges);
     BatchEvaluation evaluate(const std::vector<BatchTask>& tasks, double seconds,
                              Node mne_target, PreparationMode mode);
     BatchEvaluation evaluate_diagnostic(const std::vector<BatchTask>& tasks, double seconds,

@@ -77,6 +77,15 @@ def score_panel(
             abs_tol=1e-12,
         ) or (task.preparation_mode == "end_to_end" and result["charged_seconds"] != 0):
             return failed("超限或端到端扣费账目不符")
+        if task.preparation_charges is not None:
+            expected_charge = math.fsum(
+                cheap + preparation for _, cheap, preparation in task.preparation_charges
+            )
+            if result["charged_seconds"] > expected_charge + 1e-12 or (
+                result["preparation_completed"]
+                and not math.isclose(result["charged_seconds"], expected_charge, abs_tol=1e-12)
+            ):
+                return failed("实际扣费与任务冻结费用不符")
         counts = [
             result[name] for name in ("launched_batches", "completed_batches", "discarded_batches")
         ]

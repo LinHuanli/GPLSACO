@@ -191,6 +191,17 @@ PYBIND11_MODULE(gp_faco_ext, module) {
             result["preparation_seconds"] = info.preparation_seconds;
             return result;
         }, py::arg("instance_key"), py::arg("coordinates").noconvert())
+        .def("set_preparation_charges", [](gp_faco::FacoBatchEngine& engine, const py::object& key,
+                                           const py::object& cheap, const py::object& preparation) {
+            if (!PyLong_CheckExact(key.ptr()) ||
+                !(PyFloat_CheckExact(cheap.ptr()) || PyLong_CheckExact(cheap.ptr())) ||
+                !(PyFloat_CheckExact(preparation.ptr()) || PyLong_CheckExact(preparation.ptr())))
+                throw std::invalid_argument("冻结费用需要整数key与数值费用");
+            const auto value = py::cast<std::uint64_t>(key);
+            const gp_faco::RegistrationInfo charges{py::cast<double>(cheap), py::cast<double>(preparation)};
+            py::gil_scoped_release release;
+            engine.set_preparation_charges(value, charges);
+        }, py::arg("instance_key"), py::arg("cheap_seconds"), py::arg("preparation_seconds"))
         .def("evaluate", [](gp_faco::FacoBatchEngine& engine, const Keys& keys, const Keys& seeds,
                             const py::object& seconds, const py::object& mne, const std::string& mode) {
             if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size() ||

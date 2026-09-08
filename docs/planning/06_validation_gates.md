@@ -45,3 +45,9 @@ CPU 单元/差异测试优先在本地执行；CUDA 测试在空闲目标 GPU �
 当前8项GPU CTest、62项Python测试及三种CUDA工具通过，CPU Release和ASan/UBSan各4项CTest通过。G2主底座控制/事务部分已有工程证据；E3完整Hard/Escape预算集成仍待完成。G3的IR→原生在线控制已接通，worker调度、真实个体重评、最终代/验证/checkpoint及分项成本仍pending；G4未冻结，E1–E4未执行。
 
 [worker报告](../reports/2026-09-08_worker.md) 进一步补齐显式spawn、协调进程无CUDA导入、task身份、同PID连续任务、Future超时不重启、容量重建、准备错误恢复、缺失解失败保留和两规模外部宏平均。CPU Python回归42通过/29个GPU专属跳过，目标GPU上73通过；64个开发成员独立核验通过。DEAP代际、精英重评、最终代/验证/checkpoint、成本剖析和G4冻结仍未完成。
+
+## 真实代际与恢复新增证据
+
+[训练报告](../reports/2026-09-08_training.md) 补齐标准DEAP、精英/重复树重评、最终已评种群、固定验证和可信JSON恢复。实际A5000运行8×3，48训练任务＋2验证任务，1,600条路线核验通过；原始seed重放三代IR/fitness/RNG一致。第5任务暂停后保留原任务结果和费用；新worker实际重新测量不会改变扣费。Python 103和原生CTest 8项通过。
+
+首轮数据成员归档存在JSON整数键摘要缺陷，已保留失败证据并修复，在新目录完整重跑验收。真实pilot的shortlist退化为1候选，多候选排序/全失败无导出由编排回归覆盖。G3的协调/特征/档案分项成本仍pending，G4未冻结，不能据此次开发训练标记E1–E4完成。
