@@ -1,6 +1,8 @@
 """以手工可枚举的图验证实际边预算、图与槽位分离及无标签匹配。"""
 
 import copy
+import math
+import random
 
 import pytest
 from gp_faco.data import Instance
@@ -87,3 +89,57 @@ def test_matching_rejects_wrong_identity_duplicate_nodes_and_initial_tour():
         match_graphs(p, (0, 0, 2, 3, 4, 5, 6), priors)
     with pytest.raises(ValueError):
         match_graphs(p, tuple(range(7)), {"ALPHA": priors["ALPHA"]})
+
+
+def test_actual_slots_match_per_node_with_unequal_degrees_and_prior_tails():
+    n = 15
+    problem = Instance("unequal", tuple((float(i * i), float(i % 4)) for i in range(n)))
+    rng, priors = random.Random(919), {}
+    for kind in ("ALPHA", "POPMUSIC"):
+        rows = []
+        for i in range(n):
+            values = rng.sample([j for j in range(n) if j != i], n - 1)
+            if kind == "POPMUSIC":
+                values = values[: 2 + i % 8]
+            rows.append([{"to": j} for j in values])
+        priors[kind] = {
+            "prior_spec_id": 1,
+            "dimension": n,
+            "coordinate_sha256": coordinate_hash(problem),
+            "settings": {"kind": kind},
+            "rows": rows,
+        }
+    settings = GraphSettings(primary_width=4, backup_width=6, ls_width=3, uniform_backup_slots=2)
+    result = match_graphs(problem, tuple(range(n)), priors, settings)
+    a, b = result["ALPHA"], result["POPMUSIC"]
+    assert len(a["edges"]) == len(b["edges"])
+    assert a["degrees"] != b["degrees"]
+    assert a["matched_actual_slots"] == b["matched_actual_slots"]
+    assert any(v == 0 for v in a["matched_actual_slots"]["native_backup"])
+    assert any(v > 0 for v in a["matched_actual_slots"]["native_backup"])
+    for i in range(n):
+        primary_count = min(4, a["degrees"][i], b["degrees"][i])
+        ls_count = min(3, a["degrees"][i], b["degrees"][i])
+        actual_tail = []
+        for kind, graph in result.items():
+            main = [j for j in graph["primary"][i] if j != n]
+            actual_tail.append(
+                [e["to"] for e in priors[kind]["rows"][i][4:] if e["to"] not in {i, *main}]
+            )
+        tail_count = min(4, *(len(v) for v in actual_tail))
+        for graph in result.values():
+            assert graph["matching_spec_id"] == 2
+            assert sum(j != n for j in graph["primary"][i]) == primary_count
+            assert sum(j != n for j in graph["ls"][i]) == ls_count
+            assert sum(j != n for j in graph["backup"][i]) == tail_count + 2
+            assert len(set(graph["backup"][i]) - {n}) == tail_count + 2
+            assert not (set(graph["primary"][i]) & set(graph["backup"][i]) - {n})
+            neighbors = [y if x == i else x for x, y in graph["edges"] if i in (x, y)]
+
+            def distance(j, i=i):
+                dx = problem.coordinates[i][0] - problem.coordinates[j][0]
+                dy = problem.coordinates[i][1] - problem.coordinates[j][1]
+                return math.sqrt(dx * dx + dy * dy), j
+
+            assert graph["ls"][i][:ls_count] == sorted(neighbors, key=distance)[:ls_count]
+    assert match_graphs(problem, tuple(range(n)), priors, settings) == result

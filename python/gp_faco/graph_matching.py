@@ -73,8 +73,8 @@ def match_graphs(problem: Instance, initial_tour: tuple[int, ...], priors: dict,
             candidates.update(tuple(sorted((i, j))) for j in ids[:width])
         extras[kind] = candidates - initial_edges
     target = min(len(v) for v in extras.values())
-    output = {}
-    for kind, prior in priors.items():
+    edge_sets, neighbor_sets = {}, {}
+    for kind in priors:
         rank = ranks[kind]
 
         def priority(edge, rank=rank):
@@ -87,9 +87,40 @@ def match_graphs(problem: Instance, initial_tour: tuple[int, ...], priors: dict,
         for a, b in sorted(edges):
             neighbors[a].append(b)
             neighbors[b].append(a)
+        edge_sets[kind], neighbor_sets[kind] = edges, neighbors
+    # 完整合法图按总边数匹配；物理行内的实际访问量再按同一节点的双先验较小值匹配。
+    # 不能把哨兵当作有效候选，也不能让较长的原生尾部增加Escape的访问机会。
+    primary_quota = [
+        min(width, *(len(rows[i]) for rows in neighbor_sets.values())) for i in range(n)
+    ]
+    ls_quota = [min(ls_width, *(len(rows[i]) for rows in neighbor_sets.values())) for i in range(n)]
+    main_rows = {
+        kind: [
+            sorted(row, key=lambda j, i=i, rank=ranks[kind]: (rank[i].get(j, n), j))[
+                : primary_quota[i]
+            ]
+            for i, row in enumerate(neighbors)
+        ]
+        for kind, neighbors in neighbor_sets.items()
+    }
+    tail_rows = {
+        kind: [
+            [e["to"] for e in prior["rows"][i][width:] if e["to"] not in {i, *main_rows[kind][i]}]
+            for i in range(n)
+        ]
+        for kind, prior in priors.items()
+    }
+    uniforms = min(settings.uniform_backup_slots, backup_width)
+    tail_quota = [
+        min(backup_width - uniforms, *(len(rows[i]) for rows in tail_rows.values()))
+        for i in range(n)
+    ]
+    output = {}
+    for kind, prior in priors.items():
+        edges, neighbors = edge_sets[kind], neighbor_sets[kind]
         primary, backup, ls = [], [], []
         for i, row in enumerate(neighbors):
-            chosen = sorted(row, key=lambda j: (rank[i].get(j, n), j))[:width]
+            chosen = main_rows[kind][i]
             primary.append(chosen + [n] * (width - len(chosen)))
 
             def distance(j, i=i):
@@ -97,15 +128,11 @@ def match_graphs(problem: Instance, initial_tour: tuple[int, ...], priors: dict,
                 dy = problem.coordinates[i][1] - problem.coordinates[j][1]
                 return math.sqrt(dx * dx + dy * dy), j
 
-            ordered = sorted(row, key=distance)[:ls_width]
+            ordered = sorted(row, key=distance)[: ls_quota[i]]
             ls.append(ordered + [n] * (ls_width - len(ordered)))
-            uniforms = min(settings.uniform_backup_slots, backup_width)
-            tail_limit = backup_width - uniforms
             # 只取原生前width之后的尾部；主行和自身不能重复成为备用。
             forbidden = {i, *chosen}
-            tail = [e["to"] for e in prior["rows"][i][width:] if e["to"] not in forbidden][
-                :tail_limit
-            ]
+            tail = tail_rows[kind][i][: tail_quota[i]]
             forbidden.update(tail)
             # 使用与ACO隔离的Python MT19937准备流；版本和全部输出入图身份。
             seed = int(
@@ -115,11 +142,13 @@ def match_graphs(problem: Instance, initial_tour: tuple[int, ...], priors: dict,
                 16,
             )
             pool = [j for j in range(n) if j not in forbidden]
-            sampled = random.Random(seed).sample(pool, min(uniforms, len(pool)))
+            # 固定备用宽度不超过n-1-width，故两个先验均有足够的不重复均匀候选。
+            sampled = random.Random(seed).sample(pool, uniforms)
             values = tail + sampled
             backup.append(values + [n] * (backup_width - len(values)))
         spec = {
             "graph_spec_id": 1,
+            "matching_spec_id": 2,
             "dimension": n,
             "coordinate_sha256": fingerprint,
             "common_initial_tour": list(initial_tour),
@@ -133,6 +162,13 @@ def match_graphs(problem: Instance, initial_tour: tuple[int, ...], priors: dict,
             "extra_edge_budget": target,
             "discarded_extra_edges": len(extras[kind]) - target,
             "degrees": [len(v) for v in neighbors],
+            "matched_actual_slots": {
+                "primary": list(primary_quota),
+                "ls": list(ls_quota),
+                "native_backup": list(tail_quota),
+                "uniform_backup": [uniforms] * n,
+            },
+            "matching_policy": "paired-node minimum actual slots; full E0 edges retained",
             "preparation_random_stream": "Python Random/MT19937; coordinate/node/seed SHA domain",
         }
         output[kind] = {**spec, "sha256": content_hash(spec)}
