@@ -1,0 +1,132 @@
+{
+  "status": "passed",
+  "utc_completed": "2026-09-08T11:16:01.290761+00:00",
+  "elapsed_seconds": 9.815702239982784,
+  "files": [
+    {
+      "path": "test_dataset/tsp/tsp1000_concorde_23.118.txt",
+      "bytes": 5432331,
+      "sha256": "c0d7dda637587a647086861769ee5fae6e078818187d53b42d4fe31a9f50f386",
+      "matches": true
+    },
+    {
+      "path": "test_dataset/tsp/tsp500_concorde_16.546.txt",
+      "bytes": 2709880,
+      "sha256": "aacffc5f523806b7a24c14e08aa77a203cdb6a211f9a0e46611a3f08d5d6ff36",
+      "matches": true
+    },
+    {
+      "path": "train_dataset/tsp/tsp_1k/tsp1000_uniform_8k_1.txt",
+      "bytes": 339540111,
+      "sha256": "5b4bbe015308abb4bcb5c49d752180d943d5d0be876bbd49491e30b96c39e21c",
+      "matches": true
+    },
+    {
+      "path": "train_dataset/tsp/tsp_1k/tsp1000_uniform_8k_2.txt",
+      "bytes": 339540354,
+      "sha256": "66d87bd29bc7a620ecced5b67da464892a1a88a0ee5e40379b27a7076d756afc",
+      "matches": true
+    },
+    {
+      "path": "train_dataset/tsp/tsp_1k/tsp1000_uniform_8k_3.txt",
+      "bytes": 339541557,
+      "sha256": "9ddc50c14e6b91fdda000518dd3fbf6945ec5d7e018c1f9927e1fdf67bca8251",
+      "matches": true
+    },
+    {
+      "path": "train_dataset/tsp/tsp_1k/tsp1000_uniform_8k_4.txt",
+      "bytes": 339537568,
+      "sha256": "0066b48c974dcc5aa2cd8c661521e0e09c4d0ce4939fd39a259a10cc3ad33aef",
+      "matches": true
+    },
+    {
+      "path": "train_dataset/tsp/tsp_1k/tsp1000_uniform_8k_5.txt",
+      "bytes": 339545582,
+      "sha256": "d872bb912853caae5580ad66b6aae463adc12d9d903830717001ffbc9186a92f",
+      "matches": true
+    },
+    {
+      "path": "train_dataset/tsp/tsp_1k/tsp1000_uniform_8k_6.txt",
+      "bytes": 339546729,
+      "sha256": "d76f87334bcd5b8e61f75a6385d106afbd64702196e78b716855e460f386a3b0",
+      "matches": true
+    },
+    {
+      "path": "train_dataset/tsp/tsp_1k/tsp1000_uniform_8k_7.txt",
+      "bytes": 339539932,
+      "sha256": "b26c823c44fc6c0f471e054866335cf596a6b036d9959f91875caec018307f71",
+      "matches": true
+    },
+    {
+      "path": "train_dataset/tsp/tsp_1k/tsp1000_uniform_8k_8.txt",
+      "bytes": 339543785,
+      "sha256": "c82cd8c5fcc616f481ed5bfbf1a1f59264ddb9c30a93aa34990fb2e554a3f56d",
+      "matches": true
+    },
+    {
+      "path": "train_dataset/tsp/tsp_500/tsp500_uniform_16k_1.txt",
+      "bytes": 338751908,
+      "sha256": "c4f4fef9fc7feed55d679669dab7b2868eeb459a5d1b9b4c87512e7ff7b58795",
+      "matches": true
+    },
+    {
+      "path": "train_dataset/tsp/tsp_500/tsp500_uniform_16k_2.txt",
+      "bytes": 338750259,
+      "sha256": "7ec2cd1eb138152f7edfa2b1e3228cb44c6a09d201de8bc110405f8bd1bbe906",
+      "matches": true
+    },
+    {
+      "path": "train_dataset/tsp/tsp_500/tsp500_uniform_16k_3.txt",
+      "bytes": 338745325,
+      "sha256": "c4137f006be671fedf9ba3ddda647104c56a192a8c4299180268c9147c13a8cf",
+      "matches": true
+    },
+    {
+      "path": "train_dataset/tsp/tsp_500/tsp500_uniform_16k_4.txt",
+      "bytes": 338754304,
+      "sha256": "5187aaeac9b5b15322271628ac504e0389f2e0245ef638cc8f9fb6c5b9adc056",
+      "matches": true
+    },
+    {
+      "path": "val_dataset/tsp/tsp1000_uniform_val.txt",
+      "bytes": 1358136,
+      "sha256": "eebfbb87afbd72e84da76eae11461600dc64306a5d557a41ac4eaf5701711034",
+      "matches": true
+    },
+    {
+      "path": "val_dataset/tsp/tsp500_uniform_val.txt",
+      "bytes": 2710110,
+      "sha256": "0c4a2e045d2eb8c9c17d47dd9974af608368dd80d6f48b389e8de2d4c4ea767d",
+      "matches": true
+    }
+  ],
+  "database_sha256": "1b91deb6ab9a1ce2953973c0dad4537d2af3b90f807225f07e0fc5b3f577595c",
+  "database_matches": true,
+  "index_manifest_sha256": "c61ac17079e018f4e32f4f072c12181e4e0fe225dc72da43b3bb7b13fd59d2ca",
+  "metadata_files": [
+    {
+      "path": "Datasets/manifest.json",
+      "bytes": 23353,
+      "sha256": "097c690550e73ff8c81c13b18f2bd74ce4f08d45d1ff9c3d5bdc30319cbdb250"
+    },
+    {
+      "path": "Datasets/TSP/logs/download.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Datasets/TSP/logs/download_20260317_2228.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Datasets/TSP/logs/download_20260317_224642.log",
+      "bytes": 2651,
+      "sha256": "b1c24993ea7a57ffb99f08c68e59bf1dfef04c88cac218fbb64cc712d58c29df"
+    }
+  ],
+  "parentage": "Available manifest has file-level provenance only; the nonempty download log records HF Hub transfer progress, without repository identity or rotation/scaling/subsampling parent IDs. Parentage limitation remains.",
+  "access_scope": "full bytes/hash only; no solver, score or test performance access",
+  "script_sha256": "0e2c1ee88bf0a7784f1bff7728a229c0d5b2db9e93d4bd7a7a590c763875a11f",
+  "raw_report_sha256": "478ee671692b1388c1e208c8c1ae693dad39583a1e4e8508e3ad91f63786c119"
+}
