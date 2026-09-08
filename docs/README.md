@@ -23,6 +23,7 @@
 | 15 | [E3图匹配与完整约束接入](planning/15_e3_graph_integration.md) | 共同初解、实际E0及逐节点有效槽位匹配、完整CSR、三种候选视图及Hard/Escape边界 |
 | 18 | [Escape完整执行契约](planning/18_e3_escape_spec_v1.md) | 固定槽位替换、64边事务、独立随机域、LS足迹继承及当前工程验收 |
 | 19 | [图目录与常驻worker](planning/19_e3_graph_worker_contract.md) | 冻结图身份、配对随机键、共享GPU锁、次数任务及独立训练/恢复通路 |
+| 20 | [正式E3与全量图准备](planning/20_e3_formal_freeze_and_graph_preparation.md) | 四条件×五seed的128×50训练、完整Static搜索、2,296实例准备与预定统计；[完整准备验收](reports/2026-09-09_e3_formal_preparation.md) |
 | E1 | [反馈价值](experiments/E1_feedback.md) | 完整程序、去反馈重训及状态分叉 |
 | E2 | [两尺度关系](experiments/E2_factorial.md) | 2×2 析因与交互 |
 | E3 | [候选与出口](experiments/E3_candidates_and_escape.md) | Hard/Escape 的可执行定义与公平性 |

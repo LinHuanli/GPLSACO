@@ -1,0 +1,427 @@
+{
+  "colonies": 32,
+  "comparison": {
+    "additional_fe_per_colony": [
+      1024,
+      16384
+    ],
+    "bootstrap": {
+      "confidence": 0.95,
+      "replicates": 10000,
+      "seed": 20260911,
+      "sensitivity": "two-level resampling of instances and paired evolution seeds",
+      "stratify_by_dimension": true
+    },
+    "contrasts": [
+      {
+        "name": "alpha-Hard:GP_vs_Static",
+        "terms": [
+          [
+            "alpha-Hard",
+            "static",
+            1
+          ],
+          [
+            "alpha-Hard",
+            "gp",
+            -1
+          ]
+        ]
+      },
+      {
+        "name": "alpha-Escape:GP_vs_Static",
+        "terms": [
+          [
+            "alpha-Escape",
+            "static",
+            1
+          ],
+          [
+            "alpha-Escape",
+            "gp",
+            -1
+          ]
+        ]
+      },
+      {
+        "name": "POPMUSIC-Hard:GP_vs_Static",
+        "terms": [
+          [
+            "POPMUSIC-Hard",
+            "static",
+            1
+          ],
+          [
+            "POPMUSIC-Hard",
+            "gp",
+            -1
+          ]
+        ]
+      },
+      {
+        "name": "POPMUSIC-Escape:GP_vs_Static",
+        "terms": [
+          [
+            "POPMUSIC-Escape",
+            "static",
+            1
+          ],
+          [
+            "POPMUSIC-Escape",
+            "gp",
+            -1
+          ]
+        ]
+      },
+      {
+        "name": "alpha:Escape_vs_Hard:gp",
+        "terms": [
+          [
+            "alpha-Hard",
+            "gp",
+            1
+          ],
+          [
+            "alpha-Escape",
+            "gp",
+            -1
+          ]
+        ]
+      },
+      {
+        "name": "alpha:Escape_vs_Hard:static",
+        "terms": [
+          [
+            "alpha-Hard",
+            "static",
+            1
+          ],
+          [
+            "alpha-Escape",
+            "static",
+            -1
+          ]
+        ]
+      },
+      {
+        "name": "alpha:GP_advantage_interaction",
+        "terms": [
+          [
+            "alpha-Hard",
+            "gp",
+            1
+          ],
+          [
+            "alpha-Escape",
+            "gp",
+            -1
+          ],
+          [
+            "alpha-Hard",
+            "static",
+            -1
+          ],
+          [
+            "alpha-Escape",
+            "static",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "POPMUSIC:Escape_vs_Hard:gp",
+        "terms": [
+          [
+            "POPMUSIC-Hard",
+            "gp",
+            1
+          ],
+          [
+            "POPMUSIC-Escape",
+            "gp",
+            -1
+          ]
+        ]
+      },
+      {
+        "name": "POPMUSIC:Escape_vs_Hard:static",
+        "terms": [
+          [
+            "POPMUSIC-Hard",
+            "static",
+            1
+          ],
+          [
+            "POPMUSIC-Escape",
+            "static",
+            -1
+          ]
+        ]
+      },
+      {
+        "name": "POPMUSIC:GP_advantage_interaction",
+        "terms": [
+          [
+            "POPMUSIC-Hard",
+            "gp",
+            1
+          ],
+          [
+            "POPMUSIC-Escape",
+            "gp",
+            -1
+          ],
+          [
+            "POPMUSIC-Hard",
+            "static",
+            -1
+          ],
+          [
+            "POPMUSIC-Escape",
+            "static",
+            1
+          ]
+        ]
+      }
+    ],
+    "coverage": "labelled-tour recall computed offline after formal test release; not a reachability or unique optimum proof",
+    "failure_policy": "retain all predefined failures; no finite-only primary comparison; undefined finite-gap inference explicitly reported",
+    "macro_weighting": "equal weight for500 and1000",
+    "p_value": {
+      "alternative": "two_sided",
+      "correction": "Holm over all10 predefined contrasts",
+      "method": "paired random sign permutation of per-instance contrasts",
+      "replicates": 100000,
+      "seed": 20260912
+    },
+    "primary_fe_per_colony": 4096,
+    "solve_seeds": [
+      17,
+      29,
+      41,
+      53,
+      67,
+      79,
+      97,
+      109,
+      127,
+      149
+    ],
+    "statistical_unit": "instance; average solve seeds within instance; paired five evolution repeats and each repeat reported",
+    "test_gate": "all20 full GP training/validation runs and four full Static searches independently audited and selected identities sealed"
+  },
+  "conditions": [
+    {
+      "constraint_mode": "hard",
+      "name": "alpha-Hard",
+      "prior_kind": "ALPHA"
+    },
+    {
+      "constraint_mode": "escape",
+      "name": "alpha-Escape",
+      "prior_kind": "ALPHA"
+    },
+    {
+      "constraint_mode": "hard",
+      "name": "POPMUSIC-Hard",
+      "prior_kind": "POPMUSIC"
+    },
+    {
+      "constraint_mode": "escape",
+      "name": "POPMUSIC-Escape",
+      "prior_kind": "POPMUSIC"
+    }
+  ],
+  "data": {
+    "expected_counts": {
+      "1000": {
+        "test": 128,
+        "train": 63648,
+        "validation": 256
+      },
+      "500": {
+        "test": 128,
+        "train": 63744,
+        "validation": 256
+      }
+    },
+    "label_status": "user_supplied_reference; no independent optimality certificate",
+    "parentage_limitation": "rotation_scaling_subsampling_parent_metadata_unavailable",
+    "selection": "all members of the existing independently indexed split",
+    "test_split": "test",
+    "training_split": "train",
+    "validation_split": "validation"
+  },
+  "dimensions": [
+    500,
+    1000
+  ],
+  "escape": {
+    "construction_probability_denominator": 16,
+    "construction_probability_numerator": 1,
+    "edge_capacity_per_ant": 64,
+    "immutable_native_spec_id": 1,
+    "replacement_fraction_denominator": 4,
+    "replacement_fraction_numerator": 1
+  },
+  "escape_spec_id": 1,
+  "evolution": {
+    "crossover_probability": 0.8,
+    "elites": 4,
+    "feature_spec_id": 2,
+    "generations": 50,
+    "initial_depth_max": 3,
+    "initial_depth_min": 1,
+    "max_depth": 5,
+    "max_nodes": 63,
+    "mutation_depth_max": 2,
+    "mutation_depth_min": 0,
+    "mutation_probability": 0.2,
+    "no_feedback": false,
+    "population": 128,
+    "tournament_size": 4
+  },
+  "evolution_seeds": [
+    1103,
+    2207,
+    3313,
+    4409,
+    5519
+  ],
+  "execution": {
+    "GP_and_static_may_run_in_parallel_after_own_dependencies_sealed": true,
+    "GP_does_not_read_static_scores": true,
+    "hardware": "any idle compatible GPU; UUID/host/model/driver fixed per run; model timings separate",
+    "main_E1_constraint_mode_remains": "unrestricted",
+    "native_end_to_end_scope": "Engine only; original external candidate preparation resources separately recorded",
+    "preparation_has_no_search_FE_or_wall_clock_limit": true,
+    "test_inputs_prepared_only_after_execution_gate": true
+  },
+  "graph": {
+    "backup_width": 64,
+    "ls_width": 20,
+    "preparation_seed": 80471,
+    "primary_width": 16,
+    "uniform_backup_slots": 16
+  },
+  "graph_spec_id": 1,
+  "matching_spec_id": 2,
+  "maximum_registered_per_dimension": 1056,
+  "priors": {
+    "ALPHA": {
+      "distance_scale": 1000000,
+      "kind": "ALPHA",
+      "maximum_candidates": 80,
+      "popmusic_max_neighbors": 5,
+      "popmusic_sample_size": 10,
+      "popmusic_solutions": 50,
+      "popmusic_trials": 1,
+      "seed": 73001
+    },
+    "POPMUSIC": {
+      "distance_scale": 1000000,
+      "kind": "POPMUSIC",
+      "maximum_candidates": 80,
+      "popmusic_max_neighbors": 5,
+      "popmusic_sample_size": 10,
+      "popmusic_solutions": 50,
+      "popmusic_trials": 1,
+      "seed": 73001
+    }
+  },
+  "protocol_spec_id": 1,
+  "scope": "E3_formal_design_and_graph_preparation",
+  "solver": {
+    "ants": 32,
+    "backup_width": 64,
+    "beta": 1.0,
+    "epoch_source_probability": 0.01,
+    "initial_ls_evaluation_limit": 100000,
+    "ls_evaluation_limit": 100000,
+    "ls_width": 20,
+    "p_best": 0.1,
+    "primary_width": 16,
+    "retention": 0.5
+  },
+  "static_search": {
+    "data_pools": {
+      "search": {
+        "count": 64,
+        "offset": 0
+      },
+      "validation": {
+        "count": 32,
+        "offset": 64
+      }
+    },
+    "maximum_registered_per_dimension": 128,
+    "policy_grid": {
+      "mne_levels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "periods": [
+        4,
+        8,
+        16,
+        32,
+        64
+      ],
+      "probabilities": [
+        0.01,
+        0.05,
+        0.1,
+        0.25
+      ],
+      "regions": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    "selection": "all160 configurations full search; top10 complete fixed development validation; macro reference gap then policy SHA256",
+    "settings": {
+      "evaluation_limits": [
+        4096
+      ],
+      "experiment_mask": 4294967295,
+      "infrastructure_retries": 1,
+      "instances_per_panel": 16,
+      "order_seed": 90371,
+      "preparation_mode": "cached",
+      "purpose": "static_tuning",
+      "solver_seeds": [
+        17,
+        29
+      ],
+      "validation_shortlist_per_kind": 10
+    }
+  },
+  "training": {
+    "budget_kind": "search_tour_evaluations",
+    "budgets": [
+      [
+        500,
+        4096
+      ],
+      [
+        1000,
+        4096
+      ]
+    ],
+    "experiment_mask": 4294967295,
+    "infrastructure_retries": 1,
+    "instances_per_panel": 16,
+    "panel_seed": 73001,
+    "preparation_mode": "cached",
+    "solver_seeds_per_instance": 2,
+    "validation_seeds": [
+      17,
+      29
+    ]
+  },
+  "wall_clock_limit": null
+}

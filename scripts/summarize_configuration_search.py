@@ -37,7 +37,10 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
-def summarize(directory, paused=None):
+def summarize(directory, paused=None, *, database=None, dataset_root=None, entrypoint=None):
+    database = database or PROJECT / "artifacts/data/main-index-v1/instances.sqlite"
+    dataset_root = dataset_root or PROJECT.parent / "Datasets/TSP"
+    entrypoint = entrypoint or PROJECT / "scripts/search_baselines.py"
     manifest = load_checkpoint(directory / "manifest.json")
     state = load_checkpoint(directory / "checkpoint.json")
     plan = load_checkpoint(directory / "plan.json")
@@ -71,7 +74,7 @@ def summarize(directory, paused=None):
     config_path = PROJECT / identity["config_path"]
     require(file_hash(config_path) == identity["config_sha256"], "预登记配置改变")
     require(
-        file_hash(PROJECT / "scripts/search_baselines.py") == identity["entrypoint_sha256"],
+        file_hash(entrypoint) == identity["entrypoint_sha256"],
         "配置展开/数据选取入口改变",
     )
     config = json.loads(config_path.read_text())
@@ -91,7 +94,6 @@ def summarize(directory, paused=None):
         config["scope"] == identity["scope"] and "development" in config["scope"],
         "研究范围不是预定development",
     )
-    database = PROJECT / "artifacts/data/main-index-v1/instances.sqlite"
     require(file_hash(database) == identity["database_sha256"], "索引身份改变")
     require(
         file_hash(PROJECT / "provenance/splits.v1.json") == identity["split_sha256"], "划分身份改变"
@@ -116,7 +118,7 @@ def summarize(directory, paused=None):
     seen, rows = set(), []
     max_error, members, prefix_pairs, initial_pairs = 0.0, 0, 0, 0
 
-    with IndexedDataset(database, PROJECT.parent / "Datasets/TSP") as source:
+    with IndexedDataset(database, dataset_root) as source:
         pools, expected_panels = {}, {}
         for role, selection in config["data_pools"].items():
             pools[role], expected_panels[role] = {}, []
@@ -254,9 +256,9 @@ def summarize(directory, paused=None):
 
         search_scores = phase_scores("search", expected_search)
         require(search_scores == state["search_scores"], "搜索宏平均或候选覆盖不符")
-        if settings.purpose == "tuning":
+        if settings.selection_kinds:
             limit, shortlist = settings.evaluation_limits[0], []
-            for kind in ("static", "rule"):
+            for kind in settings.selection_kinds:
                 ranked = sorted(
                     (v["fitness"], k.split("/")[1])
                     for k, v in search_scores.items()
@@ -280,7 +282,7 @@ def summarize(directory, paused=None):
                 scores = phase_scores("validation", validation_plan)
                 require(scores == state["validation_scores"], "固定验证汇总不符")
                 selected = {}
-                for kind in ("static", "rule"):
+                for kind in settings.selection_kinds:
                     ranked = sorted(
                         (v["fitness"], k.split("/")[1])
                         for k, v in scores.items()
@@ -449,8 +451,17 @@ def main():
     parser.add_argument("--paused-checkpoint", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--csv", type=Path)
+    parser.add_argument("--database", type=Path)
+    parser.add_argument("--dataset-root", type=Path)
+    parser.add_argument("--entrypoint", type=Path)
     args = parser.parse_args()
-    report = summarize(args.directory.resolve(), args.paused_checkpoint)
+    report = summarize(
+        args.directory.resolve(),
+        args.paused_checkpoint,
+        database=args.database.resolve() if args.database else None,
+        dataset_root=args.dataset_root.resolve() if args.dataset_root else None,
+        entrypoint=args.entrypoint.resolve() if args.entrypoint else None,
+    )
     atomic_json(args.output, report)
     if args.csv:
         if not args.csv.resolve().is_relative_to(PROJECT):

@@ -1,0 +1,162 @@
+{
+  "protocol_spec_id": 1,
+  "status": "frozen",
+  "recorded_utc": "2026-09-08T12:32:09.243335+00:00",
+  "budget_kind": "search_tour_evaluations",
+  "fe_unit": "one ant completes construction and checklist LS and outputs a complete tour",
+  "fe_unit_status": "implementation assumption retained from user clarification; LS move checks separately reported",
+  "wall_clock_limit": null,
+  "primary_fe_per_colony": 4096,
+  "additional_fe_per_colony": [
+    1024,
+    16384
+  ],
+  "shared_initialization_excluded_from_search_fe": true,
+  "colonies": 32,
+  "ants": 32,
+  "gpu_model": "NVIDIA RTX A5000",
+  "driver_version": "610.43.02",
+  "solver": {
+    "ants": 32,
+    "primary_width": 16,
+    "backup_width": 64,
+    "ls_width": 20,
+    "beta": 1.0,
+    "retention": 0.5,
+    "p_best": 0.1,
+    "epoch_source_probability": 0.01,
+    "ls_evaluation_limit": 100000,
+    "initial_ls_evaluation_limit": 100000
+  },
+  "calibration_report_sha256": "d6a2acce39e8571bd7690e07b990bd8a195aa83cb696d3ae6f9f7bb2497dbece",
+  "calibration_run_id": "e2693a176fc3145f57e0465e1a4d33664045521394566d2bd73466b4f44f529f",
+  "binary_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+  "original_tuning_config_sha256": "3416cfb78c8470a0347009177ee6e42c818eced7b7e265ebc8b5c36fab0fb500",
+  "confirmed_tuning_config_sha256": "2fab438a01e4a7bbe2b56bcf0f3ec60b84ba1c9d0c58f2da562db9d0d92a5ea9",
+  "selection_rule": "Retain predeclared 4096 primary and 1/4,4x additional FE after complete identity/route/prefix checks and improvement on both dimensions; no elapsed-time truncation or final baseline selection.",
+  "curves_descriptive_mean_over_24_predeclared_policies": [
+    {
+      "fe_per_colony": 0,
+      "gap_500": {
+        "mean": 6.039149083766368,
+        "minimum": 6.039149083766368,
+        "maximum": 6.039149083766368
+      },
+      "gap_1000": {
+        "mean": 6.133229213216985,
+        "minimum": 6.133229213216985,
+        "maximum": 6.133229213216985
+      },
+      "macro_gap": {
+        "mean": 6.086189148491677,
+        "minimum": 6.086189148491677,
+        "maximum": 6.086189148491677
+      },
+      "native_seconds": 0.886744975
+    },
+    {
+      "fe_per_colony": 256,
+      "gap_500": {
+        "mean": 3.4667702242088234,
+        "minimum": 2.9552858237878477,
+        "maximum": 4.379324998771557
+      },
+      "gap_1000": {
+        "mean": 4.523805787934433,
+        "minimum": 4.160080746403551,
+        "maximum": 5.116820188188956
+      },
+      "macro_gap": {
+        "mean": 3.995288006071628,
+        "minimum": 3.5576832850956994,
+        "maximum": 4.748072593480256
+      },
+      "native_seconds": 57.183830759
+    },
+    {
+      "fe_per_colony": 1024,
+      "gap_500": {
+        "mean": 1.4523452693800996,
+        "minimum": 1.0994285769942997,
+        "maximum": 2.288132779759547
+      },
+      "gap_1000": {
+        "mean": 2.4948591700340965,
+        "minimum": 2.07582881809845,
+        "maximum": 3.2606295050639793
+      },
+      "macro_gap": {
+        "mean": 1.9736022197070981,
+        "minimum": 1.5938841998712148,
+        "maximum": 2.7743811424117633
+      },
+      "native_seconds": 236.441244657
+    },
+    {
+      "fe_per_colony": 4096,
+      "gap_500": {
+        "mean": 0.6848648233843337,
+        "minimum": 0.4919988683265552,
+        "maximum": 1.1561785143570966
+      },
+      "gap_1000": {
+        "mean": 1.1718302075677667,
+        "minimum": 0.8134643155976898,
+        "maximum": 1.6972527441146288
+      },
+      "macro_gap": {
+        "mean": 0.9283475154760502,
+        "minimum": 0.6527315919621225,
+        "maximum": 1.4267156292358627
+      },
+      "native_seconds": 962.908296632
+    },
+    {
+      "fe_per_colony": 16384,
+      "gap_500": {
+        "mean": 0.4182892160969026,
+        "minimum": 0.2889002015875546,
+        "maximum": 0.7143603105180539
+      },
+      "gap_1000": {
+        "mean": 0.6833134492591809,
+        "minimum": 0.4561304315342985,
+        "maximum": 1.0498918159175203
+      },
+      "macro_gap": {
+        "mean": 0.5508013326780418,
+        "minimum": 0.3815733047752923,
+        "maximum": 0.8821260632177872
+      },
+      "native_seconds": 3906.227149756
+    }
+  ],
+  "checks": {
+    "prefix_pairs": 12288,
+    "common_initial_pairs": 2944,
+    "incomplete_curves": 0,
+    "max_route_cost_error": 7.815970093361102e-14,
+    "gpu_occupancy": {
+      "after_foreign_samples": 0,
+      "after_unknown_samples": 0,
+      "before_foreign_samples": 0,
+      "interpretation": "task boundaries only; not a continuous exclusivity claim"
+    }
+  },
+  "calibration_cli_resources": {
+    "wall_seconds": 5467.58,
+    "cpu_user_seconds": 5334.53,
+    "cpu_system_seconds": 46.3,
+    "maximum_rss_kib": 484980,
+    "exit_status": 0
+  },
+  "audit_cli_resources": {
+    "wall_seconds": 74.14,
+    "cpu_user_seconds": 54.25,
+    "cpu_system_seconds": 2.95,
+    "maximum_rss_kib": 559420,
+    "exit_status": 0
+  },
+  "reference_label_limitation": "User supplied reference tours; no independent optimality certificates",
+  "formal_test_scores_seen": false
+}

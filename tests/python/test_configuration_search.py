@@ -209,8 +209,11 @@ def test_baseline_policy_task_identity_and_actual_configuration_verification(set
         replace(task, evaluation_limit_per_colony=17).manifest(protocol)
 
 
-def test_full_grid_fixed_validation_and_pause_resume(setup, tmp_path):
+@pytest.mark.parametrize("purpose,calls,shortlist", [("tuning", 24, 4), ("static_tuning", 12, 2)])
+def test_full_grid_fixed_validation_and_pause_resume(setup, tmp_path, purpose, calls, shortlist):
     settings, protocol, policies = setup
+    settings = replace(settings, purpose=purpose)
+    policies = tuple(p for p in policies if p.kind in settings.selection_kinds)
     first, second = WorkerFarm(), WorkerFarm(timeout=True)
     baseline = ConfigurationRun(
         tmp_path / "full",
@@ -245,12 +248,14 @@ def test_full_grid_fixed_validation_and_pause_resume(setup, tmp_path):
     )
     result = resumed.run()
     assert result["status"] == "complete" and result["selected"] == expected["selected"]
-    assert len(result["shortlist"]) == 4
+    assert len(result["shortlist"]) == shortlist
+    assert set(result["selected"]) == set(settings.selection_kinds)
     assert result["selected"]["static"]["policy"]["mne_level"] == 1
-    assert result["selected"]["rule"]["policy"]["mne_level"] == 2
-    assert len(second.submissions) == result["costs"]["solve_jobs"] == 24
-    assert result["costs"]["search_tour_evaluations"] == 24 * 16 * 4
-    assert result["costs"]["observer_timeouts"] == 24
+    if "rule" in settings.selection_kinds:
+        assert result["selected"]["rule"]["policy"]["mne_level"] == 2
+    assert len(second.submissions) == result["costs"]["solve_jobs"] == calls
+    assert result["costs"]["search_tour_evaluations"] == calls * 16 * 4
+    assert result["costs"]["observer_timeouts"] == calls
     assert result["costs"]["charged_seconds"] == result["costs"]["overrun_seconds"] == 0
     assert [t.task_id(protocol) for t in first.submissions] == [
         t.task_id(protocol) for t in second.submissions
@@ -261,6 +266,22 @@ def test_full_grid_fixed_validation_and_pause_resume(setup, tmp_path):
         load_checkpoint(resumed.directory / "selected_baselines.json")["selected"]
         == result["selected"]
     )
+
+
+def test_static_tuning_rejects_extra_policy_kind_or_multiple_budgets(setup, tmp_path):
+    settings, protocol, policies = setup
+    with pytest.raises(ValueError, match="预登记基线种类"):
+        ConfigurationRun(
+            tmp_path / "wrong-kind",
+            replace(settings, purpose="static_tuning"),
+            protocol,
+            policies,
+            Source().data(),
+            worker_factory=WorkerFarm(),
+            boundary=free_boundary,
+        )
+    with pytest.raises(ValueError, match="预定主档"):
+        replace(settings, purpose="static_tuning", evaluation_limits=(16, 32))
 
 
 @pytest.mark.parametrize("window", ["raw_receipt", "verified_receipt", "cursor_checkpoint"])
