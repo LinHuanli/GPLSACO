@@ -93,7 +93,7 @@ struct ArchivePool {
 static __global__ void update_control(Node n, Node ants, const Node* all_tours, const Node* all_positions,
     const FacoDiagnosticInfo* all_info, const TourFingerprint* all_identities, const Colony* colonies,
     Node* all_archive, Node* all_archive_positions, Node* all_scratch, Node* all_scratch_positions,
-    ControllerState* controls, std::uint64_t evaluation_limit) {
+    ControllerState* controls, std::uint64_t evaluation_limit, EscapeFootprints footprints = {}) {
     const Node colony = blockIdx.x;
     const auto base = static_cast<std::size_t>(colony) * n;
     auto* archive = all_archive + base * archive_capacity;
@@ -141,11 +141,19 @@ static __global__ void update_control(Node n, Node ants, const Node* all_tours, 
         const Node slot = i / n, position = i % n;
         const Node node = pool.view(chosen[slot]).tour[position];
         scratch[i] = node; scratch_positions[slot * n + node] = position;
+        if (footprints.parent) {
+            const Node entry = chosen[slot];
+            footprints.scratch[base * archive_capacity + i] = entry < archive_capacity
+                ? footprints.archive[base * archive_capacity + static_cast<std::size_t>(entry) * n + position]
+                : footprints.ants[base * ants + static_cast<std::size_t>(entry - archive_capacity) * n + position];
+        }
     }
     __syncthreads();
     for (Node i = threadIdx.x; i < archive_capacity * n; i += blockDim.x) {
         archive[i] = i < count * n ? scratch[i] : 0;
         positions[i] = i < count * n ? scratch_positions[i] : 0;
+        if (footprints.parent) footprints.archive[base * archive_capacity + i] =
+            i < count * n ? footprints.scratch[base * archive_capacity + i] : 0;
     }
     if (threadIdx.x == 0) {
         control.archive_size = count;
@@ -234,7 +242,7 @@ static __global__ void apply_control_action(Node n, Node ants, Node primary_widt
     double* all_trails, const double* all_heuristic, double* all_products, Node* all_targets,
     Node* all_tours, Node* all_positions, Node* all_parent_positions_per_ant, Node* all_scratch,
     Node* all_pending, std::uint8_t* all_visited, double* all_gains, FacoDiagnosticInfo* all_info,
-    TourFingerprint* all_identities, bool initializing = false) {
+    TourFingerprint* all_identities, bool initializing = false, EscapeFootprints footprints = {}) {
     const Node colony = blockIdx.x, action = actions[colony];
     const auto base = static_cast<std::size_t>(colony) * n;
     const Node target = 2u << (action % 4);
@@ -256,6 +264,8 @@ static __global__ void apply_control_action(Node n, Node ants, Node primary_widt
     for (Node i = threadIdx.x; i < n; i += blockDim.x) {
         all_parent[base + i] = all_epoch[base + i] = tour[i];
         all_parent_positions[base + i] = positions[i];
+        if (footprints.parent) footprints.parent[base + i] = footprints.epoch[base + i] =
+            footprints.archive[base * archive_capacity + static_cast<std::size_t>(alternative) * n + i];
     }
     for (Node i = threadIdx.x; i < n * primary_width; i += blockDim.x) {
         const auto index = base * primary_width + i;
@@ -266,6 +276,7 @@ static __global__ void apply_control_action(Node n, Node ants, Node primary_widt
         all_tours[index] = tour[i % n];
         all_positions[index] = all_parent_positions_per_ant[index] = positions[i % n];
         all_scratch[index] = 0; all_visited[index] = 0;
+        if (footprints.parent) footprints.ants[index] = 0;
     }
     for (std::size_t i = threadIdx.x; i < static_cast<std::size_t>(ants) * n * 5; i += blockDim.x)
         all_pending[base * ants * 5 + i] = 0;

@@ -4,6 +4,7 @@
 #include "gp_faco/faco_cuda_diagnostic.hpp"
 #include "gp_faco/edge_constraints.hpp"
 #include "gp_faco/profiling.hpp"
+#include "escape_device.cuh"
 #include <cuda_runtime.h>
 #include <math_constants.h>
 #include <type_traits>
@@ -40,7 +41,7 @@ struct ExplicitChoices {
 
 struct State {
     Node current, selected, old_previous, node_position, target_position;
-    Node first, last, a, a_next, a_previous;
+    Node first, last, a, a_next, a_previous, best_slot, best_kind;
     Node move[4], allowed[2], pending_size, pending_head;
     bool nonidentity, stopped;
     double cost, accumulated_gain, best_gain;
@@ -82,6 +83,7 @@ __global__ void construct_and_search(
     const auto choices = choice_views.for_ant(ant, n);
     const auto local_ant = choice_views.ant_index(ant);
     const auto allowed = all_allowed.for_ant(ant, n);
+    constexpr bool escape = std::is_same_v<std::decay_t<decltype(allowed)>, EscapeEdges>;
     const Node* candidates = all_candidates + choice_views.candidate_offset(ant, n, width);
     const Node* parent = parent_tours + choice_views.parent_offset(ant, n);
     std::uint8_t* visited = all_visited + base;
@@ -92,14 +94,21 @@ __global__ void construct_and_search(
     Node* pending = all_pending + base * 5;
     double* gains = all_gains + static_cast<std::size_t>(ant) * width * 2;
     __shared__ State state;
+    const auto ls_allowed = [&](Node node, Node slot) {
+        if constexpr (escape) return choices.ls_allowed(node, slot, width, allowed);
+        else return allowed;
+    };
     for (Node i = threadIdx.x; i < n; i += blockDim.x) {
         tour[i] = parent[i];
         position[parent[i]] = i;
         parent_position[parent[i]] = i;
         visited[i] = 0;
+        if constexpr (escape) choices.anchors[i] = choices.footprint[i] = 0;
     }
     if (threadIdx.x == 0) {
         state = {};
+        output[ant].escape = {};
+        if constexpr (escape) allowed.cache->reset();
         state.current = choices.start(local_ant, n);
         output[ant].start_node = state.current;
         for (Node i = 0; i < n; ++i) {
@@ -123,6 +132,12 @@ __global__ void construct_and_search(
             if (state.stopped) state.construction.legal_exhausted = true;
             // 同一线程完成选择与端点捕获，随后只需一次block发布边界。
             else {
+                if constexpr (escape) {
+                    const auto proposal = prepare_escape_relocation(tour, position, n, state.current,
+                        state.selected, allowed.with_permission(choices.selected_novel));
+                    if (!commit_escape_edges(*allowed.cache, proposal)) asm("trap;");
+                    choices.stats->new_edges += proposal.count;
+                }
                 ++state.construction.steps;
                 visited[state.selected] = 1;
                 state.old_previous = predecessor(tour, position, n, state.selected);
@@ -132,6 +147,14 @@ __global__ void construct_and_search(
                 const Node target_after = successor(tour, position, n, state.current);
                 state.nonidentity = target_after != state.selected;
                 if (state.nonidentity) {
+                    if constexpr (escape) choices.record_move(state.construction.nonidentity_relocations, n,
+                        {0, state.current, state.selected, choices.selected_slot, allowed.cache->size, choices.selected_novel});
+                    if constexpr (escape) if (choices.selected_novel) {
+                        // 只登记当前构造扰动的五个端点；后续LS不扩展许可锚点集合。
+                        choices.anchors[state.current] = choices.anchors[target_after] = 1;
+                        choices.anchors[state.selected] = choices.anchors[state.old_previous] = choices.anchors[after] = 1;
+                        ++choices.stats->escape_relocations;
+                    }
                     ++state.construction.nonidentity_relocations;
                     state.cost += -distance(matrix, n, state.old_previous, state.selected)
                                   -distance(matrix, n, state.selected, after)
@@ -177,6 +200,29 @@ __global__ void construct_and_search(
     }
     if (threadIdx.x == 0) output[ant].construction_cost = state.cost;
     __syncthreads();
+    if constexpr (escape) {
+        for (Node node = threadIdx.x; node < n; node += blockDim.x)
+            choices.build_ls_row(local_ant, node, width, n, candidates, matrix);
+        __syncthreads();
+        candidates = choices.ls_rows;
+        if (threadIdx.x == 0) for (Node node = 0; node < n; ++node) {
+            // 足迹按node ID继承；即使父tour未留下图外边，也检查失效后恢复的普通行。
+            if (choices.parent_footprint[node]) {
+                const Node before = state.pending_size;
+                append_if_absent(pending, 0, node, state.pending_size);
+                choices.stats->old_view_reactivations += state.pending_size != before;
+            }
+            if (choices.anchors[node]) {
+                ++choices.stats->ls_anchor_nodes;
+                const Node before = state.pending_size;
+                append_if_absent(pending, 0, node, state.pending_size);
+                choices.stats->anchor_reactivations += state.pending_size != before;
+                for (Node j = 0; j < width; ++j)
+                    choices.stats->ls_replaced_slots += choices.ls_replaced[static_cast<std::size_t>(node) * width + j];
+            }
+        }
+        __syncthreads();
+    }
     if constexpr (Profile) { if (threadIdx.x == 0) tick2 = clock64(); }
 
     for (;;) {
@@ -211,8 +257,14 @@ __global__ void construct_and_search(
                         ++state.allowed[kind];
                         const Node neighbor = kind == 0 ? successor(tour, position, n, b)
                                                         : predecessor(tour, position, n, b);
-                        if (!two_opt_allowed(state.a, kind == 0 ? state.a_next : state.a_previous,
-                                             b, neighbor, allowed)) ++state.ls.constraint_rejections;
+                        const auto view = ls_allowed(state.a, j);
+                        if constexpr (escape) {
+                            const auto proposal = prepare_escape_two_opt(state.a,
+                                kind == 0 ? state.a_next : state.a_previous, b, neighbor, view);
+                            choices.stats->ls_capacity_rejections += proposal.status == EscapeProposalStatus::Capacity;
+                            state.ls.constraint_rejections += !proposal;
+                        } else if (!two_opt_allowed(state.a, kind == 0 ? state.a_next : state.a_previous,
+                                             b, neighbor, view)) ++state.ls.constraint_rejections;
                     }
                 }
             }
@@ -231,7 +283,7 @@ __global__ void construct_and_search(
             const double other = kind == 0 ? distance(matrix, n, b, neighbor)
                                            : distance(matrix, n, neighbor, b);
             const Node closing = kind == 0 ? state.a_next : state.a_previous;
-            gains[index] = two_opt_allowed(state.a, closing, b, neighbor, allowed)
+            gains[index] = two_opt_allowed(state.a, closing, b, neighbor, ls_allowed(state.a, j))
                 ? current_distance + other - distance(matrix, n, state.a, b)
                   -distance(matrix, n, closing, neighbor)
                 : -CUDART_INF;
@@ -243,6 +295,7 @@ __global__ void construct_and_search(
                 const double gain = gains[kind * width + j];
                 if (gain > state.best_gain) {
                     state.best_gain = gain;
+                    state.best_slot = j; state.best_kind = kind;
                     const Node b = candidates[state.a * width + j];
                     const Node neighbor = kind == 0 ? successor(tour, position, n, b)
                                                     : predecessor(tour, position, n, b);
@@ -253,6 +306,19 @@ __global__ void construct_and_search(
                 }
             }
             if (state.best_gain > 0) {
+                if constexpr (escape) {
+                    const Node b = candidates[state.a * width + state.best_slot];
+                    const Node neighbor = state.best_kind == 0 ? successor(tour, position, n, b)
+                                                               : predecessor(tour, position, n, b);
+                    const auto proposal = prepare_escape_two_opt(state.a,
+                        state.best_kind == 0 ? state.a_next : state.a_previous, b, neighbor,
+                        ls_allowed(state.a, state.best_slot));
+                    if (!commit_escape_edges(*allowed.cache, proposal)) asm("trap;");
+                    choices.stats->new_edges += proposal.count;
+                    choices.record_move(state.construction.nonidentity_relocations + state.ls.accepted_moves, n,
+                        {state.best_kind + 1, state.a, b, state.best_slot, allowed.cache->size,
+                         choices.ls_replaced[static_cast<std::size_t>(state.a) * width + state.best_slot] != 0});
+                }
                 const Node a = position[state.move[0]], b = position[state.move[1]];
                 state.first = a < b ? a : b;
                 state.last = a < b ? b : a;

@@ -21,6 +21,11 @@ struct ControlDeviceSnapshot {
     std::vector<double> trails, products, gains;
     std::vector<FacoDiagnosticInfo> info;
     std::vector<TourFingerprint> ant_identities;
+    std::vector<EscapeCache> escape_caches;
+    std::vector<EscapeMoveEvent> escape_moves;
+    std::vector<Node> escape_ls_rows;
+    std::vector<std::uint8_t> escape_anchors, escape_ls_replaced, ant_footprints,
+        parent_footprints, epoch_footprints, global_footprints, archive_footprints;
 };
 
 struct ControlBatchTrace {

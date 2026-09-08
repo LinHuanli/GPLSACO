@@ -1,4 +1,4 @@
-"""Hard公共绑定的身份、共同初解、非法输入与注册事务。"""
+"""图约束公共绑定的身份、共同初解、非法输入与注册事务。"""
 
 import copy
 import os
@@ -42,9 +42,12 @@ def fixture():
     return native, xy, settings, common, graph
 
 
-def test_graph_public_binding_rejects_ambiguous_nodes_and_failed_registration_is_atomic():
+@pytest.mark.parametrize("constraint_mode", ["hard", "escape"])
+def test_graph_public_binding_rejects_ambiguous_nodes_and_failed_registration_is_atomic(
+    constraint_mode,
+):
     native, xy, settings, common, cached = fixture()
-    engine = native.FacoBatchEngine(7, 1, settings, "hard")
+    engine = native.FacoBatchEngine(7, 1, settings, constraint_mode)
     graph = engine_graph_spec(cached)
     wrong = []
     for field, value in (
@@ -78,7 +81,7 @@ def test_graph_public_binding_rejects_ambiguous_nodes_and_failed_registration_is
     zero = engine.evaluate_program_evaluations(keys, seeds, 0, program)
     assert zero["items"][0]["tour"] == common["tour"]
     assert zero["items"][0]["cost"] == common["cost"]
-    assert zero["constraint_mode"] == "hard"
+    assert zero["constraint_mode"] == constraint_mode
     assert zero["graph_edges_per_colony"] == [len(graph["edges"])]
     assert zero["total_tour_evaluations"] == 0 and zero["budget_seconds"] is None
     with pytest.raises(ValueError):
@@ -92,10 +95,63 @@ def test_graph_cache_integrity_and_unsupported_modes():
     with pytest.raises(ValueError):
         engine_graph_spec(changed)
     with pytest.raises(ValueError):
-        native.FacoBatchEngine(7, 1, settings, "escape")
+        native.FacoBatchEngine(7, 1, settings, "escape_v0")
     engine = native.FacoBatchEngine(7, 1, settings)
     with pytest.raises(ValueError):
         engine.register_graph_problem(11, xy, engine_graph_spec(graph))
     for bad in (xy.astype(np.float32), xy.reshape(-1), np.full((7, 2), np.nan)):
         with pytest.raises((ValueError, TypeError)):
             native.prepare_common_initial(bad, settings)
+
+
+def test_escape_public_counts_resources_and_gp_baseline_reuse():
+    from gp_faco.baseline_policy import BaselinePolicy
+    from gp_faco.data import tour_cost
+
+    native, xy, settings, common, graph = fixture()
+    engine = native.FacoBatchEngine(7, 2, settings, "escape")
+    hard = native.FacoBatchEngine(7, 2, settings, "hard")
+    for target in (engine, hard):
+        target.register_graph_problem(11, xy, engine_graph_spec(graph))
+    keys, seeds = np.array([11, 11], np.uint64), np.array([17, 29], np.uint64)
+    policy = BaselinePolicy(
+        mne_level=3, max_mne_level=3, restart_mode="bernoulli", restart_probability=0.5
+    ).to_dict()
+    result = engine.evaluate_baseline_evaluations(keys, seeds, 64, policy)
+    assert result["constraint_mode"] == "escape" and result["escape_spec_id"] == 1
+    assert result["escape_edge_capacity_per_ant"] == 64
+    assert result["total_tour_evaluations"] == 128 and result["completed_batches"] == 16
+    assert result["budget_seconds"] is None
+    assert (
+        result["charged_seconds"] == result["discarded_batches"] == result["overrun_seconds"] == 0
+    )
+    counters = result["escape_counters"]
+    assert all(type(value) is int and value >= 0 for value in counters.values())
+    assert counters["new_edges"] <= 64 * 128
+    assert counters["construction_gates"] <= counters["construction_opportunities"]
+    assert (
+        result["completed_construction_steps"]
+        <= counters["construction_opportunities"]
+        <= result["completed_construction_steps"] + 128
+    )
+    assert counters["ls_replaced_slots"] <= 5 * counters["ls_anchor_nodes"]
+    program = Program((0,), (4,), feature_spec_id=2).to_dict()
+    engine.evaluate_program_evaluations(keys, seeds, 8, program)
+    repeated = engine.evaluate_baseline_evaluations(keys, seeds, 64, policy, "end_to_end")
+    assert (
+        repeated["escape_counters"] == counters
+        and repeated["control_states"] == result["control_states"]
+    )
+    problem = Instance("seven", tuple(map(tuple, xy.tolist())))
+    for a, b in zip(result["items"], repeated["items"], strict=True):
+        assert a["tour"] == b["tour"] and a["cost"] == b["cost"]
+        assert tour_cost(problem, a["tour"]) == pytest.approx(a["cost"], abs=1e-12)
+    zero = engine.evaluate_program_evaluations(keys, seeds, 0, program)
+    assert not any(zero["escape_counters"].values())
+    assert all(item["tour"] == common["tour"] for item in zero["items"])
+    reference = hard.evaluate_program_evaluations(keys, seeds, 0, program)
+    assert result["allocated_device_bytes"] == reference["allocated_device_bytes"]
+    assert result["reserved_escape_device_bytes"] == reference["reserved_escape_device_bytes"] > 0
+    settings.primary_width = 17
+    with pytest.raises(ValueError):
+        native.FacoBatchEngine(31, 1, settings, "escape")

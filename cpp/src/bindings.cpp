@@ -187,11 +187,29 @@ py::dict batch_output(const gp_faco::BatchEvaluation& result, const std::string&
     output["completed_construction_steps"] = result.completed_construction_steps;
     output["completed_ls_evaluations"] = result.completed_ls_evaluations;
     if (result.constraint_mode != gp_faco::ConstraintMode::Unrestricted) {
-        output["constraint_mode"] = "hard";
+        output["constraint_mode"] = result.constraint_mode == gp_faco::ConstraintMode::Escape ? "escape" : "hard";
         output["graph_spec_id"] = 1;
         output["graph_edges_per_colony"] = result.graph_edges_per_colony;
         output["completed_constraint_rejections"] = result.completed_constraint_rejections;
         output["preparation_scope"] = "engine_only; external candidate graph cached";
+        output["reserved_escape_device_bytes"] = result.reserved_escape_device_bytes;
+        if (result.constraint_mode == gp_faco::ConstraintMode::Escape) {
+            output["escape_spec_id"] = 1;
+            output["escape_edge_capacity_per_ant"] = gp_faco::kEscapeEdgeCapacity;
+            py::dict counters;
+            counters["construction_opportunities"] = result.escape.construction_opportunities;
+            counters["construction_gates"] = result.escape.construction_gates;
+            counters["construction_replaced_slots"] = result.escape.construction_replaced_slots;
+            counters["escape_relocations"] = result.escape.escape_relocations;
+            counters["ls_anchor_nodes"] = result.escape.ls_anchor_nodes;
+            counters["ls_replaced_slots"] = result.escape.ls_replaced_slots;
+            counters["old_view_reactivations"] = result.escape.old_view_reactivations;
+            counters["anchor_reactivations"] = result.escape.anchor_reactivations;
+            counters["new_edges"] = result.escape.new_edges;
+            counters["construction_capacity_rejections"] = result.escape.construction_capacity_rejections;
+            counters["ls_capacity_rejections"] = result.escape.ls_capacity_rejections;
+            output["escape_counters"] = counters;
+        }
     }
     output["allocated_device_bytes"] = result.allocated_device_bytes;
     output["preparation_completed"] = result.preparation_completed;
@@ -294,10 +312,10 @@ PYBIND11_MODULE(gp_faco_ext, module) {
                 throw std::invalid_argument("dimension/colonies必须为整数");
             const auto dimension = py::cast<gp_faco::Node>(n), colonies = py::cast<gp_faco::Node>(count);
             const auto copied = settings;
-            if (constraint_mode != "unrestricted" && constraint_mode != "hard")
+            if (constraint_mode != "unrestricted" && constraint_mode != "hard" && constraint_mode != "escape")
                 throw std::invalid_argument("未知或尚未验证的图约束模式");
             const auto mode = constraint_mode == "hard" ? gp_faco::ConstraintMode::Hard
-                                                        : gp_faco::ConstraintMode::Unrestricted;
+                : constraint_mode == "escape" ? gp_faco::ConstraintMode::Escape : gp_faco::ConstraintMode::Unrestricted;
             py::gil_scoped_release release;
             return std::make_unique<gp_faco::FacoBatchEngine>(dimension, colonies, copied, mode);
         }), py::arg("dimension"), py::arg("colonies"), py::arg("settings"),

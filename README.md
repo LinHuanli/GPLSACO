@@ -4,6 +4,8 @@
 
 **状态：主底座GP、worker和完整DEAP训练/验证/恢复已通过当前开发验收。尚无正式训练结果或 E1–E4 结论。**
 
+隔离E3分支已完成[Escape Engine与真实匹配v2面板验收](docs/reports/2026-09-09_escape_engine.md)：17项CTest、139项Python检查及三类CUDA工具通过，34次真实调用的81,920 FE独立核验。正式四条件训练/测试仍待完成；主树既有E1与基线运行保持原冻结版本。
+
 按用户最新要求，进化与ACO主实验按评价次数终止，默认训练入口不设求解秒数上限。原生次数入口、`progress`特征版本、完整训练及恢复已通过[开发验收](docs/reports/2026-09-08_evaluation_counts.md)；计数口径和正式冻结顺序见[最新协议](docs/planning/12_evaluation_count_protocol.md)。
 
 - [详细研究计划与阅读顺序](docs/README.md)

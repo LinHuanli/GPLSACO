@@ -13,7 +13,7 @@
 namespace gp_faco {
 
 enum class PreparationMode { CachedCharged, EndToEnd };
-enum class ConstraintMode { Unrestricted, Hard };
+enum class ConstraintMode { Unrestricted, Hard, Escape };
 struct BatchTask { std::uint64_t instance_key, seed; };
 struct RegistrationInfo { double cheap_seconds, preparation_seconds; };
 
@@ -31,6 +31,9 @@ struct BatchEvaluation {
     ConstraintMode constraint_mode = ConstraintMode::Unrestricted;
     std::vector<std::uint64_t> graph_edges_per_colony;
     std::uint64_t completed_constraint_rejections = 0;
+    EscapeStats escape;
+    std::size_t reserved_escape_device_bytes = 0;
+    std::size_t control_trace_device_bytes = 0;
     // 仅C++诊断入口填充，Python正式结果不暴露迟到tour或成本。
     std::vector<double> discarded_costs;
     std::vector<ControllerState> completed_control_states;
@@ -47,6 +50,7 @@ struct BatchDiagnosticControls {
     bool force_fingerprint_collisions = false;  // 只供C++诊断检验完整邻接去重。
     bool profile = false;
     double fixed_elapsed_ratio = -1;  // 固定批次对照专用；负一表示正常wall-clock特征。
+    bool disable_escape = false;  // 仅C++诊断：完全关闭替换，核对Hard逐批一致性。
 };
 
 class FacoBatchEngine {
