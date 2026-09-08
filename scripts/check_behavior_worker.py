@@ -4,11 +4,13 @@
 import argparse
 import copy
 import csv
+import hashlib
 import json
 import platform
+import re
 import subprocess
 import sys
-from dataclasses import asdict
+from dataclasses import asdict, fields
 from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -41,6 +43,32 @@ from gp_faco.worker import (  # noqa: E402
 
 def source_identity():
     return sources() | {"scripts/check_behavior_worker.py": file_hash(Path(__file__))}
+
+
+def protocol_from_manifest(value):
+    # implementation_sha256为派生字段；构造后仍须与保存的完整身份精确相同。
+    names = {field.name for field in fields(WorkerProtocol) if field.init}
+    protocol = WorkerProtocol(
+        **{
+            key: SolverSettings(**item) if key == "settings" else item
+            for key, item in value.items()
+            if key in names
+        }
+    )
+    require(json.loads(json.dumps(asdict(protocol))) == value, "序列化worker身份不符")
+    return protocol
+
+
+def producer_sources(manifest):
+    current = source_identity()
+    commit = manifest["source_commit"]
+    require(type(commit) is str and re.fullmatch(r"[0-9a-f]{40}", commit), "来源commit无效")
+    driver = "scripts/check_behavior_worker.py"
+    # 允许独立审计器修正自身的读取错误；原执行脚本必须能按执行commit逐字节复原。
+    archived = subprocess.check_output(["git", "show", f"{commit}:{driver}"], cwd=PROJECT)
+    current[driver] = hashlib.sha256(archived).hexdigest()
+    require(current == manifest["sources"], "执行来源与Git归档/当前核心不一致")
+    return current
 
 
 def tasks(source):
@@ -148,15 +176,15 @@ def run(args):
 def audit(args):
     def read(path):
         return json.loads(path.read_text())
+
     manifest, runtime = read(args.output / "manifest.json"), read(args.output / "runtime.json")
     require(
-        manifest["sources"] == source_identity()
+        manifest["sources"] == producer_sources(manifest)
         and manifest["database_sha256"] == file_hash(args.database)
         and manifest["native_sha256"] == file_hash(Path(manifest["native_path"])),
         "来源/数据/原生身份改变",
     )
-    values = manifest["protocol"] | {"settings": SolverSettings(**manifest["protocol"]["settings"])}
-    protocol = WorkerProtocol(**values)
+    protocol = protocol_from_manifest(manifest["protocol"])
     require(
         protocol.sha256 == manifest["protocol_sha256"]
         and runtime["protocol_sha256"] == protocol.sha256
@@ -225,6 +253,8 @@ def audit(args):
         "resource_deviations": deviations,
         "cli_resources": resource,
         "manifest_sha256": file_hash(args.output / "manifest.json"),
+        "producer_commit": manifest["source_commit"],
+        "auditor_sha256": file_hash(Path(__file__)),
     }
     atomic_json(args.output / "audit.json", report)
     print(json.dumps(report), flush=True)
