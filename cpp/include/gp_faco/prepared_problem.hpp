@@ -10,6 +10,8 @@ struct PreparedProblem {
     std::vector<double> coordinates;
     FixedFacoSettings settings;
     CandidateRows primary, backup, ls;
+    std::vector<double> local_scale;
+    double scale_epsilon = 1e-12;
     std::vector<Node> cheap_tour, initial_tour;
     double cheap_cost = 0, initial_cost = 0;
     double cheap_seconds = 0, preparation_seconds = 0;

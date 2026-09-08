@@ -3,6 +3,8 @@
 #include "gp_faco/prepared_problem.hpp"
 #include "colony_state.cuh"
 #include "faco_device.cuh"
+#include "control_state.cuh"
+#include "gp_score.cuh"
 
 #include <algorithm>
 #include <chrono>
@@ -40,6 +42,15 @@ struct FacoBatchEngine::Impl {
     DeviceArray<std::uint8_t> visited;
     DeviceArray<FacoDiagnosticInfo> info;
     DeviceArray<Colony> state;
+    DeviceArray<double> local_scale, epsilons;
+    DeviceArray<Node> samples, archive, archive_positions, archive_scratch,
+        archive_scratch_positions, alternatives;
+    DeviceArray<TourFingerprint> identities;
+    DeviceArray<ControllerState> controllers;
+    DeviceArray<StartRegions> regions;
+    DeviceArray<float> features, scores;
+    DeviceArray<std::uint32_t> experiment_masks, masks;
+    DeviceArray<std::int32_t> actions;
 
     Impl(Node dimension, Node count, FixedFacoSettings settings)
         : n(dimension), colonies(count), config(normalized_settings(settings, dimension)) {
@@ -61,6 +72,39 @@ struct FacoBatchEngine::Impl {
         allocate(tours, ants * n); allocate(positions, ants * n); allocate(parent_positions, ants * n);
         allocate(scratch, ants * n); allocate(pending, ants * n * 5); allocate(visited, ants * n);
         allocate(gains, ants * config.ls_width * 2); allocate(info, ants); allocate(state, colonies);
+        allocate(local_scale, nodes); allocate(epsilons, colonies); allocate(samples, colonies * sample_capacity);
+        allocate(archive, nodes * archive_capacity); allocate(archive_positions, nodes * archive_capacity);
+        allocate(archive_scratch, nodes * archive_capacity); allocate(archive_scratch_positions, nodes * archive_capacity);
+        allocate(alternatives, colonies); allocate(identities, ants); allocate(controllers, colonies);
+        allocate(regions, colonies); allocate(features, colonies * 12 * 32); allocate(scores, colonies * 32);
+        allocate(experiment_masks, colonies); allocate(masks, colonies); allocate(actions, colonies);
+    }
+
+    ControlDeviceSnapshot snapshot() const {
+        ControlDeviceSnapshot result;
+        result.controls = controllers.download();
+        for (const auto& value : state.download()) result.colonies.push_back({value.global_cost,
+            value.epoch_cost, value.parent_cost, value.minimum, value.maximum, value.default_trail,
+            value.source_uniform, value.iteration_best, value.source_is_epoch});
+        result.parent = parent.download(); result.parent_positions = parent_position.download();
+        result.epoch = epoch.download(); result.global = global.download();
+        result.archive = archive.download(); result.archive_positions = archive_positions.download();
+        result.targets = targets.download(); result.tours = tours.download(); result.positions = positions.download();
+        result.per_ant_parent_positions = parent_positions.download(); result.scratch = scratch.download();
+        result.pending = pending.download(); result.visited = visited.download();
+        result.trails = trails.download(); result.products = products.download(); result.gains = gains.download();
+        result.info = info.download(); result.ant_identities = identities.download();
+        return result;
+    }
+
+    void apply_actions(bool initializing = false) {
+        const auto& c = config;
+        cuda_detail::apply_control_action<<<colonies, 128>>>(n, c.ants, c.primary_width, c.ls_width,
+            actions.data(), alternatives.data(), archive.data(), archive_positions.data(), parent.data(),
+            parent_position.data(), epoch.data(), state.data(), controllers.data(), c.retention, c.p_best,
+            trails.data(), heuristic.data(), products.data(), targets.data(), tours.data(), positions.data(),
+            parent_positions.data(), scratch.data(), pending.data(), visited.data(), gains.data(), info.data(),
+            identities.data(), initializing);
     }
 };
 
@@ -92,6 +136,24 @@ BatchEvaluation FacoBatchEngine::evaluate(const std::vector<BatchTask>& tasks, d
 
 BatchEvaluation FacoBatchEngine::evaluate_diagnostic(const std::vector<BatchTask>& tasks, double seconds,
     Node mne_target, PreparationMode mode, BatchDiagnosticControls controls) {
+    require(!controls.capture_control && !controls.force_fingerprint_collisions,
+            "控制轨迹和强制碰撞只能由程序评价诊断入口启用");
+    return evaluate_impl(tasks, seconds, mne_target, mode, controls, nullptr, UINT32_MAX);
+}
+
+BatchEvaluation FacoBatchEngine::evaluate_program(const std::vector<BatchTask>& tasks, double seconds,
+    const Program& program, PreparationMode mode, std::uint32_t experiment_mask) {
+    return evaluate_impl(tasks, seconds, 2, mode, {}, &program, experiment_mask);
+}
+
+BatchEvaluation FacoBatchEngine::evaluate_program_diagnostic(const std::vector<BatchTask>& tasks, double seconds,
+    const Program& program, PreparationMode mode, std::uint32_t experiment_mask, BatchDiagnosticControls controls) {
+    return evaluate_impl(tasks, seconds, 2, mode, controls, &program, experiment_mask);
+}
+
+BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tasks, double seconds,
+    Node mne_target, PreparationMode mode, BatchDiagnosticControls controls, const Program* program,
+    std::uint32_t experiment_mask) {
     const auto started = Clock::now();
     auto& p = *impl_;
     std::unique_lock<std::mutex> lock(p.mutex, std::try_to_lock);
@@ -99,6 +161,12 @@ BatchEvaluation FacoBatchEngine::evaluate_diagnostic(const std::vector<BatchTask
     require(tasks.size() == p.colonies && mne_target > 0 && controls.completion_delay_ms <= 2000,
             "任务数量、MNE或诊断延迟无效");
     require(mode == PreparationMode::CachedCharged || mode == PreparationMode::EndToEnd, "未知准备模式");
+    if (program) {
+        validate_program(*program);
+        require((experiment_mask & 0xffffu) != 0, "实验mask必须保留至少一个保持模式动作");
+        require(!controls.force_fingerprint_collisions || controls.capture_control,
+                "强制指纹碰撞必须同时收集诊断轨迹");
+    }
     int device = -1; checked(cudaGetDevice(&device));
     require(device == p.device, "Engine必须在创建它的CUDA设备上评价");
     const auto actual_elapsed = [&]() { return std::chrono::duration<double>(Clock::now() - started).count(); };
@@ -107,6 +175,7 @@ BatchEvaluation FacoBatchEngine::evaluate_diagnostic(const std::vector<BatchTask
     result.budget_seconds = seconds;
     result.allocated_device_bytes = p.allocated_bytes;
     result.incumbents.resize(p.colonies);
+    if (program) result.completed_control_states.resize(p.colonies);
     std::map<std::uint64_t, std::vector<Node>> groups;
     for (Node colony = 0; colony < p.colonies; ++colony) {
         require(p.registry.find(tasks[colony].instance_key) != p.registry.end(), "任务实例尚未注册");
@@ -155,9 +224,10 @@ BatchEvaluation FacoBatchEngine::evaluate_diagnostic(const std::vector<BatchTask
         if (budget.expired()) return finish();
     }
 
-    std::vector<double> xy, costs;
-    std::vector<Node> primary, backup, ls, initial;
+    std::vector<double> xy, costs, local_scale, epsilons;
+    std::vector<Node> primary, backup, ls, initial, samples;
     std::vector<std::uint64_t> keys;
+    std::map<std::uint64_t, std::vector<Node>> sample_cache;
     for (const auto& task : tasks) {
         const auto& prepared = mode == PreparationMode::CachedCharged ? p.registry.at(task.instance_key)
                                                                       : fresh.at(task.instance_key);
@@ -168,6 +238,13 @@ BatchEvaluation FacoBatchEngine::evaluate_diagnostic(const std::vector<BatchTask
         for (const auto& row : prepared.backup) backup.insert(backup.end(), row.begin(), row.end());
         for (const auto& row : prepared.ls) ls.insert(ls.end(), row.begin(), row.end());
         keys.push_back(mixed(task.seed ^ mixed(task.instance_key + 0xd1b54a32d192ed03ULL)));
+        if (program) {
+            local_scale.insert(local_scale.end(), prepared.local_scale.begin(), prepared.local_scale.end());
+            epsilons.push_back(prepared.scale_epsilon);
+            auto [entry, inserted] = sample_cache.try_emplace(task.instance_key, sample_capacity, 0);
+            if (inserted) sample_nodes(p.n, task.instance_key, entry->second.data());
+            samples.insert(samples.end(), entry->second.begin(), entry->second.end());
+        }
     }
     if (!budget.can_start()) return finish();
     p.xy.upload(xy); p.costs.upload(costs); p.primary.upload(primary); p.backup.upload(backup);
@@ -180,30 +257,74 @@ BatchEvaluation FacoBatchEngine::evaluate_diagnostic(const std::vector<BatchTask
     cuda_detail::initialize_products<<<(cells + 255) / 256, 256>>>(
         cuda_detail::CoordinateDistance{p.xy.data()}, cells, p.n, c.primary_width, p.primary.data(),
         c.beta, p.state.data(), p.heuristic.data(), p.trails.data(), p.products.data());
+    if (program) {
+        p.local_scale.upload(local_scale); p.epsilons.upload(epsilons); p.samples.upload(samples);
+        p.experiment_masks.upload(std::vector<std::uint32_t>(p.colonies, experiment_mask));
+        cuda_detail::initialize_control<<<p.colonies, 128>>>(p.n, p.initial.data(), p.costs.data(),
+            p.parent_position.data(), p.archive.data(), p.archive_positions.data(), p.controllers.data(),
+            controls.force_fingerprint_collisions);
+        p.actions.zero(); p.apply_actions(true);
+    }
     checked(cudaGetLastError()); checked(cudaDeviceSynchronize());
+    const auto initial_control = program ? p.controllers.download() : std::vector<ControllerState>{};
     if (budget.expired()) return finish();
     result.preparation_completed = true;
+    if (program) result.completed_control_states = initial_control;
 
     for (Node batch = 0; budget.can_start(); ++batch) {
         if (controls.fixed_batches && batch >= controls.fixed_batches) break;
         ++result.launched_batches;
+        ControlBatchTrace trace;
+        if (program) {
+            trace.batch = batch;
+            if (controls.capture_control) trace.before = p.snapshot();
+            trace.elapsed_ratio = budget.elapsed() / seconds;
+            cuda_detail::build_control_features<<<p.colonies, 128>>>(p.n, c.primary_width, p.colonies,
+                p.xy.data(), p.primary.data(), p.local_scale.data(), p.epsilons.data(), p.samples.data(),
+                p.keys.data(), batch, trace.elapsed_ratio, p.parent.data(), p.parent_position.data(),
+                p.archive.data(), p.archive_positions.data(), p.controllers.data(), p.state.data(),
+                p.trails.data(), p.experiment_masks.data(), p.regions.data(), p.alternatives.data(),
+                p.masks.data(), p.features.data());
+            cuda_detail::score_actions<<<(p.colonies + 3) / 4, 128>>>(*program, p.features.data(),
+                p.masks.data(), p.scores.data(), p.actions.data(), p.colonies);
+            if (controls.capture_control) {
+                trace.features = p.features.download(); trace.scores = p.scores.download();
+                trace.masks = p.masks.download(); trace.actions = p.actions.download();
+                trace.alternatives = p.alternatives.download(); trace.regions = p.regions.download();
+            }
+            p.apply_actions();
+            if (controls.capture_control) trace.after_restart = p.snapshot();
+        }
         const cuda_detail::BatchCoordinateDistance distance{p.xy.data(), p.n, c.ants};
         const cuda_detail::BatchStochasticChoices choices{p.primary.data(), p.backup.data(), p.products.data(),
             p.keys.data(), c.primary_width, c.backup_width, batch, c.ants};
-        cuda_detail::construct_and_search<<<ants, 128>>>(distance, p.ls.data(), p.n, c.ls_width,
-            p.parent.data(), choices, p.targets.data(), c.ls_evaluation_limit, p.tours.data(),
-            p.positions.data(), p.parent_positions.data(), p.scratch.data(), p.pending.data(),
-            p.gains.data(), nullptr, p.info.data(), p.visited.data());
+        const auto construct = [&](auto view) {
+            cuda_detail::construct_and_search<<<ants, 128>>>(distance, p.ls.data(), p.n, c.ls_width,
+                p.parent.data(), view, p.targets.data(), c.ls_evaluation_limit, p.tours.data(),
+                p.positions.data(), p.parent_positions.data(), p.scratch.data(), p.pending.data(),
+                p.gains.data(), nullptr, p.info.data(), p.visited.data());
+        };
+        if (program) construct(cuda_detail::BatchRegionChoices{choices, p.regions.data(), p.actions.data()});
+        else construct(choices);
         cuda_detail::reduce_and_select<<<p.colonies, 128>>>(p.n, c.ants, p.tours.data(), p.info.data(),
             p.parent.data(), p.parent_position.data(), p.epoch.data(), p.global.data(), p.state.data(),
             c.primary_width, c.retention, c.p_best, c.epoch_source_probability, p.keys.data(), batch);
         cuda_detail::update_pheromone<<<(cells + 255) / 256, 256>>>(p.n, c.primary_width, p.colonies,
             p.primary.data(), p.parent.data(), p.parent_position.data(), c.retention, p.state.data(),
             p.heuristic.data(), p.trails.data(), p.products.data());
+        if (program) {
+            cuda_detail::fingerprint_ants<<<ants, 128>>>(p.n, p.tours.data(), p.identities.data(),
+                controls.force_fingerprint_collisions);
+            cuda_detail::update_control<<<p.colonies, 128>>>(p.n, c.ants, p.tours.data(), p.positions.data(),
+                p.info.data(), p.identities.data(), p.state.data(), p.archive.data(), p.archive_positions.data(),
+                p.archive_scratch.data(), p.archive_scratch_positions.data(), p.controllers.data(), c.ls_evaluation_limit);
+        }
         checked(cudaGetLastError()); checked(cudaDeviceSynchronize());
         const auto states = p.state.download();
         const auto tours = p.global.download();
         const auto info = p.info.download();
+        const auto controller_state = program ? p.controllers.download() : std::vector<ControllerState>{};
+        if (controls.capture_control) trace.after_batch = p.snapshot();
         std::vector<std::vector<Node>> candidates;
         std::vector<double> candidate_costs;
         for (Node colony = 0; colony < p.colonies; ++colony) {
@@ -230,6 +351,8 @@ BatchEvaluation FacoBatchEngine::evaluate_diagnostic(const std::vector<BatchTask
         for (Node colony = 0; colony < p.colonies; ++colony)
             result.incumbents[colony].offer(std::move(candidates[colony]), candidate_costs[colony], completed, budget);
         ++result.completed_batches;
+        if (program) result.completed_control_states = controller_state;
+        if (controls.capture_control) result.control_trace.push_back(std::move(trace));
         for (const auto& ant : info) {
             result.completed_construction_steps += ant.construction.steps;
             result.completed_ls_evaluations += ant.local_search.move_evaluations;

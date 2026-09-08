@@ -9,7 +9,7 @@ option(GP_FACO_NATIVE "Build the external native FACO and diagnostic wrapper" ON
 option(GP_FACO_CUDA "Build CUDA solver and diagnostic targets" OFF)
 option(GP_FACO_PYTHON "Build pybind11 solver and scoring bindings" ON)
 
-add_library(gp_faco_core STATIC cpp/src/program_cpu.cpp cpp/src/faco_cpu.cpp cpp/src/prepared_problem.cpp cpp/src/sparse_graph.cpp)
+add_library(gp_faco_core STATIC cpp/src/program_cpu.cpp cpp/src/faco_cpu.cpp cpp/src/prepared_problem.cpp cpp/src/sparse_graph.cpp cpp/src/control_cpu.cpp)
 set_target_properties(gp_faco_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(gp_faco_core PUBLIC cpp/include)
 target_compile_options(gp_faco_core PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
@@ -20,6 +20,10 @@ add_executable(hard_edge_semantics tests/cpp/test_hard_edges.cpp)
 target_link_libraries(hard_edge_semantics PRIVATE gp_faco_core)
 add_test(NAME hard_edge_semantics COMMAND hard_edge_semantics
     "${CMAKE_CURRENT_BINARY_DIR}/hard_edge_results.json")
+add_executable(control_cpu_semantics tests/cpp/test_control_cpu.cpp)
+target_link_libraries(control_cpu_semantics PRIVATE gp_faco_core)
+add_test(NAME control_cpu_semantics COMMAND control_cpu_semantics
+    "${CMAKE_CURRENT_BINARY_DIR}/control_cpu_results.json")
 
 if(GP_FACO_CUDA)
     enable_language(CUDA)
@@ -46,6 +50,11 @@ if(GP_FACO_CUDA)
     target_link_libraries(batch_engine_semantics PRIVATE gp_faco_cuda)
     add_test(NAME batch_engine_semantics COMMAND batch_engine_semantics
         "${CMAKE_CURRENT_BINARY_DIR}/batch_engine_results.json")
+    add_executable(control_engine_semantics tests/cpp/test_control_engine.cpp)
+    target_compile_options(control_engine_semantics PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
+    target_link_libraries(control_engine_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME control_engine_semantics COMMAND control_engine_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/control_engine_results.json")
     add_executable(hard_cuda_semantics tests/cpp/test_hard_cuda.cpp)
     target_compile_options(hard_cuda_semantics PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
     target_link_libraries(hard_cuda_semantics PRIVATE gp_faco_cuda)

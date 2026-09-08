@@ -98,6 +98,7 @@ __global__ void construct_and_search(
     if (threadIdx.x == 0) {
         state = {};
         state.current = choices.start(local_ant, n);
+        output[ant].start_node = state.current;
         for (Node i = 0; i < n; ++i) {
             state.cost += distance(matrix, n, parent[(i + n - 1) % n], parent[i]);
         }

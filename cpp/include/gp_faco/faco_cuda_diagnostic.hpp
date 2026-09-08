@@ -19,6 +19,7 @@ struct FacoDiagnosticInfo {
     ConstructionStats construction;
     LocalSearchStats local_search;
     Node checklist_size;
+    Node start_node;  // 实际抽到的起点，用于检查区域动作是否真正进入构造。
 };
 
 struct FacoDiagnosticResult {

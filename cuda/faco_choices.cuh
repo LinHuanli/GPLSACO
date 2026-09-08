@@ -2,6 +2,7 @@
 #pragma once
 #include "gp_faco/faco_cpu.hpp"
 #include "gp_faco/edge_constraints.hpp"
+#include "gp_faco/control_ops.hpp"
 #include <curand_kernel.h>
 #include <math_constants.h>
 #include <type_traits>
@@ -11,7 +12,7 @@ namespace gp_faco::cuda_detail {
 struct CoordinateDistance {
     const double* xy;
     __device__ CoordinateDistance for_ant(Node) const { return *this; }
-    __device__ double operator()(Node a, Node b) const {
+    __host__ __device__ double operator()(Node a, Node b) const {
         const double x = xy[a * 2] - xy[b * 2], y = xy[a * 2 + 1] - xy[b * 2 + 1];
         return sqrt(x * x + y * y);
     }
@@ -51,6 +52,8 @@ struct StochasticChoices {
     std::uint64_t seed;
     Node* selected_trace;
     double* uniform_trace;
+    const Node* start_nodes = nullptr;
+    Node start_count = 0;
     __device__ StochasticChoices for_ant(Node, Node) const { return *this; }
     __device__ Node ant_index(Node ant) const { return ant; }
     __device__ std::size_t parent_offset(Node, Node) const { return 0; }
@@ -59,10 +62,11 @@ struct StochasticChoices {
     __device__ Node start(Node ant, Node n) const {
         auto random = random_state(seed, batch, ant, 0xffffffffu);
         // 拒绝采样避免模偏差。起点占用远离构造step的保留counter区。
-        const Node threshold = -n % n;
+        const Node count = start_nodes ? start_count : n;
+        const Node threshold = -count % count;
         Node value;
         do { value = curand(&random); } while (value < threshold);
-        const Node node = value % n;
+        const Node node = start_nodes ? start_nodes[value % count] : value % count;
         if (selected_trace) {
             selected_trace[static_cast<std::size_t>(ant) * n] = node;
             uniform_trace[static_cast<std::size_t>(ant) * n] = 0;
@@ -157,6 +161,18 @@ struct BatchStochasticChoices {
     }
     __device__ std::size_t candidate_offset(Node ant, Node n, Node width) const {
         return parent_offset(ant, n) * width;
+    }
+};
+
+struct BatchRegionChoices : BatchStochasticChoices {
+    const StartRegions* regions;
+    const std::int32_t* actions;
+    __device__ StochasticChoices for_ant(Node ant, Node n) const {
+        auto choices = BatchStochasticChoices::for_ant(ant, n);
+        const Node colony = ant / ants, action = actions[colony];
+        choices.start_nodes = regions[colony].nodes[action / 16][(action / 4) % 4];
+        choices.start_count = regions[colony].count;
+        return choices;
     }
 };
 

@@ -128,3 +128,25 @@ CUDA_VISIBLE_DEVICES=GPU-056fae3f-b504-efe0-2d9d-b1186860e643 \
 当前GPU CTest包含原操作对照和固定迭代流程两个目标，pytest为39项。新入口的memcheck/synccheck/racecheck各检查20种配置、240个蚂蚁批次。所有新日志写入 `artifacts/gpu/fixed-faco`，保留之前报告的日志。
 
 开发试跑默认500/1K各8个已预登记开发ID、三个seed、50批次；重复执行须使用新的 `--output` 目录，不覆盖已有summary。标签在完整求解返回后才由外部Python evaluator读取。一次 `FixedFacoGpu.run_iterations` 完成全部迭代；这是开发接口，尚无deadline或GP决策。
+
+## 主底座控制Engine、档案和重启
+
+```bash
+TMPDIR="$PWD/.tmp" cmake --build build/cpu -j 6
+ctest --test-dir build/cpu --output-on-failure
+TMPDIR="$PWD/.tmp" cmake --build build/cpu-sanitize -j 6
+ASAN_OPTIONS=detect_leaks=1 ctest --test-dir build/cpu-sanitize --output-on-failure
+TMPDIR="$PWD/.tmp" cmake --build build/cuda -j 6
+# 在实时空闲目标host的共享项目目录执行；脚本再次核查UUID。
+bash scripts/run_control_checks.sh GPU-056fae3f-b504-efe0-2d9d-b1186860e643
+# 必须确认上一运行句柄已结束，再启动计时；已有summary时另给新的--output。
+CUDA_VISIBLE_DEVICES=GPU-056fae3f-b504-efe0-2d9d-b1186860e643 \
+  CUDA_CACHE_PATH="$PWD/.cache/cuda" TMPDIR="$PWD/.tmp" \
+  .venv/bin/python scripts/control_engine_smoke.py \
+  --gpu-uuid GPU-056fae3f-b504-efe0-2d9d-b1186860e643
+.venv/bin/python scripts/summarize_control_engine.py
+```
+
+新增核验为8项GPU CTest、62项Python测试，三种sanitizer执行完整控制循环的小面板。CPU原语包含手算和独立枚举；C++ GPU诊断包含强制双指纹碰撞。生产调用 `engine.evaluate_program(keys, seeds, seconds, program_dict, preparation_mode, experiment_mask)` 不导出完整诊断轨迹、强制碰撞开关或迟到候选。
+
+计时试跑固定32 colony、每colony 32 ants，500/1K各16个已有开发实例×2 solve seeds，两个未训练的一终端程序和两种准备模式。它核验实际控制与提交成本，不是正式GP训练或统计比较。原始日志位于 `artifacts/gpu/control-engine`，精简报告为 `control_engine_results.json`。

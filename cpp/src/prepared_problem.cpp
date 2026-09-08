@@ -57,7 +57,15 @@ bool prepare_problem(PreparedProblem& p, const std::function<bool()>& stop_reque
     const Node n = p.size();
     const auto& c = p.settings;
     p.primary.assign(n, {}); p.backup.assign(n, {}); p.ls.assign(n, {});
-    const Node needed = std::max(c.primary_width + c.backup_width, c.ls_width);
+    const Node scale_width = std::min<Node>(8, n - 1);
+    const Node needed = std::max({c.primary_width + c.backup_width, c.ls_width, scale_width});
+    p.local_scale.assign(n, 0);
+    double min_x = p.coordinates[0], max_x = min_x, min_y = p.coordinates[1], max_y = min_y;
+    for (Node i = 0; i < n; ++i) {
+        min_x = std::min(min_x, p.coordinates[i * 2]); max_x = std::max(max_x, p.coordinates[i * 2]);
+        min_y = std::min(min_y, p.coordinates[i * 2 + 1]); max_y = std::max(max_y, p.coordinates[i * 2 + 1]);
+    }
+    p.scale_epsilon = 1e-12 * std::max({max_x - min_x, max_y - min_y, 1.0});
     for (Node a = 0; a < n; ++a) {
         if (expired()) return false;
         // 一次仅保留一行O(n)临时距离，不分配n²矩阵。
@@ -69,6 +77,8 @@ bool prepare_problem(PreparedProblem& p, const std::function<bool()>& stop_reque
             row.emplace_back(d, b);
         }
         std::partial_sort(row.begin(), row.begin() + needed, row.end());
+        // 独立于候选先验的真实最近8邻居摘要；在已有距离行准备中一次计算。
+        for (Node j = 0; j < scale_width; ++j) p.local_scale[a] += row[j].first / scale_width;
         for (Node j = 0; j < c.primary_width; ++j) p.primary[a].push_back(row[j].second);
         for (Node j = c.primary_width; j < c.primary_width + c.backup_width; ++j)
             p.backup[a].push_back(row[j].second);

@@ -2,6 +2,8 @@
 
 #include "gp_faco/deadline.hpp"
 #include "gp_faco/fixed_faco_gpu.hpp"
+#include "gp_faco/control_trace.hpp"
+#include "gp_faco/program.hpp"
 
 #include <memory>
 
@@ -21,6 +23,8 @@ struct BatchEvaluation {
     bool preparation_completed = false;
     // 仅C++诊断入口填充，Python正式结果不暴露迟到tour或成本。
     std::vector<double> discarded_costs;
+    std::vector<ControllerState> completed_control_states;
+    std::vector<ControlBatchTrace> control_trace;
 };
 
 struct BatchDiagnosticControls {
@@ -28,6 +32,8 @@ struct BatchDiagnosticControls {
     Node delay_batch = 0;
     unsigned completion_delay_ms = 0;
     bool capture_discarded = false;
+    bool capture_control = false;
+    bool force_fingerprint_collisions = false;  // 只供C++诊断检验完整邻接去重。
 };
 
 class FacoBatchEngine {
@@ -42,7 +48,15 @@ public:
                              Node mne_target, PreparationMode mode);
     BatchEvaluation evaluate_diagnostic(const std::vector<BatchTask>& tasks, double seconds,
         Node mne_target, PreparationMode mode, BatchDiagnosticControls controls);
+    BatchEvaluation evaluate_program(const std::vector<BatchTask>& tasks, double seconds,
+        const Program& program, PreparationMode mode, std::uint32_t experiment_mask = UINT32_MAX);
+    BatchEvaluation evaluate_program_diagnostic(const std::vector<BatchTask>& tasks, double seconds,
+        const Program& program, PreparationMode mode, std::uint32_t experiment_mask,
+        BatchDiagnosticControls controls);
 private:
+    BatchEvaluation evaluate_impl(const std::vector<BatchTask>& tasks, double seconds,
+        Node mne_target, PreparationMode mode, BatchDiagnosticControls controls,
+        const Program* program, std::uint32_t experiment_mask);
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };

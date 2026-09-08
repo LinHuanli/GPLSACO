@@ -91,10 +91,62 @@ py::dict score(const py::dict& dictionary, const FeatureArray& features,
     return output;
 }
 
+#ifdef GPFACO_CUDA
+gp_faco::PreparationMode preparation_mode(const std::string& mode) {
+    if (mode == "cached_charged") return gp_faco::PreparationMode::CachedCharged;
+    if (mode == "end_to_end") return gp_faco::PreparationMode::EndToEnd;
+    throw std::invalid_argument("未知准备模式");
+}
+
+py::dict batch_output(const gp_faco::BatchEvaluation& result, const std::string& mode) {
+    py::dict output;
+    py::list items;
+    for (const auto& item : result.incumbents) {
+        py::dict entry;
+        entry["has_incumbent"] = item.present;
+        entry["tour"] = item.tour;
+        entry["cost"] = item.present ? py::cast(item.cost) : py::none();
+        entry["completed_seconds"] = item.completed_seconds;
+        items.append(entry);
+    }
+    output["items"] = items;
+    output["budget_seconds"] = result.budget_seconds;
+    output["elapsed_seconds"] = result.elapsed_seconds;
+    output["actual_seconds"] = result.actual_seconds;
+    output["charged_seconds"] = result.charged_seconds;
+    output["last_batch_completed_seconds"] = result.last_batch_completed_seconds;
+    output["overrun_seconds"] = result.overrun_seconds;
+    output["launched_batches"] = result.launched_batches;
+    output["completed_batches"] = result.completed_batches;
+    output["discarded_batches"] = result.discarded_batches;
+    output["completed_construction_steps"] = result.completed_construction_steps;
+    output["completed_ls_evaluations"] = result.completed_ls_evaluations;
+    output["allocated_device_bytes"] = result.allocated_device_bytes;
+    output["preparation_completed"] = result.preparation_completed;
+    output["preparation_mode"] = mode;
+    // 只导出最后一个按时完成批次的计数，迟到状态和完整诊断轨迹不进入Python。
+    if (!result.completed_control_states.empty()) {
+        py::list states;
+        for (const auto& control : result.completed_control_states) {
+            py::dict state;
+            state["archive_size"] = control.archive_size;
+            state["stagnant_batches"] = control.feedback.stagnant_batches;
+            state["return_rate"] = control.feedback.return_rate;
+            state["ls_work"] = control.feedback.ls_work;
+            state["epoch_batches"] = control.feedback.epoch_batches;
+            state["restarts"] = control.feedback.restarts;
+            states.append(state);
+        }
+        output["control_states"] = states;
+    }
+    return output;
+}
+#endif
+
 }  // namespace
 
 PYBIND11_MODULE(gp_faco_ext, module) {
-    module.doc() = "GP评分、固定迭代与并发截止FACO接口；GP控制器尚未接入Engine";
+    module.doc() = "GP评分、固定迭代与并发截止FACO接口；在线GP控制在原生Engine内执行";
     module.def("score_cpu", [](const py::dict& p, const FeatureArray& f, const MaskArray& m) {
         return score(p, f, m, false);
     }, py::arg("program"), py::arg("features").noconvert(), py::arg("masks").noconvert());
@@ -144,10 +196,7 @@ PYBIND11_MODULE(gp_faco_ext, module) {
             if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size() ||
                 !(PyFloat_CheckExact(seconds.ptr()) || PyLong_CheckExact(seconds.ptr())) ||
                 !PyLong_CheckExact(mne.ptr())) throw std::invalid_argument("任务数组或预算/MNE类型无效");
-            gp_faco::PreparationMode preparation;
-            if (mode == "cached_charged") preparation = gp_faco::PreparationMode::CachedCharged;
-            else if (mode == "end_to_end") preparation = gp_faco::PreparationMode::EndToEnd;
-            else throw std::invalid_argument("未知准备模式");
+            const auto preparation = preparation_mode(mode);
             const double budget = py::cast<double>(seconds);
             const auto target = py::cast<gp_faco::Node>(mne);
             std::vector<gp_faco::BatchTask> tasks;
@@ -157,34 +206,30 @@ PYBIND11_MODULE(gp_faco_ext, module) {
                 py::gil_scoped_release release;
                 result = engine.evaluate(tasks, budget, target, preparation);
             }
-            py::dict output;
-            py::list items;
-            for (const auto& item : result.incumbents) {
-                py::dict entry;
-                entry["has_incumbent"] = item.present;
-                entry["tour"] = item.tour;
-                entry["cost"] = item.present ? py::cast(item.cost) : py::none();
-                entry["completed_seconds"] = item.completed_seconds;
-                items.append(entry);
-            }
-            output["items"] = items;
-            output["budget_seconds"] = result.budget_seconds;
-            output["elapsed_seconds"] = result.elapsed_seconds;
-            output["actual_seconds"] = result.actual_seconds;
-            output["charged_seconds"] = result.charged_seconds;
-            output["last_batch_completed_seconds"] = result.last_batch_completed_seconds;
-            output["overrun_seconds"] = result.overrun_seconds;
-            output["launched_batches"] = result.launched_batches;
-            output["completed_batches"] = result.completed_batches;
-            output["discarded_batches"] = result.discarded_batches;
-            output["completed_construction_steps"] = result.completed_construction_steps;
-            output["completed_ls_evaluations"] = result.completed_ls_evaluations;
-            output["allocated_device_bytes"] = result.allocated_device_bytes;
-            output["preparation_completed"] = result.preparation_completed;
-            output["preparation_mode"] = mode;
-            return output;
+            return batch_output(result, mode);
         }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
-           py::arg("budget_seconds"), py::arg("mne_target"), py::arg("preparation_mode") = "cached_charged");
+           py::arg("budget_seconds"), py::arg("mne_target"), py::arg("preparation_mode") = "cached_charged")
+        .def("evaluate_program", [](gp_faco::FacoBatchEngine& engine, const Keys& keys, const Keys& seeds,
+                                    const py::object& seconds, const py::dict& dictionary,
+                                    const std::string& mode, const py::object& mask) {
+            if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size() ||
+                !(PyFloat_CheckExact(seconds.ptr()) || PyLong_CheckExact(seconds.ptr())) ||
+                !PyLong_CheckExact(mask.ptr())) throw std::invalid_argument("任务数组或预算/mask类型无效");
+            const auto preparation = preparation_mode(mode);
+            const auto program = read_program(dictionary);
+            const auto experiment_mask = py::cast<std::uint32_t>(mask);
+            const double budget = py::cast<double>(seconds);
+            std::vector<gp_faco::BatchTask> tasks;
+            for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            gp_faco::BatchEvaluation result;
+            {
+                py::gil_scoped_release release;
+                result = engine.evaluate_program(tasks, budget, program, preparation, experiment_mask);
+            }
+            return batch_output(result, mode);
+        }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
+           py::arg("budget_seconds"), py::arg("program"),
+           py::arg("preparation_mode") = "cached_charged", py::arg("experiment_mask") = UINT32_MAX);
     py::class_<gp_faco::FixedFacoGpu>(module, "FixedFacoGpu")
         .def(py::init([](const Coordinates& coordinates, const py::object& key,
                           const gp_faco::FixedFacoSettings& settings) {

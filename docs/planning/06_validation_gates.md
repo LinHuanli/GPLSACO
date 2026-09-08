@@ -37,3 +37,9 @@ CPU 单元/差异测试优先在本地执行；CUDA 测试在空闲目标 GPU �
 这只关闭G2中的批量状态隔离与当前提交边界验证项。Hard全新增边、Escape同槽位/例外、epoch重启全字段事务、动作特征、GPU内核的时间粒度校准仍待实现或补充；不会因为4项CTest和49项Python测试通过而把G2/G3整体标为完成。
 
 后续 [Hard操作报告](../reports/2026-09-08_hard_operations.md) 已补齐全新增边谓词、CSR无向化实际成员、CPU/CUDA受限选择/LS的操作证据；6项GPU CTest和49项Python测试通过。Hard在完整Engine的初始/截止/费用集成、Escape、重启及特征仍pending；G2整体状态不变。
+
+## 主底座控制层新增证据
+
+[控制Engine报告](../reports/2026-09-08_control_engine.md) 补齐区域起点、全部十二特征、GP实际动作、双指纹及完整邻接去重、档案裁剪、pre-action旧信息素、epoch完整重启、反馈和跨任务隔离的核验。人为GPU指纹碰撞仍保留结构不同的档案成员。重启前保留GB/档案/全局stagnation，重启后逐字段检查工作tour、逆映射、stored/default/products、visited/pending/scratch/gains及ant统计。
+
+当前8项GPU CTest、62项Python测试及三种CUDA工具通过，CPU Release和ASan/UBSan各4项CTest通过。G2主底座控制/事务部分已有工程证据；E3完整Hard/Escape预算集成仍待完成。G3的IR→原生在线控制已接通，worker调度、真实个体重评、最终代/验证/checkpoint及分项成本仍pending；G4未冻结，E1–E4未执行。
