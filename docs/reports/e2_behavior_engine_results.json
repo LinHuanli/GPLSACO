@@ -1,0 +1,374 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "scope": "E2 behavior engineering only; full E2 research remains incomplete",
+  "created_at_utc": "2026-09-08T23:20:31.399110+00:00",
+  "formal_test_released": false,
+  "branch": "work/e2-behavior",
+  "protocol_commit": "3a0926aa4662f278fb4ce24c00d1082de55a1953",
+  "matrix_producer_commit": "f0a3b678a01878c03a39b81f18f0d4dc0bfc91ee",
+  "worker_producer_commit": "8951f3feaf9feac2de670220a58aff15fde25c7d",
+  "auditor_commit": "9da4724d0f154ef62442f813641e795c3f3030a3",
+  "native_sha256": "76263bc3c13b9a04787ec19ce1d2a6d8a501da75852fb2d4bfd6ee760341dea8",
+  "original_e2_native_sha256": "636ae59997779059d464f50c408a08f1b4c49371049c9af0260858306f0b413c",
+  "main_native_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+  "build": {
+    "architecture": 75,
+    "cuda_compiler": "13.3.33",
+    "cxx_compiler": "GNU 16.1.1",
+    "host": "cuda-small1.ecs.vuw.ac.nz",
+    "final_build_tool_session": 48048,
+    "final_build_exit_code": 0
+  },
+  "checks": {
+    "cpp": {
+      "status": "passed",
+      "trajectory_pairs": 38,
+      "row_checks": 1824,
+      "edge_set_checks": 29184,
+      "collision_difference_rows": 172,
+      "restart_rows": 362
+    },
+    "ctest": {
+      "passed": 14,
+      "resources": {
+        "elapsed_seconds": 24.01,
+        "user_seconds": 18.34,
+        "system_seconds": 2.48,
+        "maximum_rss_kib": 209320,
+        "exit_code": 0
+      }
+    },
+    "python_gpu": {
+      "passed": 33,
+      "resources": {
+        "elapsed_seconds": 20.32,
+        "user_seconds": 21.26,
+        "system_seconds": 0.31,
+        "maximum_rss_kib": 205748,
+        "exit_code": 0
+      }
+    },
+    "python_cpu": {
+      "passed": 36,
+      "seconds": 17.18,
+      "log_sha256": "375b32de3d57347681055ca15742f3eea324d56e2d8d066dac6ecddc984e0169"
+    },
+    "auditor_regression": {
+      "passed": 1,
+      "seconds": 0.34,
+      "tool_session_id": 42423,
+      "exit_code": 0,
+      "evidence_kind": "actual tool completion transcribed; no separate log file"
+    },
+    "cuda_tools": [
+      {
+        "tool": "memcheck",
+        "exit_code": 0,
+        "log": ".tmp/behavior-memcheck-v2.log"
+      },
+      {
+        "tool": "racecheck",
+        "exit_code": 0,
+        "log": ".tmp/behavior-racecheck-v2.log"
+      },
+      {
+        "tool": "synccheck",
+        "exit_code": 0,
+        "log": ".tmp/behavior-synccheck-v2.log"
+      },
+      {
+        "tool": "initcheck",
+        "exit_code": 0,
+        "log": ".tmp/behavior-initcheck-v2.log"
+      }
+    ],
+    "final_native_wrapper": {
+      "session_id": 4753,
+      "exit_code": 0,
+      "admission": {
+        "gpu": "GPU-3d5546e7-cd11-ceef-40ce-6010c607db67, Quadro RTX 6000, 610.43.02, 4, 0",
+        "processes": "",
+        "host": "cuda17.ecs.vuw.ac.nz"
+      }
+    }
+  },
+  "accepted_clean_matrix": {
+    "behavior_rows": 8192,
+    "behavior_summaries_sha256": "dd5d07d35ea99c98b45dc8efa7419dcc2b0436481c7d284c81c50dd208448fc0",
+    "calls": 96,
+    "cli_resources": [
+      {
+        "elapsed_seconds": 22.45,
+        "exit_code": 0,
+        "maximum_rss_kib": 224104,
+        "system_seconds": 1.56,
+        "user_seconds": 18.79
+      },
+      {
+        "elapsed_seconds": 43.39,
+        "exit_code": 0,
+        "maximum_rss_kib": 227860,
+        "system_seconds": 2.62,
+        "user_seconds": 37.18
+      }
+    ],
+    "cross_binary_pairs": 32,
+    "label_queries": 0,
+    "manifests_sha256": [
+      "cfe07657f134e4ec648b1d723c0b37e9bdbb881b5c1d5426004160b28a90ccd4",
+      "477eb85541b00cbc7d35addf9cbe338a0ba5152ee7878468d574d5407a9a5579"
+    ],
+    "max_independent_cost_error": 5.684341886080802e-14,
+    "native_sha256": [
+      "636ae59997779059d464f50c408a08f1b4c49371049c9af0260858306f0b413c",
+      "76263bc3c13b9a04787ec19ce1d2a6d8a501da75852fb2d4bfd6ee760341dea8"
+    ],
+    "observation_toggle_pairs": 32,
+    "resource_deviations": [],
+    "scope": "E2 behavior engineering only; no labels or formal TEST",
+    "search_tour_evaluations": 786432,
+    "status": "passed",
+    "timing_scope": "one counterbalanced engineering pass; not a formal speed estimate",
+    "valid_members": 3072
+  },
+  "accepted_worker": {
+    "FE": 131072,
+    "auditor_sha256": "7ed31f326d4bfc7f4d7c90a7332a5112b93963079e150c4f5aef64da29a28bb4",
+    "behavior_rows": 2048,
+    "calls": 16,
+    "cli_resources": {
+      "elapsed_seconds": 14.77,
+      "exit_code": 0,
+      "maximum_rss_kib": 228252,
+      "system_seconds": 1.19,
+      "user_seconds": 12.15
+    },
+    "dataset_label_queries": 0,
+    "manifest_sha256": "1c1ec32bb9b0faa395e7ce111a1a2ed48cda0d869952a22c82b25b889fad8817",
+    "producer_commit": "8951f3feaf9feac2de670220a58aff15fde25c7d",
+    "rejected_tampered_outcomes": 16,
+    "resource_deviations": [],
+    "scope": "engineering worker/evaluator plumbing only; no quality inference",
+    "status": "passed",
+    "toggle_pairs": 8,
+    "valid_tours": 512
+  },
+  "accepted_clean_primary_totals": {
+    "calls": 112,
+    "FE": 917504,
+    "valid_tours": 3584,
+    "cross_binary_pairs": 32,
+    "observation_toggle_pairs": 40,
+    "behavior_rows": 10240
+  },
+  "all_real_development_panel_costs": {
+    "calls": 240,
+    "FE": 1966080,
+    "valid_tours": 7680,
+    "behavior_rows": 18432,
+    "includes": [
+      "engineering-v1 96 calls",
+      "engineering-v2 original 32 calls; observed 0 calls",
+      "engineering-v3 96 calls",
+      "worker-v1 producer 16 calls"
+    ],
+    "excludes": "synthetic native/pytest/sanitizer work; these are logged separately"
+  },
+  "earlier_matrix": {
+    "behavior_rows": 8192,
+    "behavior_summaries_sha256": "5339fd5f505746dc650fe3088ace3d939a46191fc433c6d7b18644a729fbedae",
+    "calls": 96,
+    "cli_resources": [
+      {
+        "elapsed_seconds": 15.42,
+        "exit_code": 0,
+        "maximum_rss_kib": 295200,
+        "system_seconds": 1.29,
+        "user_seconds": 11.9
+      },
+      {
+        "elapsed_seconds": 32.12,
+        "exit_code": 0,
+        "maximum_rss_kib": 296608,
+        "system_seconds": 2.97,
+        "user_seconds": 25.4
+      }
+    ],
+    "cross_binary_pairs": 32,
+    "label_queries": 0,
+    "manifests_sha256": [
+      "07b0f54f9397e7235e9b2fc38b80cffeda528fb275ab1162666a5adc0a4b993a",
+      "8659b9704023b9a926cf9222aa44af535ae493ef8e5d2a46c5ac78fff4898157"
+    ],
+    "max_independent_cost_error": 5.684341886080802e-14,
+    "native_sha256": [
+      "636ae59997779059d464f50c408a08f1b4c49371049c9af0260858306f0b413c",
+      "76263bc3c13b9a04787ec19ce1d2a6d8a501da75852fb2d4bfd6ee760341dea8"
+    ],
+    "observation_toggle_pairs": 32,
+    "resource_deviations": [],
+    "scope": "E2 behavior engineering only; no labels or formal TEST",
+    "search_tour_evaluations": 786432,
+    "status": "passed",
+    "timing_scope": "single counterbalanced on/off engineering pass; not a formal speed estimate",
+    "valid_members": 3072
+  },
+  "retained_incidents": [
+    {
+      "kind": "initial_native_initcheck",
+      "wrapper_session": 94768,
+      "exit_code": 99,
+      "errors": 1872,
+      "native_sha256": "1f648e261b3bc88e356d52c3584bf79b86c41e07f3ad8d676cc2b97d0b4e0939",
+      "cause": "uninitialized BatchBehaviorRow padding copied to host",
+      "resolution": "zero observation storage before field kernels; final four CUDA tools all exit 0"
+    },
+    {
+      "kind": "engineering-v1_provenance",
+      "wrapper_session": 27911,
+      "exit_code": 0,
+      "source_note": "exact untracked driver at first launch preserved; later formatting-only driver committed before clean v3",
+      "exact_driver_sha256": "ec282b988d05ab9d406d7599af7391e459253e002885d8d7c6a435f1edf7e38b"
+    },
+    {
+      "kind": "engineering-v2_gpu_admission",
+      "wrapper_session": 38661,
+      "exit_code": 1,
+      "completed_original_calls": 32,
+      "completed_FE": 262144,
+      "completed_valid_tours": 1024,
+      "observed_native_calls": 0,
+      "cause": "foreign process appeared between original and observed stages; rejected before Engine"
+    },
+    {
+      "kind": "worker_v1_independent_auditor",
+      "wrapper_session": 42671,
+      "wrapper_exit_code": 1,
+      "producer_exit_code": 0,
+      "actual_calls": 16,
+      "cause": "audit reconstruction passed init=False implementation_sha256 to WorkerProtocol",
+      "resolution": "auditor-only reconstruction fix validates derived identity and original producer source; no repeated GPU calls",
+      "corrected_audit_session": 61053,
+      "corrected_audit_exit_code": 0
+    }
+  ],
+  "memory": {
+    "row_bytes": 232,
+    "extra_device_bytes_at_32_by_32": 15616,
+    "host_native_row_bytes_FE256": 59392,
+    "host_native_row_bytes_FE4096": 950272,
+    "host_native_row_bytes_FE16384": 3801088,
+    "python_and_json_allocations": "additional; not included in native row bytes"
+  },
+  "timing_scope": "native actual_seconds includes GPU observations and host row download; pybind/JSON allocation and serialization require worker/CLI timings. One engineering pass is not a speed estimate.",
+  "sampling": {
+    "restart_pre_batches": 4,
+    "restart_post_batches": 4,
+    "post_includes_restart_batch": true,
+    "complete_pair_required": true,
+    "boundary_and_overlapping_events_retained": true,
+    "q_feedback": "original fingerprint approximation unchanged; exact edge returns observed separately"
+  },
+  "artifacts": [
+    {
+      "file": "artifacts/runtimes/8951f3feaf9feac2de670220a58aff15fde25c7d/behavior-preregistration-source.tar",
+      "sha256": "c6587f8ad047b87e9ad224667d7699881693fc70599b81a76afa7665ca10a319",
+      "bytes": 2897920,
+      "commit": "3a0926aa4662f278fb4ce24c00d1082de55a1953"
+    },
+    {
+      "file": "artifacts/runtimes/8951f3feaf9feac2de670220a58aff15fde25c7d/behavior-matrix-source.tar",
+      "sha256": "77137cc1e4a6d6f3b38db7cc2ab45e2a11feb4aad8fa49a2f2993da2fa6835a6",
+      "bytes": 2979840,
+      "commit": "f0a3b678a01878c03a39b81f18f0d4dc0bfc91ee"
+    },
+    {
+      "file": "artifacts/runtimes/8951f3feaf9feac2de670220a58aff15fde25c7d/behavior-worker-source.tar",
+      "sha256": "7b6b3adfaf96065df6fd2971bacf7a73584dd8ec5fc8280fdcdfe61f47c72c3b",
+      "bytes": 2990080,
+      "commit": "8951f3feaf9feac2de670220a58aff15fde25c7d"
+    },
+    {
+      "file": "artifacts/runtimes/8951f3feaf9feac2de670220a58aff15fde25c7d/behavior-auditor-source.tar",
+      "sha256": "707cf1df0dfeddf7b1884adba1806373230eb2d6a9c2a92421fdfec07db3cd46",
+      "bytes": 2990080,
+      "commit": "9da4724d0f154ef62442f813641e795c3f3030a3"
+    },
+    {
+      "file": "artifacts/runtimes/8951f3feaf9feac2de670220a58aff15fde25c7d/gp_faco_ext.so",
+      "sha256": "76263bc3c13b9a04787ec19ce1d2a6d8a501da75852fb2d4bfd6ee760341dea8",
+      "bytes": 5191024
+    },
+    {
+      "file": "artifacts/runtimes/8951f3feaf9feac2de670220a58aff15fde25c7d/gp_faco_ext-before-initialization-fix.so",
+      "sha256": "1f648e261b3bc88e356d52c3584bf79b86c41e07f3ad8d676cc2b97d0b4e0939",
+      "bytes": 5191024
+    },
+    {
+      "file": "artifacts/runtimes/8951f3feaf9feac2de670220a58aff15fde25c7d/behavior-evidence-v1.tar.zst",
+      "sha256": "b8c4965bb87ed461b480575527ccec744f1253b32964af3ee7eaf30daf02efc1",
+      "bytes": 4109936,
+      "source_tree": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/.tmp/worktrees/e2-behavior",
+      "content_paths": [
+        "artifacts/behavior",
+        "build/behavior/behavior_engine_results.json",
+        "build/behavior/CMakeCache.txt",
+        ".tmp/behavior-build-v1.log",
+        ".tmp/behavior-build-v2.log",
+        ".tmp/behavior-build-v3.log",
+        ".tmp/behavior-configure-v1.log",
+        ".tmp/behavior-cpu-v1.log",
+        ".tmp/behavior-ctest-resources-v1.json",
+        ".tmp/behavior-ctest-resources-v2.json",
+        ".tmp/behavior-ctest-v1.log",
+        ".tmp/behavior-ctest-v2.log",
+        ".tmp/behavior-initcheck-v1-results.json",
+        ".tmp/behavior-initcheck-v1.log",
+        ".tmp/behavior-initcheck-v2-results.json",
+        ".tmp/behavior-initcheck-v2.log",
+        ".tmp/behavior-memcheck-v1-results.json",
+        ".tmp/behavior-memcheck-v1.log",
+        ".tmp/behavior-memcheck-v2-results.json",
+        ".tmp/behavior-memcheck-v2.log",
+        ".tmp/behavior-native-admission-v1.json",
+        ".tmp/behavior-native-admission-v2.json",
+        ".tmp/behavior-native-completion-v1.json",
+        ".tmp/behavior-native-completion-v2.json",
+        ".tmp/behavior-pytest-resources-v1.json",
+        ".tmp/behavior-pytest-resources-v2.json",
+        ".tmp/behavior-pytest-v1.log",
+        ".tmp/behavior-pytest-v2.log",
+        ".tmp/behavior-racecheck-v1-results.json",
+        ".tmp/behavior-racecheck-v1.log",
+        ".tmp/behavior-racecheck-v2-results.json",
+        ".tmp/behavior-racecheck-v2.log",
+        ".tmp/behavior-sanitizers-v1.json",
+        ".tmp/behavior-sanitizers-v2.json",
+        ".tmp/behavior-synccheck-v1-results.json",
+        ".tmp/behavior-synccheck-v1.log",
+        ".tmp/behavior-synccheck-v2-results.json",
+        ".tmp/behavior-synccheck-v2.log",
+        ".tmp/run_behavior_matrix_v1.py",
+        ".tmp/run_behavior_matrix_v2.py",
+        ".tmp/run_behavior_matrix_v3.py",
+        ".tmp/run_behavior_native_v1.py",
+        ".tmp/run_behavior_native_v2.py",
+        ".tmp/run_behavior_sanitizers_v1.py",
+        ".tmp/run_behavior_sanitizers_v2.py",
+        ".tmp/run_behavior_worker_v1.py"
+      ]
+    },
+    {
+      "file": "artifacts/runtimes/8951f3feaf9feac2de670220a58aff15fde25c7d/e2_original_gp_faco_ext.so",
+      "sha256": "636ae59997779059d464f50c408a08f1b4c49371049c9af0260858306f0b413c",
+      "bytes": 5072240
+    }
+  ],
+  "remaining": [
+    "main M00 complete selection and independent audit",
+    "all five E1 Full selections",
+    "formal E2 execution identities, ten complete 128x50 single-factor trainings and validation",
+    "all sixteen controllers on full TEST matrices and registered statistics"
+  ]
+}

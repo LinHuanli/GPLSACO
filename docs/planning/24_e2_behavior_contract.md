@@ -4,7 +4,7 @@
 
 ## 记录单位与数值含义
 
-显式开启`record_behavior`，在每个已提交的colony批次生成一行，按(batch,colony)排序。FE为该批蚂蚁数；初始化不计FE。零FE返回空行集。仅允许次数入口，默认关闭；四格最终评价统一开启，进化fitness默认关闭。记录开关纳入任务身份，不改变控制器IR/策略身份。保留实际耗时及新增设备字节数，观测成本包含在实际时间内，不设墙钟截止。
+显式开启`record_behavior`，在每个已提交的colony批次生成一行，按(batch,colony)排序。FE为该批蚂蚁数；初始化不计FE。零FE返回空行集。仅允许次数入口，默认关闭；四格最终评价统一开启，进化fitness默认关闭。记录开关纳入任务身份，不改变控制器IR/策略身份。保留实际耗时及新增设备字节数，不设墙钟截止。计时口径说明：原生`actual_seconds`包含设备观测与逐批host行下载；之后的pybind对象构造及JSON序列化应看worker/CLI层实际耗时，不能把原生计时当作完整记录开销。
 
 每行包含：批次/colony编号、蚂蚁数、维数、限制前合法mask、限制后mask、选中动作、替代解slot、原基线独立请求动作（M11/纯GP为null）；动作前GB/reference成本、实际使用reference成本、批后GB及iteration-best成本；动作前和批后反馈计数/EMA；构造MNE累计数、构造步数、非恒等迁移数、合法候选耗尽蚂蚁数；构造结束和LS结束相对本批实际reference的精确无向新边总数；LS后精确返回蚂蚁数、双指纹匹配蚂蚁数、LS move evaluations/接受移动/触及限额蚂蚁数。
 
