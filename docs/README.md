@@ -26,4 +26,6 @@
 | E3 | [候选与出口](experiments/E3_candidates_and_escape.md) | Hard/Escape 的可执行定义与公平性 |
 | E4 | [冻结迁移](experiments/E4_transfer.md) | 10K、TSPLIB、失败与适用范围 |
 
+用户进一步允许使用任何实时空闲的兼容GPU，先用`gpu-free`发现再核查UUID占用；型号与计时分列。十个完整E1训练已启动，见[启动与快照审计](reports/2026-09-09_e1_training_launch.md)。
+
 当前事实以 [进度记录](reports/progress.md) 和其链接的机器可读报告为准。历史 v4 中“已核查”“待安装”等描述保留为方案写作时点，不替代本地执行状态。
