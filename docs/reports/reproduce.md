@@ -267,3 +267,29 @@ TMPDIR="$PWD/.tmp" .venv/bin/python scripts/summarize_calibration.py \
 实际GPU命令外层另用GNU time记录完整CLI墙钟、CPU user/system、max RSS与exit code，保存在同名`.time.json`。两个摘要脚本只读开发坐标和已归档结果，独立重算全部路线，不启动CUDA、不读取标签。重审计可将`--output`指向项目内新的audit路径；`archive_profiling_runtime.py`验证已有快照而不覆盖。快照通过内容摘要与原始manifest对应，即使后续源码/二进制已重建仍能核验旧身份。
 
 已验收训练二进制`5f9211…`在重建前另存于`artifacts/binaries/<完整SHA256>/`，附12875d6的Git源快照。旧训练的完整重放还要求对应的旧Python源和协议；不能把当前源码的版本检查绕过后拼接旧结果。
+
+## 基线配置搜索与按FE校准
+
+真实多候选工程运行见[报告](2026-09-08_configuration_search.md)；完整校准与调优采用[预登记协议](../planning/14_baseline_search_and_fe_calibration.md)。以下新运行均须使用新输出目录，且启动前确认目标A5000空闲。入口自行持有项目GPU锁、冻结全部任务身份；恢复需原设备/源码/二进制，默认无墙钟截止。
+
+```bash
+export TMPDIR="$PWD/.tmp" CUDA_CACHE_PATH="$PWD/.cache/cuda"
+.venv/bin/python scripts/check_baseline_worker.py \
+  --gpu-uuid GPU-34b223c6-7502-b097-19e0-a411b1708f06 \
+  --output artifacts/gpu/configuration-search/worker-reproduce-new
+.venv/bin/python scripts/search_baselines.py \
+  --config configs/baseline_search_engineering_v1.json \
+  --gpu-uuid GPU-34b223c6-7502-b097-19e0-a411b1708f06 \
+  --output artifacts/gpu/configuration-search/engineering-reproduce-new --stop-after-tasks 5
+# 暂停终态后保存checkpoint快照，再用同一命令去掉stop-after-tasks、加--resume继续。
+.venv/bin/python scripts/summarize_configuration_search.py \
+  artifacts/gpu/configuration-search/engineering-v1 \
+  --paused-checkpoint artifacts/gpu/configuration-search/engineering-v1/checkpoint-paused-5.json \
+  --output artifacts/gpu/configuration-search/engineering-v1-audit-repeat.json
+.venv/bin/python scripts/search_baselines.py \
+  --config configs/baseline_fe_calibration_v1.json \
+  --gpu-uuid GPU-34b223c6-7502-b097-19e0-a411b1708f06 \
+  --output artifacts/gpu/fe-calibration/reproduce-new
+```
+
+完整调参把config改为`configs/baseline_tuning_v1.json`，须先完成已登记次数曲线的核验。每个完整运行外层用GNU time保存实际CLI资源，不加timeout。核验脚本须使用对应源版本，不能通过删除hash检查重审计历史产物。

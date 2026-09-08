@@ -1,0 +1,104 @@
+{
+  "status": "passed",
+  "scope": "configuration search engineering, not formal E1-E4",
+  "cpu_tests": {
+    "passed": 36,
+    "skipped": 2,
+    "seconds": 55.23
+  },
+  "gpu_python_tests": {
+    "passed": 122,
+    "seconds": 74.79
+  },
+  "binary_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+  "native_source_commit": "7d3cbebef201ce3c5761ba5ed9d7a36c31b5d583",
+  "worker_switch": {
+    "observer_timeouts": 0,
+    "record_sha256": {
+      "1000-0.json": "be168ab28fbf155cdd7aee2cb5cef55eb59aeb6ff7192079a96471206b037ca2",
+      "1000-1.json": "0648073db2b867e1bfb5f8c258cf7ea944ee25e313208558fa45f90028272328",
+      "1000-2.json": "3df41c6a23ae33e8c53bf5abce391aa07fd5c1540d61b98670a7373ac5c64439",
+      "1000-3.json": "2afdaaa2d66eca760dcde88cb6dd968c9bbf6e23c930dc86e8fc34a976ece0ef",
+      "1000-4.json": "3413d3ec8fdb7e8b75725916652048d8ad7c44187884ccd6a9f1fa798a86270c",
+      "500-0.json": "47f65166e17afb163505f14038ed3c1f8f41a0518781e860b1895a17b8d41b50",
+      "500-1.json": "975a89cfa3ffacc3097cf2567df79d99b7e1f45feb4dba4a1f92ca872c69236c",
+      "500-2.json": "05f22cfa07320e181efe5735f9e818b449277873b6a06605fd7448144e42473e",
+      "500-3.json": "14d5f1e01c1704bb098ca85359a675de8198a052a4235971434af921f230b98b",
+      "500-4.json": "ecc83a8d6f21993fd98b1cb344326e98cfe48d2d11a94ddfef0b973c824f7cb8"
+    },
+    "route_count": 320,
+    "same_controller_repeat_pairs": 4,
+    "solve_jobs": 10,
+    "status": "passed",
+    "tour_evaluations": 28672,
+    "worker": {
+      "binary_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+      "device": {
+        "compute_capability_major": 8,
+        "compute_capability_minor": 6,
+        "name": "NVIDIA RTX A5000",
+        "total_memory_bytes": 25282805760
+      },
+      "device_before_start": "GPU-34b223c6-7502-b097-19e0-a411b1708f06, NVIDIA RTX A5000, 1, 0, 610.43.02",
+      "host": "cuda04.sms.vuw.ac.nz",
+      "pid": 298227,
+      "protocol_sha256": "43a8b09d02ba39e5419060ff1fab7ed8eba9bbcc692f737684c26ab296fabbb5",
+      "start_method": "spawn",
+      "startup_seconds": 0.5398068781942129
+    }
+  },
+  "engineering_results_sha256": "856a7b447b08a1ca5ca19e98908aa4d689c0dfa5b3089388d7ce98e08d347974",
+  "resources": {
+    "pytest-gpu-v1-resources.json": {
+      "wall_seconds": 75.83,
+      "cpu_user_seconds": 34.57,
+      "cpu_system_seconds": 4.1,
+      "maximum_rss_kib": 228724,
+      "exit_status": 0
+    },
+    "worker-v1-resources.json": {
+      "wall_seconds": 9.5,
+      "cpu_user_seconds": 7.18,
+      "cpu_system_seconds": 1.59,
+      "maximum_rss_kib": 236216,
+      "exit_status": 0
+    },
+    "engineering-v1-pause-resources.json": {
+      "wall_seconds": 8.88,
+      "cpu_user_seconds": 14.67,
+      "cpu_system_seconds": 2.71,
+      "maximum_rss_kib": 248488,
+      "exit_status": 0
+    },
+    "engineering-v1-resume-resources.json": {
+      "wall_seconds": 52.02,
+      "cpu_user_seconds": 42.01,
+      "cpu_system_seconds": 4.75,
+      "maximum_rss_kib": 250236,
+      "exit_status": 0
+    },
+    "engineering-v1-audit-resources.json": {
+      "wall_seconds": 10.24,
+      "cpu_user_seconds": 7.16,
+      "cpu_system_seconds": 0.46,
+      "maximum_rss_kib": 188428,
+      "exit_status": 0
+    }
+  },
+  "artifacts_sha256": {
+    "artifacts/gpu/configuration-search/pytest-cpu-v1.log": "a54c701a8b24bfa07d56bc05bcd4be1f59f1cf06df11a290ee50529905149537",
+    "artifacts/gpu/configuration-search/pytest-gpu-v1.log": "5fa86e7506bebc77361252cb25b10c84dbcdf2db1db9b49f9a2b7404af0ad0df",
+    "artifacts/gpu/configuration-search/pytest-gpu-v1-resources.json": "16c4a510c183e9633048dea45a1da38d1f430644fec25c9919980d6f9f817cd3",
+    "artifacts/gpu/configuration-search/worker-v1-resources.json": "101b78983b142ec52038c9ef28a5176c2cb88d514cad4208c8342989d6e2d84d",
+    "artifacts/gpu/configuration-search/engineering-v1-pause-resources.json": "7130fcab114dadf3463e0953ec9b683da2d6bc0403a5a710c6e715f05045885d",
+    "artifacts/gpu/configuration-search/engineering-v1-resume-resources.json": "adfc650e70a2f7f0381b63c450f0c5843f170b697dfb06485ffc5795eefd3e2e",
+    "artifacts/gpu/configuration-search/engineering-v1-audit-resources.json": "af7fd5e11baa66e038ed168e1ba39f482c94378ae0395200becdb847126fbf82"
+  },
+  "initial_cpu_failures": {
+    "passed": 26,
+    "skipped": 2,
+    "failed": 2,
+    "cause": "two old fault-injection hooks still patched training module after shared transaction extraction",
+    "evidence": "artifacts/gpu/configuration-search/initial-cpu-checks/manifest.json"
+  }
+}

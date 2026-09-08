@@ -340,6 +340,7 @@ def test_partial_individual_resume_matches_uninterrupted_ir_rng_and_tasks(tmp_pa
 
 @pytest.mark.parametrize("window", ["raw_receipt", "verified_receipt", "completion_checkpoint"])
 def test_result_journal_recovers_without_repeating_solve(tmp_path, setup, monkeypatch, window):
+    import gp_faco.evaluation_run as journal
     import gp_faco.training as module
 
     settings, protocol, source = setup
@@ -365,6 +366,7 @@ def test_result_journal_recovers_without_repeating_solve(tmp_path, setup, monkey
 
     with monkeypatch.context() as patch:
         patch.setattr(module, "save_checkpoint", write_then_crash)
+        patch.setattr(journal, "save_checkpoint", write_then_crash)
         with pytest.raises(RuntimeError, match="injected coordinator"):
             run.run()
     assert len(farm.submissions) == 1

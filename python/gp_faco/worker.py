@@ -20,6 +20,7 @@ from pathlib import Path
 
 import numpy as np
 
+from gp_faco.baseline_policy import BaselinePolicy
 from gp_faco.data import Instance
 from gp_faco.program_ir import Program
 
@@ -39,7 +40,14 @@ def implementation_hash() -> str:
     return content_hash(
         {
             name: file_hash(PROJECT / "python/gp_faco" / name)
-            for name in ("worker.py", "fitness.py", "data.py", "program_ir.py", "primitives.py")
+            for name in (
+                "worker.py",
+                "fitness.py",
+                "data.py",
+                "program_ir.py",
+                "primitives.py",
+                "baseline_policy.py",
+            )
         }
     )
 
@@ -155,7 +163,7 @@ class WorkerProtocol:
     def manifest(self) -> dict:
         return {
             **asdict(self),
-            "protocol_version": 3,
+            "protocol_version": 4,
             "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
             "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
             "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
@@ -165,6 +173,49 @@ class WorkerProtocol:
     @property
     def sha256(self) -> str:
         return content_hash(self.manifest())
+
+
+def _normalize_task_members(task):
+    if type(task.occurrence_id) is not str or not task.occurrence_id:
+        raise ValueError("每个实际评价位置必须有独立身份")
+    object.__setattr__(task, "problems", freeze_problems(task.problems))
+    object.__setattr__(task, "replicas", tuple(tuple(row) for row in task.replicas))
+    ids = [problem.instance_id for problem in task.problems]
+    if any(
+        len(row) != 2
+        or type(row[0]) is not str
+        or type(row[1]) is not int
+        or not 0 <= row[1] <= 0xFFFFFFFFFFFFFFFF
+        for row in task.replicas
+    ):
+        raise ValueError("replica需要实例身份和uint64 solve seed")
+    if len(set(task.replicas)) != len(task.replicas) or {row[0] for row in task.replicas} != set(
+        ids
+    ):
+        raise ValueError("replica有遗漏、未知实例或重复实例/seed")
+
+
+def _task_manifest(task, protocol):
+    if task.dimension not in protocol.dimensions or len(task.replicas) != protocol.colonies:
+        raise ValueError("任务与worker固定规模/形状不符")
+    if task.evaluation_limit_per_colony is not None and (
+        task.evaluation_limit_per_colony % protocol.settings.ants
+        or task.evaluation_limit_per_colony // protocol.settings.ants > 0xFFFFFFFF
+    ):
+        raise ValueError("次数限额必须为ants整批且批次数不超出uint32")
+    return {
+        "occurrence_id": task.occurrence_id,
+        **task.controller_identity(),
+        "protocol_sha256": protocol.sha256,
+        "dimension": task.dimension,
+        "problems": [(p.instance_id, coordinate_hash(p)) for p in task.problems],
+        "replicas": task.replicas,
+        "budget_seconds": task.budget_seconds,
+        "evaluation_limit_per_colony": task.evaluation_limit_per_colony,
+        "preparation_mode": task.preparation_mode,
+        "experiment_mask": task.experiment_mask,
+        "preparation_charges": task.preparation_charges,
+    }
 
 
 @dataclass(frozen=True)
@@ -180,25 +231,10 @@ class SolveTask:
     evaluation_limit_per_colony: int | None = None
 
     def __post_init__(self) -> None:
-        if type(self.occurrence_id) is not str or not self.occurrence_id:
-            raise ValueError("每个实际评价位置必须有身份，重复树也不能共用fitness缓存")
         if type(self.program) is not Program:
             raise TypeError("任务只接受验证后的Program")
-        object.__setattr__(self, "problems", freeze_problems(self.problems))
-        object.__setattr__(self, "replicas", tuple(tuple(row) for row in self.replicas))
+        _normalize_task_members(self)
         ids = [problem.instance_id for problem in self.problems]
-        if any(
-            len(row) != 2
-            or type(row[0]) is not str
-            or type(row[1]) is not int
-            or not 0 <= row[1] <= 0xFFFFFFFFFFFFFFFF
-            for row in self.replicas
-        ):
-            raise ValueError("replica需要实例身份和uint64 solve seed")
-        if len(set(self.replicas)) != len(self.replicas) or {
-            row[0] for row in self.replicas
-        } != set(ids):
-            raise ValueError("replica有遗漏、未知实例或重复实例/seed")
         counted = self.evaluation_limit_per_colony is not None
         if counted:
             if (
@@ -260,27 +296,63 @@ class SolveTask:
     def dimension(self) -> int:
         return self.problems[0].dimension
 
+    @property
+    def controller_sha256(self) -> str:
+        return self.program.sha256
+
+    def controller_identity(self) -> dict:
+        return {"program_sha256": self.program.sha256}
+
     def manifest(self, protocol: WorkerProtocol) -> dict:
-        if self.dimension not in protocol.dimensions or len(self.replicas) != protocol.colonies:
-            raise ValueError("任务与worker固定规模/形状不符")
-        if self.evaluation_limit_per_colony is not None and (
-            self.evaluation_limit_per_colony % protocol.settings.ants
-            or self.evaluation_limit_per_colony // protocol.settings.ants > 0xFFFFFFFF
+        return _task_manifest(self, protocol)
+
+    def task_id(self, protocol: WorkerProtocol) -> str:
+        return content_hash(self.manifest(protocol))
+
+
+@dataclass(frozen=True)
+class BaselineTask:
+    """基线参数任务与GP程序任务分离，共享完整面板及FE终止契约。"""
+
+    occurrence_id: str
+    policy: BaselinePolicy
+    problems: tuple[Instance, ...]
+    replicas: tuple[tuple[str, int], ...]
+    evaluation_limit_per_colony: int
+    preparation_mode: str = "cached"
+    experiment_mask: int = 0xFFFFFFFF
+    budget_seconds: None = field(default=None, init=False)
+    preparation_charges: None = field(default=None, init=False)
+
+    def __post_init__(self):
+        if type(self.policy) is not BaselinePolicy:
+            raise TypeError("基线任务需要验证后的BaselinePolicy")
+        _normalize_task_members(self)
+        if (
+            type(self.evaluation_limit_per_colony) is not int
+            or not 0 <= self.evaluation_limit_per_colony <= 128 * 0xFFFFFFFF
+            or self.preparation_mode not in ("cached", "end_to_end")
         ):
-            raise ValueError("次数限额必须为ants整批且批次数不超出uint32")
+            raise ValueError("基线任务需要整数FE限额及无扣费准备模式")
+        self.policy.validate_mask(self.experiment_mask)
+
+    @property
+    def dimension(self) -> int:
+        return self.problems[0].dimension
+
+    @property
+    def controller_sha256(self) -> str:
+        return self.policy.sha256
+
+    def controller_identity(self) -> dict:
         return {
-            "occurrence_id": self.occurrence_id,
-            "program_sha256": self.program.sha256,
-            "protocol_sha256": protocol.sha256,
-            "dimension": self.dimension,
-            "problems": [(p.instance_id, coordinate_hash(p)) for p in self.problems],
-            "replicas": self.replicas,
-            "budget_seconds": self.budget_seconds,
-            "evaluation_limit_per_colony": self.evaluation_limit_per_colony,
-            "preparation_mode": self.preparation_mode,
-            "experiment_mask": self.experiment_mask,
-            "preparation_charges": self.preparation_charges,
+            "baseline_policy_sha256": self.policy.sha256,
+            "baseline_policy": self.policy.to_dict(),
+            "controller_kind": self.policy.kind,
         }
+
+    def manifest(self, protocol: WorkerProtocol) -> dict:
+        return _task_manifest(self, protocol)
 
     def task_id(self, protocol: WorkerProtocol) -> str:
         return content_hash(self.manifest(protocol))
@@ -430,20 +502,22 @@ def _prepare(problems: tuple[Instance, ...]) -> dict:
     return output
 
 
-def _execute(task: SolveTask) -> dict:
+def _execute(task: SolveTask | BaselineTask) -> dict:
     started = time.perf_counter()
     identity = task.task_id(_protocol)
     output = {
         "task_id": identity,
         "protocol_sha256": _protocol.sha256,
-        "program_sha256": task.program.sha256,
+        **task.controller_identity(),
         "occurrence_id": task.occurrence_id,
         "dimension": task.dimension,
         "worker_pid": os.getpid(),
     }
     try:
         n = task.dimension
+        registration_started = time.perf_counter()
         problem_keys, fees = _register(task.problems)
+        output["registration_seconds"] = time.perf_counter() - registration_started
         if task.preparation_charges is not None:
             for name, cheap, preparation in task.preparation_charges:
                 key = problem_keys[name]
@@ -455,7 +529,16 @@ def _execute(task: SolveTask) -> dict:
             raise ValueError("该实例已有冻结费用，任务必须显式携带同一费用")
         keys = np.asarray([problem_keys[name] for name, _ in task.replicas], dtype=np.uint64)
         seeds = np.asarray([seed for _, seed in task.replicas], dtype=np.uint64)
-        if task.evaluation_limit_per_colony is not None:
+        if type(task) is BaselineTask:
+            native_result = _engines[n].evaluate_baseline_evaluations(
+                keys,
+                seeds,
+                task.evaluation_limit_per_colony,
+                task.policy.to_dict(),
+                task.preparation_mode,
+                task.experiment_mask,
+            )
+        elif task.evaluation_limit_per_colony is not None:
             native_result = _engines[n].evaluate_program_evaluations(
                 keys,
                 seeds,
@@ -509,7 +592,9 @@ class PersistentGpuWorker:
     def ready(self, timeout: float | None = None) -> dict:
         return self._ready_future.result(timeout=timeout)
 
-    def submit(self, task: SolveTask) -> Future:
+    def submit(self, task: SolveTask | BaselineTask) -> Future:
+        if type(task) not in (SolveTask, BaselineTask):
+            raise TypeError("worker仅接受已验证的GP或基线任务")
         task.manifest(self.protocol)
         self._check_idle()
         self._active = self._executor.submit(_execute, task)

@@ -1,0 +1,154 @@
+{
+  "dimensions": [
+    500,
+    1000
+  ],
+  "colonies": 32,
+  "maximum_registered_per_dimension": 128,
+  "solver": {
+    "ants": 32,
+    "primary_width": 16,
+    "backup_width": 64,
+    "ls_width": 20,
+    "beta": 1.0,
+    "retention": 0.5,
+    "p_best": 0.1,
+    "epoch_source_probability": 0.01,
+    "ls_evaluation_limit": 100000,
+    "initial_ls_evaluation_limit": 100000
+  },
+  "scope": "engineering_development",
+  "evidence_limit": "Full-panel configuration selection and actual resume engineering; not formal E1",
+  "data_pools": {
+    "search": {
+      "offset": 0,
+      "count": 32
+    },
+    "validation": {
+      "offset": 32,
+      "count": 16
+    }
+  },
+  "search": {
+    "instances_per_panel": 16,
+    "solver_seeds": [
+      17,
+      29
+    ],
+    "order_seed": 90371,
+    "preparation_mode": "cached",
+    "experiment_mask": 4294967295,
+    "infrastructure_retries": 1,
+    "purpose": "tuning",
+    "evaluation_limits": [
+      256
+    ],
+    "validation_shortlist_per_kind": 3
+  },
+  "policies": [
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 0,
+      "max_mne_level": 0,
+      "region": 0,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 1,
+      "max_mne_level": 1,
+      "region": 1,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 2,
+      "max_mne_level": 2,
+      "region": 2,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 3,
+      "max_mne_level": 3,
+      "region": 3,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "rule",
+      "mne_level": 0,
+      "max_mne_level": 3,
+      "region": 0,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 2,
+      "restart_stagnation": 1,
+      "restart_cooldown": 2
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "rule",
+      "mne_level": 1,
+      "max_mne_level": 3,
+      "region": 1,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 2,
+      "restart_stagnation": 1,
+      "restart_cooldown": 2
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "rule",
+      "mne_level": 2,
+      "max_mne_level": 3,
+      "region": 2,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 2,
+      "restart_stagnation": 1,
+      "restart_cooldown": 2
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "rule",
+      "mne_level": 3,
+      "max_mne_level": 3,
+      "region": 3,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 1,
+      "restart_cooldown": 2
+    }
+  ]
+}

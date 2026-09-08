@@ -1,0 +1,93 @@
+{
+  "dimensions": [
+    500,
+    1000
+  ],
+  "colonies": 32,
+  "maximum_registered_per_dimension": 128,
+  "solver": {
+    "ants": 32,
+    "primary_width": 16,
+    "backup_width": 64,
+    "ls_width": 20,
+    "beta": 1.0,
+    "retention": 0.5,
+    "p_best": 0.1,
+    "epoch_source_probability": 0.01,
+    "ls_evaluation_limit": 100000,
+    "initial_ls_evaluation_limit": 100000
+  },
+  "scope": "development_tuning",
+  "evidence_limit": "Predeclared exhaustive Static/Rule grid; candidate 4096 FE pending development calibration",
+  "data_pools": {
+    "search": {
+      "offset": 0,
+      "count": 64
+    },
+    "validation": {
+      "offset": 64,
+      "count": 32
+    }
+  },
+  "search": {
+    "instances_per_panel": 16,
+    "solver_seeds": [
+      17,
+      29
+    ],
+    "order_seed": 90371,
+    "preparation_mode": "cached",
+    "experiment_mask": 4294967295,
+    "infrastructure_retries": 1,
+    "purpose": "tuning",
+    "evaluation_limits": [
+      4096
+    ],
+    "validation_shortlist_per_kind": 10
+  },
+  "policy_grid": {
+    "mne_levels": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "regions": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "static": {
+      "periods": [
+        4,
+        8,
+        16,
+        32,
+        64
+      ],
+      "probabilities": [
+        0.01,
+        0.05,
+        0.1,
+        0.25
+      ]
+    },
+    "rule": {
+      "stagnation_steps": [
+        4,
+        16,
+        64
+      ],
+      "restart_thresholds": [
+        8,
+        32,
+        64
+      ],
+      "cooldowns": [
+        4,
+        16
+      ]
+    }
+  }
+}

@@ -7,14 +7,14 @@ import statistics
 from dataclasses import dataclass
 
 from gp_faco.data import Label, tour_cost
-from gp_faco.worker import SolveTask, WorkerProtocol
+from gp_faco.worker import BaselineTask, SolveTask, WorkerProtocol
 
 
 @dataclass(frozen=True)
 class PanelFitness:
     task_id: str
     protocol_sha256: str
-    program_sha256: str
+    controller_sha256: str
     dimension: int
     # (实例身份, solve seed, reference gap百分比)。失败保留任务，不生成部分平均。
     members: tuple[tuple[str, int, float], ...] = ()
@@ -26,7 +26,10 @@ class PanelFitness:
 
 
 def score_panel(
-    task: SolveTask, protocol: WorkerProtocol, outcome: dict, labels: dict[str, Label]
+    task: SolveTask | BaselineTask,
+    protocol: WorkerProtocol,
+    outcome: dict,
+    labels: dict[str, Label],
 ) -> PanelFitness:
     identity = task.task_id(protocol)
     problems = {p.instance_id: p for p in task.problems}
@@ -41,13 +44,13 @@ def score_panel(
 
     def failed(message: str) -> PanelFitness:
         return PanelFitness(
-            identity, protocol.sha256, task.program.sha256, task.dimension, error=message
+            identity, protocol.sha256, task.controller_sha256, task.dimension, error=message
         )
 
     if (
         outcome.get("task_id") != identity
         or outcome.get("protocol_sha256") != protocol.sha256
-        or outcome.get("program_sha256") != task.program.sha256
+        or any(outcome.get(k) != v for k, v in task.controller_identity().items())
         or outcome.get("dimension") != task.dimension
         or outcome.get("occurrence_id") != task.occurrence_id
     ):
@@ -56,6 +59,8 @@ def score_panel(
         return failed(str(outcome.get("error", "worker未完成预定任务")))
     try:
         result = outcome["native_result"]
+        if type(task) is BaselineTask and result.get("baseline_policy") != task.policy.to_dict():
+            return failed("原生实际基线配置与预定任务不符")
         if (
             result["budget_seconds"] != task.budget_seconds
             or result["preparation_mode"] != task.preparation_mode
@@ -136,14 +141,14 @@ def score_panel(
                 return failed("外部gap超出有限范围")
             members.append((name, seed, gap))
         return PanelFitness(
-            identity, protocol.sha256, task.program.sha256, task.dimension, tuple(members)
+            identity, protocol.sha256, task.controller_sha256, task.dimension, tuple(members)
         )
     except (KeyError, TypeError, ValueError, OverflowError) as error:
         return failed(f"返回结构或独立核验失败: {error}")
 
 
 def aggregate_panels(
-    tasks: tuple[SolveTask, ...],
+    tasks: tuple[SolveTask | BaselineTask, ...],
     protocol: WorkerProtocol,
     outcomes: tuple[PanelFitness, ...],
     dimensions: tuple[int, ...],
@@ -154,8 +159,8 @@ def aggregate_panels(
         raise ValueError("预定任务身份为空或重复")
     if len(dimensions) != len(set(dimensions)) or set(dimensions) != {t.dimension for t in tasks}:
         raise ValueError("预定规模与评价面板不符")
-    if len({task.program.sha256 for task in tasks}) != 1:
-        raise ValueError("不能把不同程序的规模结果拼成一个fitness")
+    if len({task.controller_sha256 for task in tasks}) != 1:
+        raise ValueError("不能把不同控制器的规模结果拼成一个fitness")
     received = {result.task_id: result for result in outcomes}
     if len(received) != len(outcomes) or set(received) != set(expected):
         raise ValueError("实际结果必须精确覆盖预定任务，不能遗漏、重复或加入外来任务")
@@ -166,7 +171,7 @@ def aggregate_panels(
         result = received[identity]
         if (
             result.protocol_sha256 != protocol.sha256
-            or result.program_sha256 != task.program.sha256
+            or result.controller_sha256 != task.controller_sha256
             or result.dimension != task.dimension
         ):
             raise ValueError("任务结果混用了硬件协议、程序或规模")
