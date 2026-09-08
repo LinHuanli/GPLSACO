@@ -53,12 +53,34 @@ def score_panel(
         or any(outcome.get(k) != v for k, v in task.controller_identity().items())
         or outcome.get("dimension") != task.dimension
         or outcome.get("occurrence_id") != task.occurrence_id
+        or any(outcome.get(k) != v for k, v in protocol.graph_identity(task.problems).items())
     ):
         return failed("返回任务/程序/硬件/规模身份不符")
     if outcome.get("status") != "completed":
         return failed(str(outcome.get("error", "worker未完成预定任务")))
     try:
         result = outcome["native_result"]
+        if result.get("constraint_mode", "unrestricted") != protocol.constraint_mode:
+            return failed("原生限制模式与冻结worker协议不符")
+        if protocol.graph_catalog is not None:
+            identities = {
+                row["instance_id"]: row
+                for row in protocol.graph_identity(task.problems)["graph_inputs"]
+            }
+            edges = result.get("graph_edges_per_colony")
+            if (
+                type(result.get("graph_spec_id")) is not int
+                or result["graph_spec_id"] != 1
+                or type(edges) is not list
+                or any(type(v) is not int for v in edges)
+                or edges != [identities[name]["edges"] for name, _ in task.replicas]
+            ):
+                return failed("原生图版本/实际E0边数与冻结任务不符")
+            if protocol.constraint_mode == "escape" and any(
+                type(result.get(name)) is not int or result[name] != expected
+                for name, expected in (("escape_spec_id", 1), ("escape_edge_capacity_per_ant", 64))
+            ):
+                return failed("Escape版本或每蚂蚁例外容量不符")
         if type(task) is BaselineTask and result.get("baseline_policy") != task.policy.to_dict():
             return failed("原生实际基线配置与预定任务不符")
         if (
@@ -135,6 +157,19 @@ def score_panel(
             actual = tour_cost(problems[name], item["tour"])
             if abs(actual - reported) > 1e-8 + 1e-12 * actual:
                 return failed("返回路线与成本不符")
+            if protocol.graph_catalog is not None and (
+                protocol.constraint_mode == "hard" or task.evaluation_limit_per_colony == 0
+            ):
+                allowed, common = protocol.graph_catalog.feasible_reference(
+                    problems[name], protocol.graph_prior_kind
+                )
+                tour = item["tour"]
+                if task.evaluation_limit_per_colony == 0 and tuple(tour) != common:
+                    return failed("零FE未返回冻结的共同初始tour")
+                if protocol.constraint_mode == "hard" and any(
+                    tuple(sorted((tour[i - 1], tour[i]))) not in allowed for i in range(len(tour))
+                ):
+                    return failed("Hard返回tour包含E0之外的边")
             gap = 100 * (actual / labels[name].cost - 1)
             # 参考标签未必有独立最优性证明；更好的合法路线可以具有负reference gap。
             if not math.isfinite(gap):

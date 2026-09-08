@@ -34,7 +34,10 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
-def summarize(directory):
+def summarize(directory, *, database=None, dataset_root=None, entrypoint=None, checks=None):
+    database = database or PROJECT / "artifacts/data/main-index-v1/instances.sqlite"
+    dataset_root = dataset_root or PROJECT.parent / "Datasets/TSP"
+    entrypoint = entrypoint or PROJECT / "scripts/train_gp.py"
     state = load_checkpoint(directory / "checkpoint.json")
     require(state["phase"] == "complete" and state["pending"] is None, "运行尚未完整结束")
     require(state["active_worker"] is None, "checkpoint仍标记活动worker")
@@ -70,14 +73,13 @@ def summarize(directory):
     )
     selection = load_checkpoint(directory / "data_selection.json")
     require(selection["identity"] == manifest["data"]["identity"], "数据身份不符")
-    database = PROJECT / "artifacts/data/main-index-v1/instances.sqlite"
     require(file_hash(database) == selection["identity"]["database_sha256"], "索引身份改变")
     require(
         file_hash(PROJECT / "provenance/splits.v1.json") == selection["identity"]["split_sha256"],
         "split身份改变",
     )
     require(
-        file_hash(PROJECT / "scripts/train_gp.py") == selection["identity"]["entrypoint_sha256"],
+        file_hash(entrypoint) == selection["identity"]["entrypoint_sha256"],
         "训练入口改变",
     )
     for role in ("training", "validation"):
@@ -121,11 +123,26 @@ def summarize(directory):
     require(json_value(rng.getstate()) == state["panel_rng"], "最终面板RNG不符")
     files = {path.stem: path for path in (directory / "tasks").glob("*.json")}
     require(set(files) == set(state["completed"]), "任务日志与完整完成表有遗漏或额外成员")
+    if protocol.graph_catalog is not None:
+        require(
+            {p.stem for p in (directory / "raw_returns").glob("*.json")} == set(files),
+            "图训练独立原始返回集合与任务不符",
+        )
+        admissions = state.get("admission", [])
+        require(
+            len(admissions) == len(files)
+            and {row["task_key"] for row in admissions} == set(files)
+            and all(
+                type(row.get("foreign_processes")) is int and row["foreign_processes"] == 0
+                for row in admissions
+            ),
+            "图训练提交前的GPU观察缺失、重复或有污染",
+        )
     records, evaluated, actual_measurements = [], {}, {}
     max_cost_error = 0.0
     members, total_restarts = 0, 0
     problems, labels = {}, {}
-    with IndexedDataset(database, PROJECT.parent / "Datasets/TSP") as source:
+    with IndexedDataset(database, dataset_root) as source:
         for n in protocol.dimensions:
             development = set(source.record_ids("development", n))
             train = set(selection["training"][str(n)])
@@ -152,6 +169,26 @@ def summarize(directory):
                 "任务记录身份改变",
             )
             records.append(record)
+            if protocol.graph_catalog is not None:
+                raw = json.loads((directory / "raw_returns" / f"{key}.json").read_text())
+                require(
+                    raw
+                    == {k: v for k, v in record["outcome"].items() if k != "gpu_boundary_after"},
+                    "资源查询前的原始返回被改变",
+                )
+                require(
+                    record["outcome"]["gpu_boundary_after"]["foreign_processes"] == 0,
+                    "图训练返回后GPU占用未知或被污染",
+                )
+                graph_problems = tuple(
+                    source.load_instance(name) for name, _ in record["description"]["problems"]
+                )
+                require(
+                    json_value(protocol.graph_identity(graph_problems)["graph_inputs"])
+                    == record["description"]["graph_inputs"]
+                    == record["outcome"]["graph_inputs"],
+                    "图训练准备/求解来源身份不符",
+                )
             if record["kind"] == "preparation":
                 continue
             d = record["description"]
@@ -356,10 +393,12 @@ def summarize(directory):
         sum(v["solve_jobs"] for v in work_by_phase.values()) == len(solves),
         "训练/验证工作量分组有遗漏",
     )
-    checks = PROJECT / (
-        "artifacts/gpu/evaluation-count" if counted else "artifacts/gpu/gp-training"
-    )
-    pytest_log, ctest_log = checks / "pytest.log", checks / "ctest.log"
+    if checks is None:
+        previous_checks = PROJECT / (
+            "artifacts/gpu/evaluation-count" if counted else "artifacts/gpu/gp-training"
+        )
+        checks = (previous_checks / "pytest.log", previous_checks / "ctest.log")
+    pytest_log, ctest_log = checks
     pytest_count = int(re.search(r"(\d+) passed", pytest_log.read_text()).group(1))
     match = re.search(r"100% tests passed, 0 tests failed out of (\d+)", ctest_log.read_text())
     require(
@@ -367,7 +406,7 @@ def summarize(directory):
     )
     return {
         "status": "passed",
-        "scope": "engineering development only; no formal E1 conclusion",
+        "scope": "engineering development only; no formal E1/E3 conclusion",
         "run_id": state["run_id"],
         "artifact_directory": str(directory.relative_to(PROJECT)),
         "protocol": p,
@@ -431,7 +470,7 @@ def summarize(directory):
             if counted
             else "wall-clock stopping is not bitwise reproducible",
             "worker/evaluator costs recorded; previous profiling retains its own identity",
-            "no formal budgets, five-seed E1, Hard/Escape Engine or E4 evidence",
+            "no formal budgets, five-seed E1/E3 or E4 efficacy evidence",
         ],
         "checks": {
             "gpu_python_passed": pytest_count,
@@ -442,7 +481,7 @@ def summarize(directory):
         "source_sha256": {
             **manifest["sources"],
             "summarize_training.py": file_hash(Path(__file__)),
-            "train_gp.py": file_hash(PROJECT / "scripts/train_gp.py"),
+            str(entrypoint.relative_to(PROJECT)): file_hash(entrypoint),
         },
         "artifact_sha256": {
             name: file_hash(directory / name)
@@ -466,8 +505,21 @@ def main():
     parser.add_argument(
         "--output", type=Path, default=PROJECT / "docs/reports/training_results.json"
     )
+    parser.add_argument("--database", type=Path)
+    parser.add_argument("--dataset-root", type=Path)
+    parser.add_argument("--entrypoint", type=Path)
+    parser.add_argument("--pytest-log", type=Path)
+    parser.add_argument("--ctest-log", type=Path)
     args = parser.parse_args()
-    report = summarize(args.input.resolve())
+    if bool(args.pytest_log) != bool(args.ctest_log):
+        parser.error("需要同时指定pytest和CTest日志")
+    report = summarize(
+        args.input.resolve(),
+        database=args.database,
+        dataset_root=args.dataset_root,
+        entrypoint=args.entrypoint.resolve() if args.entrypoint else None,
+        checks=(args.pytest_log, args.ctest_log) if args.pytest_log else None,
+    )
     atomic_json(args.output, report)
     print(
         json.dumps(

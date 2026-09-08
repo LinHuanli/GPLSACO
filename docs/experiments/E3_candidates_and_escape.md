@@ -2,6 +2,8 @@
 
 状态：候选工具链、完整Hard/Escape及匹配v2真实开发面板已通过工程验收；正式四条件训练/验证和统计协议仍需冻结并执行。四条件为alpha-Hard、alpha-Escape、POPMUSIC-Hard、POPMUSIC-Escape，每条件各比较Static与独立重训的GP-Full。最新执行契约见[Escape v1](../planning/18_e3_escape_spec_v1.md)，证据见[完整验收](../reports/2026-09-09_escape_engine.md)。
 
+后续[图worker及独立开发训练/恢复验收](../reports/2026-09-09_graph_worker.md)已完成：四个8×3训练分别核验全部代际和6候选完整验证，共1,966,080 FE。此为工程通路检查，不替代正式规模的四条件重训、Static选择和配对统计。
+
 ## 1. 候选准备
 
 锁定本地LKH 3.0.13副本及研究使用声明，构建输出在GPLSACO内。先验证其候选导出路径、节点编号、先验分数和原问题距离；不要猜测内部函数是稳定API。alpha/POPMUSIC决定成员，LS另外按真实距离排序。原始先验排序与距离排序同时保存并校验。
