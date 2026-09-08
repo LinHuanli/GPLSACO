@@ -1,0 +1,301 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "scope": "E2 engineering and reproducibility; not formal RQ2 evidence",
+  "source_commit": "58136b24af337065261992414ed799b046273f92",
+  "branch": "work/e2-factorial",
+  "native_sha256": "636ae59997779059d464f50c408a08f1b4c49371049c9af0260858306f0b413c",
+  "original_main_native_sha256": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+  "build": {
+    "host": "cuda-small1.ecs.vuw.ac.nz",
+    "cuda_architectures": [
+      75
+    ],
+    "compiler": "CUDA 13.3.33 / GCC 16.1.1",
+    "build_cli_exit_code": 0
+  },
+  "checks": {
+    "cpp": {
+      "status": "passed",
+      "mask_checks": 46080,
+      "action_checks": 768,
+      "endpoint_pairs": 8,
+      "replay_pairs": 32,
+      "shape_pairs": 64,
+      "restart_checks": 436,
+      "missing_alt_checks": 64,
+      "covered_actions": 16
+    },
+    "ctest": {
+      "passed": 13,
+      "resources": {
+        "elapsed_seconds": 22.47,
+        "user_seconds": 17.09,
+        "system_seconds": 2.17,
+        "maximum_rss_kib": 205988,
+        "exit_code": 0
+      }
+    },
+    "python_gpu": {
+      "passed": 21,
+      "resources": {
+        "elapsed_seconds": 14.29,
+        "user_seconds": 15.1,
+        "system_seconds": 0.31,
+        "maximum_rss_kib": 205272,
+        "exit_code": 0
+      }
+    },
+    "python_cpu_initial": {
+      "passed": 30,
+      "seconds": 63.08
+    },
+    "python_cpu_followup": {
+      "passed": 6,
+      "seconds": 20.75,
+      "overlap_note": "four earlier factorial tests repeated after changes; two resource-return tests added"
+    },
+    "cuda_tools": [
+      {
+        "tool": "memcheck",
+        "exit_code": 0,
+        "log": ".tmp/e2-memcheck-v1.log"
+      },
+      {
+        "tool": "racecheck",
+        "exit_code": 0,
+        "log": ".tmp/e2-racecheck-v1.log"
+      },
+      {
+        "tool": "synccheck",
+        "exit_code": 0,
+        "log": ".tmp/e2-synccheck-v1.log"
+      },
+      {
+        "tool": "initcheck",
+        "exit_code": 0,
+        "log": ".tmp/e2-initcheck-v1.log"
+      }
+    ]
+  },
+  "matrix": {
+    "calls": 64,
+    "cli_resources": [
+      {
+        "elapsed_seconds": 7.23,
+        "exit_code": 0,
+        "maximum_rss_kib": 227672,
+        "system_seconds": 0.66,
+        "user_seconds": 10.23
+      },
+      {
+        "elapsed_seconds": 19.5,
+        "exit_code": 0,
+        "maximum_rss_kib": 291492,
+        "system_seconds": 1.27,
+        "user_seconds": 20.56
+      }
+    ],
+    "cross_binary_endpoint_pairs": 16,
+    "factorial_replay_pairs": 16,
+    "label_queries": 0,
+    "manifests_sha256": [
+      "97420488c8831b26884ddfa87cd0ee8cf67d50e5406bb9e6fe3a73d61e760469",
+      "8d97406480f84c2c2b4ceada1d283e25dafe563ea45756bea3ee8598715701aa"
+    ],
+    "max_independent_cost_error": 5.684341886080802e-14,
+    "native_sha256": [
+      "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+      "636ae59997779059d464f50c408a08f1b4c49371049c9af0260858306f0b413c"
+    ],
+    "resource_deviations": [],
+    "scope": "E2 engineering only; no labels or formal TEST",
+    "search_tour_evaluations": 524288,
+    "status": "passed",
+    "valid_members": 2048
+  },
+  "training": {
+    "M10": {
+      "run_id": "31e8f2e3ccd75ebe498d8f805de363e30b3974174e1e2e7f885195b4d8338a89",
+      "solve_jobs": 60,
+      "valid_members": 1920,
+      "search_tour_evaluations": 491520,
+      "validation_candidates": 6,
+      "max_independent_cost_error": 6.394884621840902e-14,
+      "work_by_phase": {
+        "training": {
+          "completed_batches": 384,
+          "completed_construction_steps": 4675009,
+          "completed_ls_evaluations": 1839421213,
+          "solve_jobs": 48,
+          "total_tour_evaluations": 393216
+        },
+        "validation": {
+          "completed_batches": 96,
+          "completed_construction_steps": 1166685,
+          "completed_ls_evaluations": 453923249,
+          "solve_jobs": 12,
+          "total_tour_evaluations": 98304
+        }
+      },
+      "worker_pids": [
+        2505696,
+        2505884,
+        2506738
+      ],
+      "preserved_completed_records_after_pause": 7,
+      "variation_counts": {
+        "crossovers": 4,
+        "fallbacks": 0,
+        "mutations": 4
+      },
+      "resource_deviations": [],
+      "cli_resources": [
+        {
+          "elapsed_seconds": 8.75,
+          "exit_code": 0,
+          "maximum_rss_kib": 227656,
+          "system_seconds": 1.06,
+          "user_seconds": 8.24
+        },
+        {
+          "elapsed_seconds": 68.8,
+          "exit_code": 0,
+          "maximum_rss_kib": 239244,
+          "system_seconds": 5.36,
+          "user_seconds": 59.4
+        }
+      ],
+      "raw_manifest_sha256": "9f83487d6352d56c038ab2651b9780eaee6c75b395973dff7315a981c187edcf",
+      "audit_sha256": "a50f4168f770abac357d7522c1930cb530bf2ac6e170be05b0a3bda9c03cd68b",
+      "artifact_directory": ".tmp/worktrees/e2-factorial/artifacts/e2/engineering-v1/training/M10"
+    },
+    "M01": {
+      "run_id": "ecc99cf50cfd47205f9fcb4e058d5a96d578a0ebeafc40fd0535aacf4c0369de",
+      "solve_jobs": 50,
+      "valid_members": 1600,
+      "search_tour_evaluations": 409600,
+      "validation_candidates": 1,
+      "max_independent_cost_error": 6.039613253960852e-14,
+      "work_by_phase": {
+        "training": {
+          "completed_batches": 384,
+          "completed_construction_steps": 4022444,
+          "completed_ls_evaluations": 1805812206,
+          "solve_jobs": 48,
+          "total_tour_evaluations": 393216
+        },
+        "validation": {
+          "completed_batches": 16,
+          "completed_construction_steps": 193401,
+          "completed_ls_evaluations": 75371589,
+          "solve_jobs": 2,
+          "total_tour_evaluations": 16384
+        }
+      },
+      "worker_pids": [
+        2507143,
+        2507333,
+        2508192
+      ],
+      "preserved_completed_records_after_pause": 7,
+      "variation_counts": {
+        "crossovers": 4,
+        "fallbacks": 0,
+        "mutations": 3
+      },
+      "resource_deviations": [],
+      "cli_resources": [
+        {
+          "elapsed_seconds": 8.56,
+          "exit_code": 0,
+          "maximum_rss_kib": 227932,
+          "system_seconds": 1.06,
+          "user_seconds": 9.5
+        },
+        {
+          "elapsed_seconds": 58.26,
+          "exit_code": 0,
+          "maximum_rss_kib": 239632,
+          "system_seconds": 4.69,
+          "user_seconds": 48.34
+        }
+      ],
+      "raw_manifest_sha256": "bba3a02fe0ce26093d92092c819574c1f6570e8486ebf165c50314566dfe3b05",
+      "audit_sha256": "5aa8e2ef8844a893baddff8bb423d0661ceeca7d113673874ff44a418d98e55d",
+      "artifact_directory": ".tmp/worktrees/e2-factorial/artifacts/e2/engineering-v1/training/M01"
+    }
+  },
+  "real_calls": 174,
+  "real_search_tour_evaluations": 1425408,
+  "real_valid_members": 5568,
+  "formal_training_started": false,
+  "M00_selected": false,
+  "formal_test_released": false,
+  "limits": [
+    "engineering controls are not selected M00 methods",
+    "8 by 3 engineering runs do not replace 128 by 50 by five formal training",
+    "M01 engineering shortlist collapsed to one unique program",
+    "cross-binary equality verified on specified panels, not a proof for every input",
+    "formal lightweight behavior outputs and formal execution gate still pending",
+    "GPU occupancy was sampled at boundaries; not continuous exclusivity monitoring"
+  ],
+  "runtime_directory": "artifacts/runtimes/58136b24af337065261992414ed799b046273f92",
+  "archives": {
+    "source.tar": {
+      "sha256": "4ca5a2a61a45d3e628044ec5a7b09230c825daf45b45ff35d6013bcfdca24c4b",
+      "bytes": 2867200
+    },
+    "gp_faco_ext.so": {
+      "sha256": "636ae59997779059d464f50c408a08f1b4c49371049c9af0260858306f0b413c",
+      "bytes": 5072240
+    },
+    "factorial_engine_semantics": {
+      "sha256": "0bbe5ee655806f1c5feaa0262a84a5084069349f4baea6bde60394c2b5ec1573",
+      "bytes": 3062240
+    },
+    "engineering-evidence.tar.zst": {
+      "sha256": "fa8839cf30acbb73bf77845bc5f66ffec016ee39882fb108c3aacfa9d371351e",
+      "bytes": 2543558
+    },
+    "CMakeCache.txt": {
+      "sha256": "ba5ae98332f23f6239d2cacf1f99cf64acda666c720176dbb432e5ef3864efad",
+      "bytes": 32914
+    },
+    "build.log": {
+      "sha256": "c3321aee9faf976c35b4e9b34654fcbd918d1fb81d5ecec0e0d06eeb5604d03c",
+      "bytes": 3031
+    }
+  },
+  "evidence_sha256": {
+    ".tmp/e2-ctest-v1.log": "116502503966da5c6c36b1364d2f2e9bc86671d24ae85f3b3478d99f2f08d37e",
+    ".tmp/e2-pytest-v1.log": "e2b21662937f75ea13f392862f56b6cd8697933689d6b474157b144900f63b2d",
+    ".tmp/pytest-e2-cpu-v1.log": "c9045535c29c53acf8ce3a83386170563698694e343a78021e2b4cbbe5c1e122",
+    ".tmp/pytest-e2-pipeline-v2.log": "239feacfe7add9a14c89a33793bdc26f6736b4849c7bbe14aecf0984d8382527",
+    ".tmp/e2-native-admission-v1.json": "3c079765119a33b3a0e68853f677f36cae8c8b75d2c158ad75bb96fd64b15c80",
+    "build/e2/factorial_engine_results.json": "e8ef8713d42b1149d8928b59966f49170d2512b0687752cceea364759a73f5a6",
+    ".tmp/e2-memcheck-v1.log": "39b942b8461ccbd2d73a1069bc9c2b5e52b7c5313cc5568fd5e2a0aee17ab136",
+    ".tmp/e2-racecheck-v1.log": "892a4c13bef345c35c3121bdfbbbc7d8b1a27cea95bb591cd13cd84375e14273",
+    ".tmp/e2-synccheck-v1.log": "39b942b8461ccbd2d73a1069bc9c2b5e52b7c5313cc5568fd5e2a0aee17ab136",
+    ".tmp/e2-initcheck-v1.log": "39b942b8461ccbd2d73a1069bc9c2b5e52b7c5313cc5568fd5e2a0aee17ab136",
+    "artifacts/e2/engineering-v1/training/M01-prefix-resources.json": "7f54846466b53659defd6ac723c35c0d0f27cff8f1d238cb7d26030d7a729a17",
+    "artifacts/e2/engineering-v1/training/M10-prefix-resources.json": "0be30ad5e27086bd65bd152621f35df3f3f52bd5d992dba53a901d184f071f75",
+    "artifacts/e2/engineering-v1/training/M10-resumed-resources.json": "6b8cc75f8941627bb92bcb0e38426c5bf4f067ee26261ae01bbf7b67949e83fe",
+    "artifacts/e2/engineering-v1/training/M01-resumed-resources.json": "752ab77793d4a6304fefb8697f681ff0bdf43c18dcfa8207d159efcac4f0bf30",
+    "scripts/check_e2_matrix.py": "dc4ca0fdee8123c9a51c1b83dbbbea3413f0be36cea152e663d45862a39f3239",
+    "scripts/train_factorial_development.py": "c7241f66495ed9f46fdc942211458146bfbb16b337607c163790b30f47b31ab4",
+    "scripts/summarize_training.py": "901ab152cb9c6ad2203f25be86d4895df8e1f364f1959d53a3e15387e4a470fe",
+    "configs/e2_engineering_v1.json": "c97427d5e07ec72e83ddea2626996d5c73ac9008097d347bea9cefc6c3ce5620"
+  },
+  "actual_tool_sessions": {
+    "build": 50135,
+    "cpu_initial": 89314,
+    "native_checks": 86181,
+    "cpu_followup": 81464,
+    "cuda_sanitizers": 90401,
+    "cross_binary_matrix_and_audit": 86929,
+    "two_trainings_resume_and_audits": 45843,
+    "evidence_archive": 79161
+  },
+  "all_listed_tool_exit_codes": 0
+}
