@@ -1,0 +1,2401 @@
+{
+  "active_GP": 19,
+  "active_Static": 4,
+  "active_groups": 23,
+  "active_manifest_sha256": "3e5c8ed71587a7be75c71c2ebd383eab8cdb0c998d7c01447586d8c8992a13cf",
+  "evidence_limit": "active committed prefixes, not complete50-generation training/validation; Static terminal audit pending",
+  "execution_sha256": "f70f8691c8643f346ddb44ab07f6a87fe026d61ba89cf19dd06c3f1d4d2c6cbb",
+  "formal_test_released": false,
+  "launch_plan_sha256": "56b2796f4a1c682432b9fb898da687cdd5ee3dfea785c1e7729d9704e8b8323b",
+  "observed_at_utc": "2026-09-08T18:56:39.217708+00:00",
+  "pending_GP": [
+    "GP-POPMUSIC-Hard-5519"
+  ],
+  "runs": [
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 8448,
+        "completed_construction_steps": 1993756883,
+        "completed_ls_evaluations": 32285132349,
+        "evaluator_seconds": 7.334120711777359,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 437.0348344110001,
+        "observer_timeouts": 32,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 0,
+        "registration_seconds": 4.25058827502653,
+        "search_tour_evaluations": 8650752,
+        "solve_jobs": 66,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 2112,
+        "worker_seconds": 441.65370244020596
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+      "gpu_uuid": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978",
+      "host": "cuda05.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "alpha-Hard",
+        "log": "artifacts/e3/logs-v1/Static-alpha-Hard.log",
+        "name": "Static-alpha-Hard",
+        "output": "artifacts/e3/runs-v1/Static-alpha-Hard",
+        "resources": "artifacts/e3/logs-v1/Static-alpha-Hard-resources.json",
+        "stage": "static"
+      },
+      "phase": "search",
+      "run_id": "b172f1e47c24904a6ad52fb679708e81a19f366be116d8f152b85c1997763687",
+      "session_id": 47877,
+      "worker_pid": 617644
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 7424,
+        "completed_construction_steps": 818720899,
+        "completed_ls_evaluations": 28934459381,
+        "evaluator_seconds": 3.418629640247673,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 445.758603343,
+        "observer_timeouts": 65,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 0,
+        "registration_seconds": 4.103746089618653,
+        "search_tour_evaluations": 7602176,
+        "solve_jobs": 58,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1856,
+        "worker_seconds": 450.18399093998596
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+      "gpu_uuid": "GPU-f92178e7-9654-8706-adb7-bc338a8ea311",
+      "host": "cuda05.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "alpha-Escape",
+        "log": "artifacts/e3/logs-v1/Static-alpha-Escape.log",
+        "name": "Static-alpha-Escape",
+        "output": "artifacts/e3/runs-v1/Static-alpha-Escape",
+        "resources": "artifacts/e3/logs-v1/Static-alpha-Escape-resources.json",
+        "stage": "static"
+      },
+      "phase": "search",
+      "run_id": "e4f1f2cccc8b8471d09b5528eb87f2718f8971230f1d886b61170232571f5044",
+      "session_id": 43668,
+      "worker_pid": 617645
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 8448,
+        "completed_construction_steps": 2785411908,
+        "completed_ls_evaluations": 34209232250,
+        "evaluator_seconds": 7.9407950742170215,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 428.994039384,
+        "observer_timeouts": 32,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 0,
+        "registration_seconds": 4.9089918253012,
+        "search_tour_evaluations": 8650752,
+        "solve_jobs": 66,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 2112,
+        "worker_seconds": 434.28549086814746
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+      "gpu_uuid": "GPU-90cb0d88-15f1-389f-1f7b-db68d87a3601",
+      "host": "cuda06.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "POPMUSIC-Hard",
+        "log": "artifacts/e3/logs-v1/Static-POPMUSIC-Hard.log",
+        "name": "Static-POPMUSIC-Hard",
+        "output": "artifacts/e3/runs-v1/Static-POPMUSIC-Hard",
+        "resources": "artifacts/e3/logs-v1/Static-POPMUSIC-Hard-resources.json",
+        "stage": "static"
+      },
+      "phase": "search",
+      "run_id": "5359f368712b0ff8eb157b5533f73921797307f4c07ed9cb961221359f2d5568",
+      "session_id": 47754,
+      "worker_pid": 2093273
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 9344,
+        "completed_construction_steps": 1110225101,
+        "completed_ls_evaluations": 39492136657,
+        "evaluator_seconds": 5.871039601974189,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 429.8699429230001,
+        "observer_timeouts": 36,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 0,
+        "registration_seconds": 5.547649249434471,
+        "search_tour_evaluations": 9568256,
+        "solve_jobs": 73,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 2336,
+        "worker_seconds": 435.9446040885523
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX 6000 Ada Generation",
+      "gpu_uuid": "GPU-53f626b7-1758-3819-7558-2e6f0d5cd686",
+      "host": "cuda21.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "POPMUSIC-Escape",
+        "log": "artifacts/e3/logs-v1/Static-POPMUSIC-Escape.log",
+        "name": "Static-POPMUSIC-Escape",
+        "output": "artifacts/e3/runs-v1/Static-POPMUSIC-Escape",
+        "resources": "artifacts/e3/logs-v1/Static-POPMUSIC-Escape-resources.json",
+        "stage": "static"
+      },
+      "phase": "search",
+      "run_id": "893563bd481dfd2918a44f32bcb62883445f4af10371d58925d754e9f2fcbe51",
+      "session_id": 22615,
+      "worker_pid": 3058007
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 10624,
+        "completed_construction_steps": 768240379,
+        "completed_ls_evaluations": 35686594517,
+        "evaluator_seconds": 4.0843322947621346,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 423.182965243,
+        "observer_timeouts": 41,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.4677918143570423,
+        "search_tour_evaluations": 10878976,
+        "solve_jobs": 83,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 2656,
+        "worker_seconds": 425.4714247472584
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX 6000 Ada Generation",
+      "gpu_uuid": "GPU-f8dc50c8-d1e3-9a03-0d33-84d37569efcd",
+      "host": "cuda21.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "alpha-Hard",
+        "evolution_seed": 1103,
+        "log": "artifacts/e3/logs-v1/GP-alpha-Hard-1103.log",
+        "name": "GP-alpha-Hard-1103",
+        "output": "artifacts/e3/runs-v1/GP-alpha-Hard-1103",
+        "resources": "artifacts/e3/logs-v1/GP-alpha-Hard-1103-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "d1f7645471673d989edc5aff2d1a6974890d59f5d879565c1fd87f0722e79a55",
+      "session_id": 44356,
+      "worker_pid": 3058012
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 8320,
+        "completed_construction_steps": 266232897,
+        "completed_ls_evaluations": 27502388363,
+        "evaluator_seconds": 1.2720117382705212,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 356.7753499540001,
+        "observer_timeouts": 32,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.3637615889310837,
+        "search_tour_evaluations": 8519680,
+        "solve_jobs": 65,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 2080,
+        "worker_seconds": 358.72670916095376
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX 6000 Ada Generation",
+      "gpu_uuid": "GPU-64711271-aa36-c95d-6420-ba29ba48fddb",
+      "host": "cuda22.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "alpha-Escape",
+        "evolution_seed": 1103,
+        "log": "artifacts/e3/logs-v1/GP-alpha-Escape-1103.log",
+        "name": "GP-alpha-Escape-1103",
+        "output": "artifacts/e3/runs-v1/GP-alpha-Escape-1103",
+        "resources": "artifacts/e3/logs-v1/GP-alpha-Escape-1103-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "c9a14680a86eba6679dd4b33278a9370d42980bc30b9ebff394dceed483f6d91",
+      "session_id": 72623,
+      "worker_pid": 1457643
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 10880,
+        "completed_construction_steps": 1302466583,
+        "completed_ls_evaluations": 38095086666,
+        "evaluator_seconds": 4.303914565593004,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 416.75192636799994,
+        "observer_timeouts": 42,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.47838782612234354,
+        "search_tour_evaluations": 11141120,
+        "solve_jobs": 85,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 2720,
+        "worker_seconds": 419.0377052463591
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX 6000 Ada Generation",
+      "gpu_uuid": "GPU-ac5b5a5a-fb40-ab3d-cc70-5723ebc95654",
+      "host": "cuda22.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "POPMUSIC-Hard",
+        "evolution_seed": 1103,
+        "log": "artifacts/e3/logs-v1/GP-POPMUSIC-Hard-1103.log",
+        "name": "GP-POPMUSIC-Hard-1103",
+        "output": "artifacts/e3/runs-v1/GP-POPMUSIC-Hard-1103",
+        "resources": "artifacts/e3/logs-v1/GP-POPMUSIC-Hard-1103-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "55b4da2c3212d916d9f6cb51241c45edacfec9c40c6b864535b60a9aa6580b96",
+      "session_id": 81981,
+      "worker_pid": 1457479
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 5760,
+        "completed_construction_steps": 240860967,
+        "completed_ls_evaluations": 19541830442,
+        "evaluator_seconds": 2.320697349496186,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 401.69611528999997,
+        "observer_timeouts": 70,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.7580597065389156,
+        "search_tour_evaluations": 5898240,
+        "solve_jobs": 45,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1440,
+        "worker_seconds": 406.99028514232486
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A6000",
+      "gpu_uuid": "GPU-586ebe96-6c8e-257f-81bf-ec22a3659466",
+      "host": "gryphon.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "POPMUSIC-Escape",
+        "evolution_seed": 1103,
+        "log": "artifacts/e3/logs-v1/GP-POPMUSIC-Escape-1103.log",
+        "name": "GP-POPMUSIC-Escape-1103",
+        "output": "artifacts/e3/runs-v1/GP-POPMUSIC-Escape-1103",
+        "resources": "artifacts/e3/logs-v1/GP-POPMUSIC-Escape-1103-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "e520ee02efbae320e542190cfb7c5918275ee2c658e849b587477998de3d5fb6",
+      "session_id": 78870,
+      "worker_pid": 2557323
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 6016,
+        "completed_construction_steps": 395102039,
+        "completed_ls_evaluations": 19226618751,
+        "evaluator_seconds": 4.245704621542245,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 403.782009435,
+        "observer_timeouts": 70,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.5173025573603809,
+        "search_tour_evaluations": 6160384,
+        "solve_jobs": 47,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1504,
+        "worker_seconds": 407.36277700355276
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A6000",
+      "gpu_uuid": "GPU-a81ef6ba-4710-26e5-9f7b-606a17c1dbdd",
+      "host": "red-tomatoes.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "alpha-Hard",
+        "evolution_seed": 2207,
+        "log": "artifacts/e3/logs-v1/GP-alpha-Hard-2207.log",
+        "name": "GP-alpha-Hard-2207",
+        "output": "artifacts/e3/runs-v1/GP-alpha-Hard-2207",
+        "resources": "artifacts/e3/logs-v1/GP-alpha-Hard-2207-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "4a6be8411d80d99adc03222a377ffc6555d4d69a4afb9e8c7213d456961b7aab",
+      "session_id": 42390,
+      "worker_pid": 3099357
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 5504,
+        "completed_construction_steps": 137152481,
+        "completed_ls_evaluations": 17046148148,
+        "evaluator_seconds": 1.732259839773178,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 399.226409932,
+        "observer_timeouts": 64,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.46514796698465943,
+        "search_tour_evaluations": 5636096,
+        "solve_jobs": 43,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1376,
+        "worker_seconds": 402.6251408853568
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A6000",
+      "gpu_uuid": "GPU-b1f11ab1-57b6-9b6f-9a71-0e5b4c26eeb0",
+      "host": "red-tomatoes.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "alpha-Escape",
+        "evolution_seed": 2207,
+        "log": "artifacts/e3/logs-v1/GP-alpha-Escape-2207.log",
+        "name": "GP-alpha-Escape-2207",
+        "output": "artifacts/e3/runs-v1/GP-alpha-Escape-2207",
+        "resources": "artifacts/e3/logs-v1/GP-alpha-Escape-2207-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "13107e65d38eb8b754097700be16e9f059f911bbe98fdc8e1916fb978d251c21",
+      "session_id": 89320,
+      "worker_pid": 3099356
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 6272,
+        "completed_construction_steps": 649557262,
+        "completed_ls_evaluations": 20887161245,
+        "evaluator_seconds": 4.587962321005762,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 402.6779520289999,
+        "observer_timeouts": 73,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.5849433820694685,
+        "search_tour_evaluations": 6422528,
+        "solve_jobs": 49,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1568,
+        "worker_seconds": 406.60696098953485
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A6000",
+      "gpu_uuid": "GPU-1570e25c-9f0d-563a-a3fa-afeb0e4040db",
+      "host": "the-villa.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "POPMUSIC-Hard",
+        "evolution_seed": 2207,
+        "log": "artifacts/e3/logs-v1/GP-POPMUSIC-Hard-2207.log",
+        "name": "GP-POPMUSIC-Hard-2207",
+        "output": "artifacts/e3/runs-v1/GP-POPMUSIC-Hard-2207",
+        "resources": "artifacts/e3/logs-v1/GP-POPMUSIC-Hard-2207-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "e4efd45d81522d4d0ec4b66987432e23b8e10963c15113b6387eae148d960139",
+      "session_id": 34655,
+      "worker_pid": 1744190
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 5504,
+        "completed_construction_steps": 169621271,
+        "completed_ls_evaluations": 17263007793,
+        "evaluator_seconds": 1.4405487971380353,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 412.431239307,
+        "observer_timeouts": 65,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.3592115147039294,
+        "search_tour_evaluations": 5636096,
+        "solve_jobs": 43,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1376,
+        "worker_seconds": 414.97471876163036
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA A40",
+      "gpu_uuid": "GPU-97307f5c-8d89-28f9-e18a-b2ffa6f2f0e9",
+      "host": "cuda14.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "POPMUSIC-Escape",
+        "evolution_seed": 2207,
+        "log": "artifacts/e3/logs-v1/GP-POPMUSIC-Escape-2207.log",
+        "name": "GP-POPMUSIC-Escape-2207",
+        "output": "artifacts/e3/runs-v1/GP-POPMUSIC-Escape-2207",
+        "resources": "artifacts/e3/logs-v1/GP-POPMUSIC-Escape-2207-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "545ee3c0e92d34749218f78be6ea3d0b5fa3f71a5f5b8f248cabcec247d807e7",
+      "session_id": 70845,
+      "worker_pid": 1106117
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 5248,
+        "completed_construction_steps": 735031535,
+        "completed_ls_evaluations": 17422652317,
+        "evaluator_seconds": 5.294488505925983,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 409.641379217,
+        "observer_timeouts": 64,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.4410976590588689,
+        "search_tour_evaluations": 5373952,
+        "solve_jobs": 41,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1312,
+        "worker_seconds": 413.182803130243
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A5000",
+      "gpu_uuid": "GPU-0c0f3643-2260-d2fd-f6dd-a2e12c2f89fe",
+      "host": "cuda07.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "alpha-Hard",
+        "evolution_seed": 3313,
+        "log": "artifacts/e3/logs-v1/GP-alpha-Hard-3313.log",
+        "name": "GP-alpha-Hard-3313",
+        "output": "artifacts/e3/runs-v1/GP-alpha-Hard-3313",
+        "resources": "artifacts/e3/logs-v1/GP-alpha-Hard-3313-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "1693c2307a6f7a2b9bb63cb8e7f8d9dac43ff9642c80a94b1c66e0ba04d3eda5",
+      "session_id": 84488,
+      "worker_pid": 2250243
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 4736,
+        "completed_construction_steps": 274517603,
+        "completed_ls_evaluations": 15688880667,
+        "evaluator_seconds": 2.4340621503069997,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 406.0342886460001,
+        "observer_timeouts": 62,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.40505495481193066,
+        "search_tour_evaluations": 4849664,
+        "solve_jobs": 37,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1184,
+        "worker_seconds": 409.0474169687368
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A5000",
+      "gpu_uuid": "GPU-29d94703-008a-2265-d24c-10f593a247fe",
+      "host": "cuda10.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "alpha-Escape",
+        "evolution_seed": 3313,
+        "log": "artifacts/e3/logs-v1/GP-alpha-Escape-3313.log",
+        "name": "GP-alpha-Escape-3313",
+        "output": "artifacts/e3/runs-v1/GP-alpha-Escape-3313",
+        "resources": "artifacts/e3/logs-v1/GP-alpha-Escape-3313-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "1828ffc7330df76b544b9b20ad70e04c057b886155847268e97f2fac1f814ff0",
+      "session_id": 77514,
+      "worker_pid": 660470
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 5248,
+        "completed_construction_steps": 1037735682,
+        "completed_ls_evaluations": 17978452707,
+        "evaluator_seconds": 5.239326917100698,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 402.618850466,
+        "observer_timeouts": 64,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.43744930112734437,
+        "search_tour_evaluations": 5373952,
+        "solve_jobs": 41,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1312,
+        "worker_seconds": 405.7272846749984
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A5000",
+      "gpu_uuid": "GPU-00ccd67e-cb18-e37e-938e-a6339356c950",
+      "host": "cuda10.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "POPMUSIC-Hard",
+        "evolution_seed": 3313,
+        "log": "artifacts/e3/logs-v1/GP-POPMUSIC-Hard-3313.log",
+        "name": "GP-POPMUSIC-Hard-3313",
+        "output": "artifacts/e3/runs-v1/GP-POPMUSIC-Hard-3313",
+        "resources": "artifacts/e3/logs-v1/GP-POPMUSIC-Hard-3313-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "c09176ce43402eeb7ca0f4a0d648fddd052636cd60f1f94b5a156f235501e3f8",
+      "session_id": 31752,
+      "worker_pid": 660469
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 4992,
+        "completed_construction_steps": 298593401,
+        "completed_ls_evaluations": 16629111229,
+        "evaluator_seconds": 1.279905597679317,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 418.50028153499994,
+        "observer_timeouts": 66,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.4231352126225829,
+        "search_tour_evaluations": 5111808,
+        "solve_jobs": 39,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1248,
+        "worker_seconds": 421.37826432846487
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A5000",
+      "gpu_uuid": "GPU-cc91c3d0-a556-edeb-c53f-b64bf8bbe1f7",
+      "host": "cuda03.sms.vuw.ac.nz",
+      "job": {
+        "condition": "POPMUSIC-Escape",
+        "evolution_seed": 3313,
+        "log": "artifacts/e3/logs-v1/GP-POPMUSIC-Escape-3313.log",
+        "name": "GP-POPMUSIC-Escape-3313",
+        "output": "artifacts/e3/runs-v1/GP-POPMUSIC-Escape-3313",
+        "resources": "artifacts/e3/logs-v1/GP-POPMUSIC-Escape-3313-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "8d503d265d35973e65f091475396ce566d1a6cff06da415753c5a63ec1ad1d57",
+      "session_id": 31789,
+      "worker_pid": 3485624
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 6272,
+        "completed_construction_steps": 704568169,
+        "completed_ls_evaluations": 20658990059,
+        "evaluator_seconds": 5.461064223665744,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 395.6513327349999,
+        "observer_timeouts": 73,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.44515663012862206,
+        "search_tour_evaluations": 6422528,
+        "solve_jobs": 49,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1568,
+        "worker_seconds": 398.364667638205
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX PRO 4000 Blackwell",
+      "gpu_uuid": "GPU-82673509-4831-d297-f6f9-052a2c4cf871",
+      "host": "cuda09.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "alpha-Hard",
+        "evolution_seed": 4409,
+        "log": "artifacts/e3/logs-v1/GP-alpha-Hard-4409.log",
+        "name": "GP-alpha-Hard-4409",
+        "output": "artifacts/e3/runs-v1/GP-alpha-Hard-4409",
+        "resources": "artifacts/e3/logs-v1/GP-alpha-Hard-4409-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "e8592fbb46a2047f2b0515d2d532512d58f7564a5c5599d4db4bf5b4d314bab9",
+      "session_id": 11768,
+      "worker_pid": 1488707
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 5632,
+        "completed_construction_steps": 205238358,
+        "completed_ls_evaluations": 17993249029,
+        "evaluator_seconds": 2.6984500498510897,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 406.3729383120001,
+        "observer_timeouts": 67,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.40916330041363835,
+        "search_tour_evaluations": 5767168,
+        "solve_jobs": 44,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1408,
+        "worker_seconds": 409.0162920835428
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX PRO 4000 Blackwell",
+      "gpu_uuid": "GPU-5ba859d4-3c11-759a-fa97-8d8eaff48141",
+      "host": "cuda09.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "alpha-Escape",
+        "evolution_seed": 4409,
+        "log": "artifacts/e3/logs-v1/GP-alpha-Escape-4409.log",
+        "name": "GP-alpha-Escape-4409",
+        "output": "artifacts/e3/runs-v1/GP-alpha-Escape-4409",
+        "resources": "artifacts/e3/logs-v1/GP-alpha-Escape-4409-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "4aea755f53143f861f3058be491888004811ac618cc461168f825795d28cb889",
+      "session_id": 57044,
+      "worker_pid": 1488708
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 5504,
+        "completed_construction_steps": 766496286,
+        "completed_ls_evaluations": 18441636662,
+        "evaluator_seconds": 4.547189966775477,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 402.320008769,
+        "observer_timeouts": 65,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.3026454132050276,
+        "search_tour_evaluations": 5636096,
+        "solve_jobs": 43,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1376,
+        "worker_seconds": 404.5620367517695
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA L4",
+      "gpu_uuid": "GPU-3b100ffc-0e0b-c482-854f-4777ca648fd9",
+      "host": "cuda19.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "POPMUSIC-Hard",
+        "evolution_seed": 4409,
+        "log": "artifacts/e3/logs-v1/GP-POPMUSIC-Hard-4409.log",
+        "name": "GP-POPMUSIC-Hard-4409",
+        "output": "artifacts/e3/runs-v1/GP-POPMUSIC-Hard-4409",
+        "resources": "artifacts/e3/logs-v1/GP-POPMUSIC-Hard-4409-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "e370fdc5c2cf489b3b17a42eaf68ff1511622340dee63edacc83201b66ebf027",
+      "session_id": 21274,
+      "worker_pid": 38892
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 4224,
+        "completed_construction_steps": 178279725,
+        "completed_ls_evaluations": 13632188999,
+        "evaluator_seconds": 1.747073957696557,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 403.889122886,
+        "observer_timeouts": 70,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.5425222059711814,
+        "search_tour_evaluations": 4325376,
+        "solve_jobs": 33,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1056,
+        "worker_seconds": 408.1679464103654
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A4000",
+      "gpu_uuid": "GPU-4371d9c8-a13c-0d24-6a7c-c11089ab69c2",
+      "host": "cuda-small0.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "POPMUSIC-Escape",
+        "evolution_seed": 4409,
+        "log": "artifacts/e3/logs-v1/GP-POPMUSIC-Escape-4409.log",
+        "name": "GP-POPMUSIC-Escape-4409",
+        "output": "artifacts/e3/runs-v1/GP-POPMUSIC-Escape-4409",
+        "resources": "artifacts/e3/logs-v1/GP-POPMUSIC-Escape-4409-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "a722ad897c7bcb3de0e05454af1b30d8a8231d563688f2fd833e6ef378460b27",
+      "session_id": 24035,
+      "worker_pid": 656739
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 4224,
+        "completed_construction_steps": 185960445,
+        "completed_ls_evaluations": 13584353837,
+        "evaluator_seconds": 1.8799622869119048,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 401.114604174,
+        "observer_timeouts": 70,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.6290591228753328,
+        "search_tour_evaluations": 4325376,
+        "solve_jobs": 33,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1056,
+        "worker_seconds": 405.5926144439727
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A4000",
+      "gpu_uuid": "GPU-d4d5bd54-f8eb-9a67-0627-ed01aaa3ed7e",
+      "host": "cuda-small0.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "POPMUSIC-Escape",
+        "evolution_seed": 5519,
+        "log": "artifacts/e3/logs-v1/GP-POPMUSIC-Escape-5519.log",
+        "name": "GP-POPMUSIC-Escape-5519",
+        "output": "artifacts/e3/runs-v1/GP-POPMUSIC-Escape-5519",
+        "resources": "artifacts/e3/logs-v1/GP-POPMUSIC-Escape-5519-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "7597a85ebaa8a3cb3b5d88f76d7e101507c6fa5c85b4ae8a4888c5106cfcf9de",
+      "session_id": 8592,
+      "worker_pid": 656734
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 8320,
+        "completed_construction_steps": 791535334,
+        "completed_ls_evaluations": 27356901506,
+        "evaluator_seconds": 2.6145382905378938,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 418.13673494600005,
+        "observer_timeouts": 32,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.2984142699278891,
+        "search_tour_evaluations": 8519680,
+        "solve_jobs": 65,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 2080,
+        "worker_seconds": 419.891897554975
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+      "gpu_uuid": "GPU-a0a5bcb0-b6d9-5eef-4c90-2a9aa7fc75f4",
+      "host": "cuda00.sms.vuw.ac.nz",
+      "job": {
+        "condition": "alpha-Hard",
+        "evolution_seed": 5519,
+        "log": "artifacts/e3/logs-v1/GP-alpha-Hard-5519.log",
+        "name": "GP-alpha-Hard-5519",
+        "output": "artifacts/e3/runs-v1/GP-alpha-Hard-5519",
+        "resources": "artifacts/e3/logs-v1/GP-alpha-Hard-5519-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "99b0ee6e32ca8d9f8a502389433c8fb5bcd07eb3f0bc32bee20f10ab842009ad",
+      "session_id": 37720,
+      "worker_pid": 3010338
+    },
+    {
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 8832,
+        "completed_construction_steps": 367529386,
+        "completed_ls_evaluations": 28663392042,
+        "evaluator_seconds": 1.0416309153661132,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 410.794257869,
+        "observer_timeouts": 34,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 2,
+        "registration_seconds": 0.24838534276932478,
+        "search_tour_evaluations": 9043968,
+        "solve_jobs": 69,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 2208,
+        "worker_seconds": 412.24173694383353
+      },
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+      "gpu_uuid": "GPU-c2cde103-a3fe-1e5d-ec16-8bc6ccda401a",
+      "host": "cuda24.ecs.vuw.ac.nz",
+      "job": {
+        "condition": "alpha-Escape",
+        "evolution_seed": 5519,
+        "log": "artifacts/e3/logs-v1/GP-alpha-Escape-5519.log",
+        "name": "GP-alpha-Escape-5519",
+        "output": "artifacts/e3/runs-v1/GP-alpha-Escape-5519",
+        "resources": "artifacts/e3/logs-v1/GP-alpha-Escape-5519-resources.json",
+        "stage": "train"
+      },
+      "phase": "training",
+      "run_id": "7dfb336e87050db54bacc9ff629113565660bc84de4ad69f2e5dc3ee0e738929",
+      "session_id": 8613,
+      "worker_pid": 1242599
+    }
+  ],
+  "snapshot_audit": {
+    "audit_runner_sha256": "8fd7455dbb123f325948a688624074c8f9ed36c722271723b7c07a9f89223d6c",
+    "capture_source_sha256": "11420221748f09cb8f9336ddfff25d5c9e0e3a2dc34f8823a8c65c5196b78631",
+    "cli_receipts_sha256": "2cb0ee977821a101721459c8e3cb57448352bd665b478a5b07edd724335ee959",
+    "execution_sha256": "f70f8691c8643f346ddb44ab07f6a87fe026d61ba89cf19dd06c3f1d4d2c6cbb",
+    "failed_solves": 0,
+    "formal_test_released": false,
+    "max_independent_cost_error": 5.3290705182007514e-14,
+    "per_run": [
+      {
+        "name": "GP-alpha-Hard-1103",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "hard",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 0,
+          "execution_host": "cuda21.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX 6000 Ada Generation",
+          "gpu_uuid": "GPU-f8dc50c8-d1e3-9a03-0d33-84d37569efcd",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "ALPHA",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 15,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "4175af0e30f5237a8b884b4f484f652bf9279d70eadf908b9f5ef65656b8b10e",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "d1f7645471673d989edc5aff2d1a6974890d59f5d879565c1fd87f0722e79a55",
+        "snapshot_checkpoint_sha256": "c12471eb247fd8ec81c1f5ca6206d6a65e6b4fc7fbd96d998a6a958328b9ea1b",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 3968,
+            "completed_construction_steps": 334211838,
+            "completed_ls_evaluations": 12829512603,
+            "failed_solves": 0,
+            "native_actual_seconds": 156.64625265,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 4063232,
+            "solve_jobs": 31
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-alpha-Escape-1103",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "escape",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 1,
+          "execution_host": "cuda22.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX 6000 Ada Generation",
+          "gpu_uuid": "GPU-64711271-aa36-c95d-6420-ba29ba48fddb",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "ALPHA",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 8,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "94c133819d840c140b31f38eb2297c9c889bf620a162457c351d4945069bb7e3",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "c9a14680a86eba6679dd4b33278a9370d42980bc30b9ebff394dceed483f6d91",
+        "snapshot_checkpoint_sha256": "a4437a1fcea6a8dc06d14d20b670a1ccda36c3f04fac57c409ce285285ff0ba7",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 2176,
+            "completed_construction_steps": 50861790,
+            "completed_ls_evaluations": 6588542827,
+            "failed_solves": 0,
+            "native_actual_seconds": 90.31138915600002,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 2228224,
+            "solve_jobs": 17
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-POPMUSIC-Hard-1103",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "hard",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 0,
+          "execution_host": "cuda22.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX 6000 Ada Generation",
+          "gpu_uuid": "GPU-ac5b5a5a-fb40-ab3d-cc70-5723ebc95654",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "POPMUSIC",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 16,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "142782a129a393dab9926a61c0a42048ca576ad64157c62ca45b386510c56c87",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "55b4da2c3212d916d9f6cb51241c45edacfec9c40c6b864535b60a9aa6580b96",
+        "snapshot_checkpoint_sha256": "8306841601ed2b3b0c2ab734f580adceb9afd31cd89c32f5f3108b852d919b72",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 4224,
+            "completed_construction_steps": 539049808,
+            "completed_ls_evaluations": 14156493251,
+            "failed_solves": 0,
+            "native_actual_seconds": 160.06790669999998,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 4325376,
+            "solve_jobs": 33
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-POPMUSIC-Escape-1103",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "escape",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 1,
+          "execution_host": "gryphon.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX A6000",
+          "gpu_uuid": "GPU-586ebe96-6c8e-257f-81bf-ec22a3659466",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "POPMUSIC",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 8,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "e035208bae977b9d8893d489b37abc1806333f4a132727ce36673ca4a22cc9de",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "e520ee02efbae320e542190cfb7c5918275ee2c658e849b587477998de3d5fb6",
+        "snapshot_checkpoint_sha256": "8748a3bbeaef16cd63a75a2484b67d152862a562a7df71e5b90b88cb190e7ed1",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 2176,
+            "completed_construction_steps": 65249670,
+            "completed_ls_evaluations": 6567011244,
+            "failed_solves": 0,
+            "native_actual_seconds": 140.94810935700002,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 2228224,
+            "solve_jobs": 17
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-alpha-Hard-2207",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "hard",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 0,
+          "execution_host": "red-tomatoes.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX A6000",
+          "gpu_uuid": "GPU-a81ef6ba-4710-26e5-9f7b-606a17c1dbdd",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "ALPHA",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 8,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "52777e9ffee8f6173eb9936b8721634d3498c987210832b50603f9734b4546a5",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "4a6be8411d80d99adc03222a377ffc6555d4d69a4afb9e8c7213d456961b7aab",
+        "snapshot_checkpoint_sha256": "e8e4e75defbe4eec2f8d8a11006fe86a0f9ddfd4729a26437df99f1223d4936e",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 2176,
+            "completed_construction_steps": 100826445,
+            "completed_ls_evaluations": 6772940098,
+            "failed_solves": 0,
+            "native_actual_seconds": 142.761915864,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 2228224,
+            "solve_jobs": 17
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-alpha-Escape-2207",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "escape",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 1,
+          "execution_host": "red-tomatoes.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX A6000",
+          "gpu_uuid": "GPU-b1f11ab1-57b6-9b6f-9a71-0e5b4c26eeb0",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "ALPHA",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 8,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "48e29540090562fb8a1d6f5c037d5e3c7065311873d894ac3cc52f586d440ee1",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "13107e65d38eb8b754097700be16e9f059f911bbe98fdc8e1916fb978d251c21",
+        "snapshot_checkpoint_sha256": "02ba9b48bf672f63ceb3ce9791533969bd72787cac2ac8a6da232bab143c9eac",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 2048,
+            "completed_construction_steps": 38581703,
+            "completed_ls_evaluations": 6335219837,
+            "failed_solves": 0,
+            "native_actual_seconds": 148.457568432,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 2097152,
+            "solve_jobs": 16
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-POPMUSIC-Hard-2207",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "hard",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 0,
+          "execution_host": "the-villa.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX A6000",
+          "gpu_uuid": "GPU-1570e25c-9f0d-563a-a3fa-afeb0e4040db",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "POPMUSIC",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 8,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "494f838bba478b224c4aaea17a5c33d8ff875ca4681cc0863639510513f6a1f9",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "e4efd45d81522d4d0ec4b66987432e23b8e10963c15113b6387eae148d960139",
+        "snapshot_checkpoint_sha256": "fc08f872126b10050ff341e0be883fe4386488019ebde1c714ffbec0dbf90c2c",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 2176,
+            "completed_construction_steps": 179506225,
+            "completed_ls_evaluations": 7063764957,
+            "failed_solves": 0,
+            "native_actual_seconds": 136.48256919,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 2228224,
+            "solve_jobs": 17
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-POPMUSIC-Escape-2207",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "escape",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 1,
+          "execution_host": "cuda14.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA A40",
+          "gpu_uuid": "GPU-97307f5c-8d89-28f9-e18a-b2ffa6f2f0e9",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "POPMUSIC",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 8,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "67ec232561b803183f310bb360cacd41e02cc8f19362053c0d6bac635c3e2313",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "545ee3c0e92d34749218f78be6ea3d0b5fa3f71a5f5b8f248cabcec247d807e7",
+        "snapshot_checkpoint_sha256": "aaebbabde7a4a92f3397e101ca33d9cb6b5e0195461a773a36f7b5522e185518",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 2048,
+            "completed_construction_steps": 49060517,
+            "completed_ls_evaluations": 6398518866,
+            "failed_solves": 0,
+            "native_actual_seconds": 153.550350392,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 2097152,
+            "solve_jobs": 16
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-alpha-Hard-3313",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "hard",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 0,
+          "execution_host": "cuda07.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX A5000",
+          "gpu_uuid": "GPU-0c0f3643-2260-d2fd-f6dd-a2e12c2f89fe",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "ALPHA",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 7,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "606654e12f33959505244cef341c8f394dfb948f7181d883d7890d55de19e9c0",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "1693c2307a6f7a2b9bb63cb8e7f8d9dac43ff9642c80a94b1c66e0ba04d3eda5",
+        "snapshot_checkpoint_sha256": "028015133c8bd0c2d326e4bac0be570c57f32fbbec9f770b4cce39de255847dd",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 1792,
+            "completed_construction_steps": 382247320,
+            "completed_ls_evaluations": 6296295005,
+            "failed_solves": 0,
+            "native_actual_seconds": 146.166305575,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 1835008,
+            "solve_jobs": 14
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-alpha-Escape-3313",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "escape",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 1,
+          "execution_host": "cuda10.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX A5000",
+          "gpu_uuid": "GPU-29d94703-008a-2265-d24c-10f593a247fe",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "ALPHA",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 6,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "c6a78e2c80a1eb63af313bea930337c72427d7dd754bbefc062e0937071fbd53",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "1828ffc7330df76b544b9b20ad70e04c057b886155847268e97f2fac1f814ff0",
+        "snapshot_checkpoint_sha256": "6d41d95904bb2d507a901416e238e4ffafd95a726f40e066dd46235028193a51",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 1664,
+            "completed_construction_steps": 138757136,
+            "completed_ls_evaluations": 5764985553,
+            "failed_solves": 0,
+            "native_actual_seconds": 145.698424687,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 1703936,
+            "solve_jobs": 13
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-POPMUSIC-Hard-3313",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "hard",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 0,
+          "execution_host": "cuda10.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX A5000",
+          "gpu_uuid": "GPU-00ccd67e-cb18-e37e-938e-a6339356c950",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "POPMUSIC",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 7,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "742e02d0e6e9df5c900e3045f0fd5357d6c5e645c35c5b24f9ff298737888b04",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "c09176ce43402eeb7ca0f4a0d648fddd052636cd60f1f94b5a156f235501e3f8",
+        "snapshot_checkpoint_sha256": "f243ea56b1b93214c2eeda6c4757f01aacda873cb509c6903a8583c60c5d8977",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 1792,
+            "completed_construction_steps": 506760335,
+            "completed_ls_evaluations": 6407757891,
+            "failed_solves": 0,
+            "native_actual_seconds": 142.824474916,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 1835008,
+            "solve_jobs": 14
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-POPMUSIC-Escape-3313",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "escape",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 1,
+          "execution_host": "cuda03.sms.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX A5000",
+          "gpu_uuid": "GPU-cc91c3d0-a556-edeb-c53f-b64bf8bbe1f7",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "POPMUSIC",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 6,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "22dfe16774b679e2863ce71aa587524b0990a1ba87a8642bdccbaff378be04fa",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "8d503d265d35973e65f091475396ce566d1a6cff06da415753c5a63ec1ad1d57",
+        "snapshot_checkpoint_sha256": "30922d890caa7db7c09c894dc1f9790d8dd3813089809a38d4037e4e015dfd2d",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 1664,
+            "completed_construction_steps": 130157329,
+            "completed_ls_evaluations": 5739350319,
+            "failed_solves": 0,
+            "native_actual_seconds": 141.77964337499998,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 1703936,
+            "solve_jobs": 13
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-alpha-Hard-4409",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "hard",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 0,
+          "execution_host": "cuda09.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX PRO 4000 Blackwell",
+          "gpu_uuid": "GPU-82673509-4831-d297-f6f9-052a2c4cf871",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "ALPHA",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 9,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "404b4b396ac98039683dc553c128e27fc286cc50160b9b76fd5ff95ad7ac7bd1",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "e8592fbb46a2047f2b0515d2d532512d58f7564a5c5599d4db4bf5b4d314bab9",
+        "snapshot_checkpoint_sha256": "b276983d30f04aadd343f71047d1e735338727e5e85c29456e18c4d6584f1d59",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 2304,
+            "completed_construction_steps": 261103293,
+            "completed_ls_evaluations": 7642852175,
+            "failed_solves": 0,
+            "native_actual_seconds": 145.896869452,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 2359296,
+            "solve_jobs": 18
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-alpha-Escape-4409",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "escape",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 1,
+          "execution_host": "cuda09.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX PRO 4000 Blackwell",
+          "gpu_uuid": "GPU-5ba859d4-3c11-759a-fa97-8d8eaff48141",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "ALPHA",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 7,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "ed3fc269b158cc0a554a74dd5eab21f257759ee1d90bbfd8d78d4b2ba4d5f7d2",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "4aea755f53143f861f3058be491888004811ac618cc461168f825795d28cb889",
+        "snapshot_checkpoint_sha256": "18616c5510da01687bc005be2ebf8f6706b67b345fddcf52aaa4439d4c681fbc",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 1920,
+            "completed_construction_steps": 98348929,
+            "completed_ls_evaluations": 6316618769,
+            "failed_solves": 0,
+            "native_actual_seconds": 139.03960897900004,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 1966080,
+            "solve_jobs": 15
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-POPMUSIC-Hard-4409",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "hard",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 0,
+          "execution_host": "cuda19.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA L4",
+          "gpu_uuid": "GPU-3b100ffc-0e0b-c482-854f-4777ca648fd9",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "POPMUSIC",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 7,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "9938392af950eb78ce0b0331499ea98ff5a7ce8c45f7b4e42d98ed446b7d078e",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "e370fdc5c2cf489b3b17a42eaf68ff1511622340dee63edacc83201b66ebf027",
+        "snapshot_checkpoint_sha256": "9ee1fd17278d65285afb2fc30e6719abf29e5785941e5cac62d055d78a881e96",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 1920,
+            "completed_construction_steps": 309273573,
+            "completed_ls_evaluations": 6390351195,
+            "failed_solves": 0,
+            "native_actual_seconds": 138.242658165,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 1966080,
+            "solve_jobs": 15
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-POPMUSIC-Escape-4409",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "escape",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 1,
+          "execution_host": "cuda-small0.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX A4000",
+          "gpu_uuid": "GPU-4371d9c8-a13c-0d24-6a7c-c11089ab69c2",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "POPMUSIC",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 5,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "0e1f78734b3c0eb3f9f7da7919611c980ffb2ee2b1267e6dbf8426a0542f1180",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "a722ad897c7bcb3de0e05454af1b30d8a8231d563688f2fd833e6ef378460b27",
+        "snapshot_checkpoint_sha256": "e8f4a13845b7e5552571fce20cae4275b7b2cf78b37adb36c4ec0e37fb47fde1",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 1280,
+            "completed_construction_steps": 95248220,
+            "completed_ls_evaluations": 4673509556,
+            "failed_solves": 0,
+            "native_actual_seconds": 139.35801474599998,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 1310720,
+            "solve_jobs": 10
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-POPMUSIC-Escape-5519",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "escape",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 1,
+          "execution_host": "cuda-small0.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX A4000",
+          "gpu_uuid": "GPU-d4d5bd54-f8eb-9a67-0627-ed01aaa3ed7e",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "POPMUSIC",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 5,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "d657b065cbe562fd4031d15b9c3bbc7999f404c290772186cecbb17eac206380",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "7597a85ebaa8a3cb3b5d88f76d7e101507c6fa5c85b4ae8a4888c5106cfcf9de",
+        "snapshot_checkpoint_sha256": "5f7a5cab8fd75c579d9bf596456efe44b6e0882c1579515ec5a7b1418cce2922",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 1408,
+            "completed_construction_steps": 72445816,
+            "completed_ls_evaluations": 4448178395,
+            "failed_solves": 0,
+            "native_actual_seconds": 128.889192284,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 1441792,
+            "solve_jobs": 11
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-alpha-Hard-5519",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "hard",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 0,
+          "execution_host": "cuda00.sms.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+          "gpu_uuid": "GPU-a0a5bcb0-b6d9-5eef-4c90-2a9aa7fc75f4",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "ALPHA",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 11,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "a8858b6c2447ce807e4852514ad4a5da1d6ddf2c0ab29a912146cdfc33620938",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "99b0ee6e32ca8d9f8a502389433c8fb5bcd07eb3f0bc32bee20f10ab842009ad",
+        "snapshot_checkpoint_sha256": "43669cffb27be4dcc8c55450dc668bcbae020245565ed8be7b54310e9ac7b91c",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 2944,
+            "completed_construction_steps": 329447484,
+            "completed_ls_evaluations": 9581886828,
+            "failed_solves": 0,
+            "native_actual_seconds": 148.702114217,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 3014656,
+            "solve_jobs": 23
+          },
+          "validation": {}
+        }
+      },
+      {
+        "name": "GP-alpha-Escape-5519",
+        "protocol": {
+          "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+          "colonies": 32,
+          "constraint_mode": "escape",
+          "dimensions": [
+            500,
+            1000
+          ],
+          "driver_version": "610.43.02",
+          "escape_spec_id": 1,
+          "execution_host": "cuda24.ecs.vuw.ac.nz",
+          "extension_directory": "build/cuda",
+          "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+          "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+          "gpu_model": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+          "gpu_uuid": "GPU-c2cde103-a3fe-1e5d-ec16-8bc6ccda401a",
+          "graph_catalog_path": "artifacts/e3/graph-catalog-v1.json",
+          "graph_catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+          "graph_prior_kind": "ALPHA",
+          "graph_spec_id": 1,
+          "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+          "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+          "matching_spec_id": 2,
+          "maximum_registered_per_dimension": 1056,
+          "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+          "protocol_version": 5,
+          "settings": {
+            "ants": 32,
+            "backup_width": 64,
+            "beta": 1.0,
+            "epoch_source_probability": 0.01,
+            "initial_ls_evaluation_limit": 100000,
+            "ls_evaluation_limit": 100000,
+            "ls_width": 20,
+            "p_best": 0.1,
+            "primary_width": 16,
+            "retention": 0.5
+          },
+          "submission_boundary": "native_whole_panel_completed_and_verified"
+        },
+        "replay": {
+          "assigned_current_individuals": 12,
+          "completed_generations": 0,
+          "completed_validation_candidates": 0,
+          "current_generation": 0,
+          "generations": [],
+          "validation_candidates": 0,
+          "variation_counts": {
+            "crossovers": 0,
+            "fallbacks": 0,
+            "mutations": 0
+          }
+        },
+        "report_sha256": "e28e156f70ea7c97a163002fc73ddf71b1cf44e8f468087e17fa180b49eeba0d",
+        "resource_observations": {
+          "after_foreign": 0,
+          "after_unknown": 0,
+          "before_foreign_or_unknown": 0
+        },
+        "run_id": "7dfb336e87050db54bacc9ff629113565660bc84de4ad69f2e5dc3ee0e738929",
+        "snapshot_checkpoint_sha256": "adc3ca80319f5b5225fbc5715c41be4fd08cd0986226e26b70cd8c188e0c9877",
+        "work_by_phase": {
+          "training": {
+            "charged_seconds": 0.0,
+            "completed_batches": 3072,
+            "completed_construction_steps": 139168804,
+            "completed_ls_evaluations": 9965983010,
+            "failed_solves": 0,
+            "native_actual_seconds": 144.89674490000002,
+            "overrun_seconds": 0.0,
+            "search_tour_evaluations": 3145728,
+            "solve_jobs": 24
+          },
+          "validation": {}
+        }
+      }
+    ],
+    "routes": 10688,
+    "runs": 19,
+    "scope": "19 active formal GP prefixes only; full training and TEST remain pending",
+    "search_tour_evaluations": 43778048,
+    "snapshot_manifest_sha256": "5059253560c4eb89d0876c1b51c96bed1edb0d1cf28b9c36a58505676382fd44",
+    "solve_jobs": 334,
+    "source_commit": "7fbe5c827980fe9423d21ee46f3e3b11d0329611",
+    "status": "snapshot_passed"
+  },
+  "source_commit": "7fbe5c827980fe9423d21ee46f3e3b11d0329611",
+  "status": "formal runs active; startup prefixes audited",
+  "totals": {
+    "static": {
+      "FE": 34471936,
+      "calls": 263,
+      "failures": 0
+    },
+    "train": {
+      "FE": 125042688,
+      "calls": 954,
+      "failures": 0
+    }
+  }
+}
