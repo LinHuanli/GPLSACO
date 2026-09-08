@@ -269,6 +269,8 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     DeviceArray<Node> construction_new_edges, final_new_edges, diagnostic_construction;
     if (controls.record_behavior) {
         behavior_rows.allocate(p.colonies);
+        // cudaMemcpy会复制结构体padding；先完整清零，避免未初始化字节进入host诊断。
+        behavior_rows.zero();
         construction_new_edges.allocate(static_cast<std::size_t>(p.config.ants) * p.colonies);
         final_new_edges.allocate(static_cast<std::size_t>(p.config.ants) * p.colonies);
         result.behavior_device_bytes = behavior_rows.bytes() + construction_new_edges.bytes() +
