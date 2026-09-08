@@ -28,4 +28,6 @@
 
 用户进一步允许使用任何实时空闲的兼容GPU，先用`gpu-free`发现再核查UUID占用；型号与计时分列。十个完整E1训练已启动，见[启动与快照审计](reports/2026-09-09_e1_training_launch.md)。
 
+独立E3分支已完成[Hard/Escape及匹配图工程验收](https://github.com/LinHuanli/GPLSACO/blob/7c442af1247241bb4b8bcd9c1f7430041398f53b/docs/reports/2026-09-09_escape_engine.md)，源码与运行快照均已归档；正式四条件独立训练仍待接入，不改变主分支活动训练的冻结实现。
+
 当前事实以 [进度记录](reports/progress.md) 和其链接的机器可读报告为准。历史 v4 中“已核查”“待安装”等描述保留为方案写作时点，不替代本地执行状态。

@@ -16,6 +16,7 @@
 - [固定迭代GPU FACO与开发池结果](docs/reports/2026-09-08_fixed_faco.md)
 - [固定并发Engine、预算扣费与截止核验](docs/reports/2026-09-08_batch_engine.md)
 - [Hard全新增边与受限CPU/CUDA操作核验](docs/reports/2026-09-08_hard_operations.md)
+- [独立E3分支：完整Hard/Escape与匹配图工程验收](https://github.com/LinHuanli/GPLSACO/blob/7c442af1247241bb4b8bcd9c1f7430041398f53b/docs/reports/2026-09-09_escape_engine.md)
 - [主底座GP控制、档案、完整重启与开发计时](docs/reports/2026-09-08_control_engine.md)
 - [常驻GPU worker、任务身份与外部fitness](docs/reports/2026-09-08_worker.md)
 - [真实DEAP训练、固定验证与checkpoint恢复](docs/reports/2026-09-08_training.md)

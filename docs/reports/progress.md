@@ -1,6 +1,6 @@
 # 研究进度与下一工作项
 
-更新：2026-09-09。目标保持为v4完整研究规划和实施。**完整480任务FE校准已审计通过，主档冻结为4,096 FE/colony，短/长档为1,024/16,384；进化和ACO默认没有墙钟上限。** 完整776配置Static/Rule调优与完整E1训练已实际启动，G4和E1–E4仍未完成。E1全部五seed、128×50、完整验证及测试统计已先行冻结，十个训练均已返回真实评价：九个A5000及一个按用户“空闲GPU均可用”补充使用的PRO 5000。最新证据见[完整FE校准报告](2026-09-09_fe_calibration.md)、[完整训练协议](../planning/16_e1_freeze_and_execution.md)及[硬件补充](../../provenance/e1_hardware_amendment_v1.json)。独立E3分支8996028已完成Hard接入与真实面板验收，Escape仍待完成；不改变主运行的冻结源码。
+更新：2026-09-09。目标保持为v4完整研究规划和实施。**完整480任务FE校准已审计通过，主档冻结为4,096 FE/colony，短/长档为1,024/16,384；进化和ACO默认没有墙钟上限。** 完整776配置Static/Rule调优与完整E1训练已实际启动，G4和E1–E4仍未完成。E1全部五seed、128×50、完整验证及测试统计已先行冻结，十个训练均已返回真实评价：九个A5000及一个按用户“空闲GPU均可用”补充使用的PRO 5000。最新证据见[完整FE校准报告](2026-09-09_fe_calibration.md)、[完整训练协议](../planning/16_e1_freeze_and_execution.md)及[硬件补充](../../provenance/e1_hardware_amendment_v1.json)。独立E3分支7c442af已完成Hard/Escape和匹配v2真实面板的工程验收，正式四条件独立训练仍待接入；主运行的冻结源码和二进制未变。
 
 ## 已有证据
 
@@ -33,8 +33,9 @@
 | Static/Rule原生共同底座 | 32组等动作GP完整轨迹一致 | CPU95项手算边界、GPU1,168次动作/490次重启、12单批量对照；31/500/1K合成点集公共接口与状态复用通过；调参未执行 |
 | 基线多候选搜索与实际恢复 | 44任务、360,448 FE及1,408路线独立审计通过 | 8候选完整搜索、6候选固定验证，第5任务暂停后原记录不变；基线/GP同PID切换另有10任务/320路线；完整776配置调参未执行 |
 | 完整FE校准与主档冻结 | 480任务、66,846,720 FE及15,360路线独立审计通过 | 12,288前缀比较、2,944共同初解比较，无失败/扣费/丢批；主档4,096，补充1,024/16,384；原生b4138774 |
-| 完整Hard与实际图匹配 | 独立分支8996028已推送并留运行快照 | 14项CTest、144项Python、三类CUDA检查、32真实实例40,960 FE/576返回tour；实际备用成员量匹配和Escape仍pending |
-| E3逐节点有效槽位匹配 | 独立分支abe37d8完成准备阶段修正 | 同一32开发实例24,000节点的主/LS/备用数量逐节点相等，完整E0与初解不变，3项针对性测试；两先验当前均为16均匀备用，Escape及新图完整求解仍待完成 |
+| 完整Hard与实际图匹配 | 历史8996028快照保留 | 14项CTest、144项Python、三类CUDA检查、32真实实例40,960 FE/576返回tour；当时备用成员量尚未匹配，后续abe37d8修正 |
+| E3逐节点有效槽位匹配 | 独立分支abe37d8完成准备阶段修正 | 同一32开发实例24,000节点的主/LS/备用数量逐节点相等，完整E0与初解不变，3项针对性测试；两先验当前均为16均匀备用，完整求解证据见后续7c442af |
+| 完整Escape与匹配v2求解 | 独立分支7c442af已推送并留不可变运行快照 | 17项CTest、139项Python通过（8项既有LKH检查未重跑）；三类CUDA检查无错误；34次真实调用、81,920 FE、1,088条返回tour及8组完整重放。逐移动边集、64边事务/过期和参考LS足迹已核验；正式E3训练尚未执行 |
 | LKH候选先验导出 | 独立分支已完成开发验收，待合入/接Engine | 18项测试、真实4实例×2先验×2次，517,480候选边核验、8组完整重放；发现相同上限80的实际图大小不匹配，E3须先冻结匹配规则 |
 | 主数据源再次核验 | 16文件、4,083,547,871字节及数据库hash全部不变 | data_source_recheck_20260908.json；只重读字节，无测试性能访问；现有manifest/download日志未补足父来源ID |
 | 当前回归范围 | GPU Python 122通过；原生未修改、前次CTest 12和CPU Release/ASan各5项通过 | 新增配置搜索/恢复与GP共享事务回归；baseline_configuration_checks.json；原生及三个CUDA工具保留7d3cbeb身份 |
@@ -52,9 +53,9 @@
 2. 复用已发布500/1K索引、split与CPU oracle，不重复建立身份；追查旋转/缩放/子采样父来源元数据。正式配置冻结前复核源文件全hash，不看测试性能。
 3. 可恢复配置搜索已经完成真实8候选搜索与6候选统一验证；第5任务暂停/恢复及全部44记录独立审计已取得exit 0。复用现有身份与结果，不重新启动已完成工程作业。
 4. 保持完整776配置Static/Rule调优与已经启动的十个128×50训练持续运行；不要重启原Future或缩减次数。五演化seed与正式训练/测试身份已冻结；独立训练审计已核验十个实际快照，继续完整代际/验证终态审计和G4封存，测试尚未放行。256 FE/colony和8×3仅为历史迁移验收。
-5. E3分支`work/e3-candidate-export`已提交8996028并推送，工作树为`.tmp/worktrees/e3-candidate-export`；[完整Hard报告](https://github.com/LinHuanli/GPLSACO/blob/8996028722d52dd91d1882957f00bc3898be2cd1/docs/reports/2026-09-09_hard_engine.md)保留空槽BFS越界的失败和修复，以及实际备用成员数未匹配的限制。保持主调优/训练的源码和二进制身份；继续Escape与E4接口，不能把Hard工程验收当成E3结果。
+5. E3分支`work/e3-candidate-export`已提交7c442af并推送，工作树为`.tmp/worktrees/e3-candidate-export`；[完整Escape报告](https://github.com/LinHuanli/GPLSACO/blob/7c442af1247241bb4b8bcd9c1f7430041398f53b/docs/reports/2026-09-09_escape_engine.md)及`artifacts/runtimes/7c442af1247241bb4b8bcd9c1f7430041398f53b`保留源码、实际二进制、环境与精简报告。保持主调优/训练的源码和二进制身份；继续图身份/常驻worker与四条件独立训练接入、E4接口，不能把工程验收当成E3结果。
 
-E3后续[逐节点匹配报告](https://github.com/LinHuanli/GPLSACO/blob/abe37d8c2b7172f1ac77270e448a8fa88ca35274/docs/reports/2026-09-09_graph_slot_matching.md)已解决原备用有效成员数量差异；主/LS也按逐节点较小度数匹配。新缓存为工作树内`artifacts/hard-engine/matched-graphs-v2`，源与未改变的Hard二进制存档于`artifacts/runtimes/abe37d8c2b7172f1ac77270e448a8fa88ca35274`。E3仍须继续Escape及正式矩阵，勿改主线活动运行的核心源码。
+E3后续[逐节点匹配报告](https://github.com/LinHuanli/GPLSACO/blob/abe37d8c2b7172f1ac77270e448a8fa88ca35274/docs/reports/2026-09-09_graph_slot_matching.md)已解决原备用有效成员数量差异；主/LS也按逐节点较小度数匹配。新缓存为工作树内`artifacts/hard-engine/matched-graphs-v2`，源与未改变的Hard二进制存档于`artifacts/runtimes/abe37d8c2b7172f1ac77270e448a8fa88ca35274`。7c442af已在该缓存上完成Hard/Escape完整求解；两模式保留相同设备容量，34调用的Hard无用初始化清理前后语义逐项一致。实际存在图外移动，但本开发预算的最终incumbent全部仍在E0内，不据此推断出口收益。正式E3矩阵仍待完成，勿改主线活动运行的核心源码。
 
 次数校准运行快照为`artifacts/runtimes/b84326cbb7ad54a4f574d2a9efb0922e86d289f7`；LKH适配器与完整Hard另有e090c9c、8996028快照，均含实际二进制和源码tar。主数据源复核只证明与既有完整审计的字节身份一致；旋转/缩放/子采样父关系仍未建立。
 
