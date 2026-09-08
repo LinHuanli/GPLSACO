@@ -28,6 +28,6 @@
 
 用户进一步允许使用任何实时空闲的兼容GPU，先用`gpu-free`发现再核查UUID占用；型号与计时分列。十个完整E1训练已启动，见[启动与快照审计](reports/2026-09-09_e1_training_launch.md)。
 
-独立E3分支已完成[Hard/Escape及匹配图工程验收](https://github.com/LinHuanli/GPLSACO/blob/7c442af1247241bb4b8bcd9c1f7430041398f53b/docs/reports/2026-09-09_escape_engine.md)，并进一步完成[图worker与四条件开发训练/恢复](https://github.com/LinHuanli/GPLSACO/blob/ca7b7c9ef3df91b3126f6ebddf68e6f7197fe302/docs/reports/2026-09-09_graph_worker.md)。源码与运行快照均已归档；正式全量图目录和训练协议仍待冻结，不改变主分支活动训练的实现。
+独立E3分支已完成[Hard/Escape及匹配图工程验收](https://github.com/LinHuanli/GPLSACO/blob/7c442af1247241bb4b8bcd9c1f7430041398f53b/docs/reports/2026-09-09_escape_engine.md)、[图worker与四条件开发训练/恢复](https://github.com/LinHuanli/GPLSACO/blob/ca7b7c9ef3df91b3126f6ebddf68e6f7197fe302/docs/reports/2026-09-09_graph_worker.md)，以及[正式协议与全部2,296实例/4,592成对图准备](https://github.com/LinHuanli/GPLSACO/blob/c12120199aca2595f57a5eca8b433e49949cd95c/docs/reports/2026-09-09_e3_formal_preparation.md)。完整图目录已独立审计并封存，A5000四条件worker也已通过核验；20个完整GP及四个完整Static运行的执行入口与终态审计仍待完成。源码、二进制、worker图输入和审计快照均在项目内归档，原始候选收据单独保留；主分支活动训练的实现未变。
 
 当前事实以 [进度记录](reports/progress.md) 和其链接的机器可读报告为准。历史 v4 中“已核查”“待安装”等描述保留为方案写作时点，不替代本地执行状态。
