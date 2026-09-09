@@ -1,0 +1,14 @@
+{
+  "policy_version": 2,
+  "allowed_gpu_models": [
+    "NVIDIA RTX A5000"
+  ],
+  "gpu_discovery_command": "gpu-free",
+  "evolution_budget": "evaluation_counts",
+  "aco_budget": "search_tour_evaluations",
+  "algorithm_wall_clock_limit": null,
+  "file_and_runtime_integrity_hashing": false,
+  "algorithm_internal_hashing": "use only where appropriate for correctness and performance",
+  "existing_progress": "preserve completed evaluations and resume; do not repeat completed work",
+  "current_training_status": "paused while removing integrity checks and adapting existing records"
+}

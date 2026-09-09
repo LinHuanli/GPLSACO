@@ -380,17 +380,17 @@ class IndexedDataset:
 
     def _read_line(self, record_id: str) -> str:
         row = self.connection.execute(
-            "SELECT path,byte_offset,byte_length,raw_sha256 FROM records WHERE record_id=?",
+            "SELECT path,byte_offset,byte_length FROM records WHERE record_id=?",
             (record_id,),
         ).fetchone()
         if row is None:
             raise KeyError(record_id)
-        path, offset, length, expected = row
+        path, offset, length = row
         with (self.root / path).open("rb") as stream:
             stream.seek(offset)
             raw = stream.read(length)
-        if hashlib.sha256(raw).hexdigest() != expected:
-            raise ValueError("实例字节与已审计身份不一致")
+        if len(raw) != length:
+            raise ValueError("实例文件在指定记录结束前截断")
         return raw.decode("utf-8")
 
     def load_instance(self, record_id: str) -> Instance:
@@ -399,12 +399,11 @@ class IndexedDataset:
         return Instance(record_id, tuple(zip(coordinates[::2], coordinates[1::2], strict=True)))
 
     def load_label(self, record_id: str) -> Label:
-        # 只在外部 evaluator 中调用；再次核对标签成本/路线指纹。
+        # 只在外部evaluator读取标签，不重复计算文件或路线摘要。
         _, label = parse_record(self._read_line(record_id), record_id)
         stored = self.connection.execute(
-            "SELECT cost,tour_sha256 FROM labels WHERE record_id=?", (record_id,)
+            "SELECT cost FROM labels WHERE record_id=?", (record_id,)
         ).fetchone()
-        fingerprint = hashlib.sha256(struct.pack(f"<{len(label.tour)}I", *label.tour)).hexdigest()
-        if stored is None or stored != (label.cost, fingerprint):
+        if stored is None or stored[0] != label.cost:
             raise ValueError("标签与索引不符")
         return label
