@@ -13,7 +13,7 @@ from pathlib import Path
 
 from gp_faco.checkpoint import atomic_json
 from gp_faco.data import Instance
-from gp_faco.worker import PROJECT, content_hash, coordinate_hash, file_hash
+from gp_faco.worker import PROJECT
 
 
 @dataclass(frozen=True)
@@ -120,11 +120,10 @@ def parse_candidates(problem: Instance, settings: PriorSettings, raw: dict) -> d
     return {
         "prior_spec_id": 1,
         "dimension": n,
-        "coordinate_sha256": coordinate_hash(problem),
+        "instance_id": problem.instance_id,
         "settings": asdict(settings),
         "rows": rows,
         "distance_rows": distance_rows,
-        "native_nodes_sha256": content_hash(nodes),
         "node_pi": [v["pi"] for v in nodes],
         "directed_slots": sum(degrees),
         "undirected_edges": len(undirected),
@@ -150,9 +149,6 @@ def prepare_candidates(problem: Instance, settings: PriorSettings, binary: Path,
     binary, directory = binary.resolve(), directory.resolve()
     if not binary.is_relative_to(PROJECT) or not directory.is_relative_to(PROJECT):
         raise ValueError("候选工具及产物必须在项目内")
-    build = json.loads((binary.parent / "build-manifest.json").read_text())
-    if build["exit_code"] != 0 or file_hash(binary) != build["binary_sha256"]:
-        raise ValueError("LKH适配器与实际构建身份不符")
     directory.mkdir(parents=True, exist_ok=False)
     lines = [
         "NAME: gpfaco_prior",
@@ -185,15 +181,9 @@ def prepare_candidates(problem: Instance, settings: PriorSettings, binary: Path,
     (directory / "parameters.par").write_text("\n".join([*params, ""]))
     manifest = {
         "instance_id": problem.instance_id,
-        "coordinate_sha256": coordinate_hash(problem),
         "dimension": n,
         "settings": asdict(settings),
-        "binary_sha256": file_hash(binary),
-        "build_manifest_sha256": file_hash(binary.parent / "build-manifest.json"),
-        "module_sha256": file_hash(Path(__file__)),
         "wall_clock_limit": None,
-        "problem_file_sha256": file_hash(directory / "problem.tsp"),
-        "parameter_file_sha256": file_hash(directory / "parameters.par"),
     }
     atomic_json(directory / "manifest.json", manifest)
     (PROJECT / ".tmp").mkdir(exist_ok=True)
@@ -215,14 +205,11 @@ def prepare_candidates(problem: Instance, settings: PriorSettings, binary: Path,
         "cpu_system_seconds": after.ru_stime - before.ru_stime,
         "max_rss_children_kib": after.ru_maxrss,
         "rss_note": "maximum over child processes of this coordinator, not additive",
-        "log_sha256": file_hash(directory / "native.log"),
     }
     atomic_json(directory / "resources.json", resources)
     if outcome.returncode != 0:
         raise RuntimeError("候选原生进程失败；保留原始日志，不根据质量重试")
     raw = json.loads((directory / "native-candidates.json").read_text())
     prior = parse_candidates(problem, settings, raw)
-    prior["manifest_sha256"] = content_hash(manifest)
-    prior["native_output_sha256"] = file_hash(directory / "native-candidates.json")
     atomic_json(directory / "prior.json", prior)
     return prior

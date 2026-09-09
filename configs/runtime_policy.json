@@ -1,14 +1,1 @@
-{
-  "policy_version": 2,
-  "allowed_gpu_models": [
-    "NVIDIA RTX A5000"
-  ],
-  "gpu_discovery_command": "gpu-free",
-  "evolution_budget": "evaluation_counts",
-  "aco_budget": "search_tour_evaluations",
-  "algorithm_wall_clock_limit": null,
-  "file_and_runtime_integrity_hashing": false,
-  "algorithm_internal_hashing": "use only where appropriate for correctness and performance",
-  "existing_progress": "preserve completed evaluations and resume; do not repeat completed work",
-  "current_training_status": "paused while removing integrity checks and adapting existing records"
-}
+{"aco_budget":"search_tour_evaluations","algorithm_internal_hashing":"use only where appropriate for correctness and performance","algorithm_wall_clock_limit":null,"allowed_gpu_models":["NVIDIA RTX A5000"],"campaign_entrypoint":"scripts/run_representation_pilot.py","current_campaign":"artifacts/v3/gp-representation-pilot","current_training_status":"TSP500 joint_single vs conditional_three, each 3 GP seeds x 10 generations; no automatic 50-generation extension or final val/test","evolution_budget":"evaluation_counts","existing_progress":"preserve v1 and old two-scale fitness read-only; reuse matching FACO baselines; new TSP500 evolution starts from initial populations","experiment_version":3,"file_and_runtime_integrity_hashing":false,"gp_population_parallelism":{"geometry":"shared_across_individuals","layout":"individual_instance_seed_ant","population_shard_size":128,"resume":"ordinary request IDs, completed shards, full evolution state and RNG","scope":"unrestricted_n_at_most_1500","shared_gpu_pool":true,"size":128,"training_extension":"build/v3-gp-representation-exact"},"gpu_discovery_command":"gpu-free","gpu_resource_limit":null,"gpu_resource_policy":"all currently idle NVIDIA RTX A5000; one project worker per GPU","local_search_spec":"checklist_2opt_identity_zero_v2","native_parallel_policy":{"additional_hosts":"discovered through idle A5000 and exactly 24 logical CPUs","initial_host":"cuda07","initial_routes":24,"jobs_per_host":1,"threads_per_job":8},"parallel_experiment_stages":["baseline","independent_representation_seed_runs","population_shards","GPU_behavior_and_breeding","development_monitor","end_development_comparison"],"policy_version":6,"test_dimensions":[],"training_aco_seeds":1,"training_dimensions":[500],"training_iterations":1000,"validation":{"champions_per_run":1,"end_development_instances":32,"end_development_iterations":5000,"end_development_seeds":3,"formal_val_test":false,"monitor_generations":[5,10],"monitor_instances":16,"monitor_iterations":1000,"monitor_seeds":1}}

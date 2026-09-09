@@ -5,6 +5,16 @@
 
 namespace gp_faco {
 
+// 解释程序时按少量预登记迭代采样，不复制路线、档案或完整求解工作区。
+struct DecisionTrace {
+    bool conditional_three = false;
+    bool fixed_policy = false;
+    std::uint64_t iteration;
+    std::vector<float> features, scores;
+    std::vector<std::uint32_t> masks;
+    std::vector<std::int32_t> actions;
+};
+
 struct ColonyObservation {
     double global_cost, epoch_cost, parent_cost, minimum, maximum, default_trail, source_uniform;
     Node iteration_best;

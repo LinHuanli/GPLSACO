@@ -44,9 +44,9 @@ def settings_and_protocol():
     )
     protocol = WorkerProtocol(
         "GPU-056fae3f-b504-efe0-2d9d-b1186860e643",
-        "test-only",
+        "NVIDIA RTX A5000",
         "0",
-        "0" * 64,
+        "test-build",
         dimensions=(5, 7),
         colonies=4,
         settings=SolverSettings(ants=4),
@@ -116,8 +116,10 @@ def test_independent_training_full_evaluations_resume_and_policy_identity(tmp_pa
     final, expected = load_checkpoint(restored.path), load_checkpoint(full.path)
     assert final["phase"] == "complete"
     assert final["evolution"] == expected["evolution"]
-    assert final["validation_results"] == expected["validation_results"]
-    assert final["selected"] == expected["selected"]
+    assert without_task_locations(final["validation_results"]) == without_task_locations(
+        expected["validation_results"]
+    )
+    assert without_task_locations(final["selected"]) == without_task_locations(expected["selected"])
     assert all(final["completed"][k] == v for k, v in before["completed"].items())
     assert len(farm.submissions) == final["costs"]["solve_jobs"]
     assert len({t.occurrence_id for t in farm.submissions}) == len(farm.submissions)
@@ -151,8 +153,8 @@ def test_task_identity_native_policy_tamper_and_no_wall_clock():
         factorial_policy=policy,
     )
     other = replace(task, factorial_policy=replace(policy, variant="M01"))
-    assert task.task_id(protocol) != other.task_id(protocol)
-    assert task.controller_sha256 != other.controller_sha256
+    assert task.manifest(protocol) != other.manifest(protocol)
+    assert task.controller_id != other.controller_id
     farm = FactorialFarm()
     outcome = farm(protocol).submit(task).result()
     labels = {p.instance_id: source.load_label(p.instance_id) for p in problems}
@@ -177,3 +179,15 @@ def test_retraining_rejects_wrong_grammar_and_nonlearned_variant(tmp_path):
                 factorial_policy=FactorialPolicy(variant, BaselinePolicy()),
                 worker_factory=FactorialFarm(),
             )
+
+
+def without_task_locations(value):
+    if isinstance(value, dict):
+        return {
+            k: without_task_locations(v)
+            for k, v in value.items()
+            if k not in ("task_ids", "task_keys")
+        }
+    if isinstance(value, list):
+        return [without_task_locations(v) for v in value]
+    return value

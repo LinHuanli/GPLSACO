@@ -1,28 +1,26 @@
 # GPLSACO / GP-FACO
 
-用遗传编程学习FACO的重启、扰动起始区域和MNE阈值，研究反馈、两类控制的协同、候选图出口和跨规模迁移。
+用遗传编程学习 FACO 的局部扰动与重启控制，研究反馈价值、两类控制的协同、候选图出口和跨规模迁移。
 
-**先读：[实验进展总览：做了什么、参数怎么设、现在有什么结果](docs/reports/实验进展总览_2026-09-09.md)。**
+**本轮入口：[单树与三树预实验——设置、实时进度、曲线和个体解释](docs/reports/单树与三树预实验.md)。** 历史依据和已有FACO复现见[实验说明与结果](docs/reports/实验说明与结果.md)。
 
-当前E1和E3已进入正式训练，四组E3 Static调参完成；尚无完整GP正式测试结论。训练进度已保存，正在取消运行管理中的重复完整性校验。恢复后只使用空闲RTX A5000，进化和ACO按evaluation次数，不设算法墙钟上限。
+当前执行 v2：蚂蚁数采用 2022 FACO 论文公式，只使用空闲 RTX A5000，ACO 和 GP 按评价次数运行。旧的 32 蚂蚁训练只读保存；新训练必须先确定数值后端、开发集训练预算并准备两类配对 FACO baseline。已有六个 TSPLIB 实例各 30 次的原始 FACO 复现结果；GP 正式测试尚未执行。
 
-- [当前进度与下一步](docs/reports/progress.md)
-- [研究计划与文档导航](docs/README.md)
-- [原始v4研究方案](docs/design/GP_ACO_TSP_Research_Proposal_v4.md)
-- [当前资源和运行规则](docs/planning/29_runtime_simplification.md)
+当前轮次为 **TSP500，修复后的单树/条件三树各3 seed×128个体×10代**，每实例1个ACO seed、1000迭代训练。使用全部空闲A5000的共享任务池；g5/g10轻量开发监控，结束后仅比较g10冠军。旧50代轮次已暂停，本预实验不会自动进入正式val/test。运行 `.venv/bin/python scripts/run_representation_pilot.py --launch` 启动，恢复用 `--resume --launch`；参数与论文依据见[本轮协议](docs/experiments/representation_pilot_v3.md)。
 
-## 项目目录
+- [当前进度](docs/reports/progress.md)
+- [文档导航](docs/README.md)
+- [参数与依据](docs/design/implementation_v2.md)
+- [128 个体在 GPU 上并行](docs/design/population_gpu_v2.md)
+- [实验执行协议与命令](docs/experiments/protocol_v2.md)
 
 | 目录 | 内容 |
 |---|---|
-| docs/design | 原始研究方案 |
-| docs/planning、docs/experiments | 参数、方法和E1–E4设计 |
-| docs/reports | 实测结果与当前总览；历史报告保留当时状态 |
-| python/gp_faco | 数据、GP进化、外部评价和任务管理 |
-| cpp、cuda | CPU参考、CUDA求解和绑定 |
-| configs | 实验参数和当前运行规则 |
-| scripts、tests | 实验入口与必要的实现检查 |
-| provenance | 历史来源记录、第三方声明及已选参数 |
-| artifacts、build、.venv、.tmp | 本地结果、构建、环境和临时工作树，不提交原始数据与二进制 |
+| `python/gp_faco` | GP 进化、外部评分、数据和实验编排 |
+| `cpp`、`cuda` | 原生 FACO 对照、CUDA 求解器和绑定 |
+| `configs`、`scripts`、`tests` | 实验参数、入口和必要测试 |
+| `docs` | 设计、实验协议、可读报告及 v1 历史 |
+| `results` | 按版本保存的精简统计结果 |
+| `artifacts`、`build`、`.venv`、`.tmp`、`.deps` | 本地原始结果、构建、环境和中间产物 |
 
-所有工作都在本项目目录内。外部Datasets和references只读。历史方案中的文件摘要要求与旧GPU授权已由最新运行规则替代。
+所有写入都在本项目内，外部数据、参考源码和 MTGP_ACO 只读。文件、源码、二进制、坐标与实验管理记录不计算完整性哈希；算法内部的路线指纹保留用于档案去重。

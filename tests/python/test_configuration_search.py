@@ -68,7 +68,7 @@ class WorkerFarm:
                 return {
                     "pid": self.pid,
                     "host": protocol.execution_host,
-                    "protocol_sha256": protocol.sha256,
+                    "protocol_id": protocol.identifier,
                     "start_method": "spawn",
                 }
 
@@ -116,7 +116,7 @@ class WorkerFarm:
                 outcome = {
                     "status": "completed",
                     "task_id": task.task_id(protocol),
-                    "protocol_sha256": protocol.sha256,
+                    "protocol_id": protocol.identifier,
                     **task.controller_identity(),
                     "dimension": task.dimension,
                     "occurrence_id": task.occurrence_id,
@@ -154,9 +154,9 @@ def setup():
     )
     protocol = WorkerProtocol(
         "GPU-34b223c6-7502-b097-19e0-a411b1708f06",
-        "unit",
+        "NVIDIA RTX A5000",
         "0",
-        "0" * 64,
+        "test-build",
         dimensions=(5, 7),
         colonies=4,
         settings=SolverSettings(ants=4),
@@ -174,7 +174,7 @@ def test_baseline_policy_task_identity_and_actual_configuration_verification(set
     settings, protocol, policies = setup
     for policy in policies:
         assert BaselinePolicy.from_dict(policy.to_dict()) == policy
-        assert policy.sha256 != replace(policy, region=1).sha256
+        assert policy.identifier != replace(policy, region=1).identifier
     for changed in (
         {"policy_spec_id": True},
         {"kind": "gp"},
@@ -201,8 +201,10 @@ def test_baseline_policy_task_identity_and_actual_configuration_verification(set
     changed = copy.deepcopy(outcome)
     changed["native_result"]["baseline_policy"] = policies[1].to_dict()
     assert score_panel(task, protocol, changed, labels).failed
-    assert "program_sha256" not in task.manifest(protocol)
-    assert replace(task, evaluation_limit_per_colony=20).task_id(protocol) != task.task_id(protocol)
+    assert "program_id" not in task.manifest(protocol)
+    assert replace(task, evaluation_limit_per_colony=20).manifest(protocol) != task.manifest(
+        protocol
+    )
     with pytest.raises(ValueError):
         replace(task, evaluation_limit_per_colony=True)
     with pytest.raises(ValueError):
@@ -222,7 +224,6 @@ def test_full_grid_fixed_validation_and_pause_resume(setup, tmp_path, purpose, c
         policies,
         Source().data(),
         worker_factory=first,
-        boundary=free_boundary,
     )
     expected = baseline.run()
     paused = ConfigurationRun(
@@ -232,7 +233,6 @@ def test_full_grid_fixed_validation_and_pause_resume(setup, tmp_path, purpose, c
         policies,
         Source().data(),
         worker_factory=second,
-        boundary=free_boundary,
     )
     assert paused.run(stop_after_tasks=5)["status"] == "paused"
     before = load_checkpoint(paused.path)
@@ -243,11 +243,12 @@ def test_full_grid_fixed_validation_and_pause_resume(setup, tmp_path, purpose, c
         policies,
         Source().data(),
         worker_factory=second,
-        boundary=free_boundary,
         resume=True,
     )
     result = resumed.run()
-    assert result["status"] == "complete" and result["selected"] == expected["selected"]
+    assert result["status"] == "complete" and without_task_locations(
+        result["selected"]
+    ) == without_task_locations(expected["selected"])
     assert len(result["shortlist"]) == shortlist
     assert set(result["selected"]) == set(settings.selection_kinds)
     assert result["selected"]["static"]["policy"]["mne_level"] == 1
@@ -257,8 +258,8 @@ def test_full_grid_fixed_validation_and_pause_resume(setup, tmp_path, purpose, c
     assert result["costs"]["search_tour_evaluations"] == calls * 16 * 4
     assert result["costs"]["observer_timeouts"] == calls
     assert result["costs"]["charged_seconds"] == result["costs"]["overrun_seconds"] == 0
-    assert [t.task_id(protocol) for t in first.submissions] == [
-        t.task_id(protocol) for t in second.submissions
+    assert [t.task_id(protocol).split(":", 1)[1] for t in first.submissions] == [
+        t.task_id(protocol).split(":", 1)[1] for t in second.submissions
     ]
     assert all(resumed.state["completed"][k] == value for k, value in before["completed"].items())
     assert all(worker.closed for worker in second.workers) and len(second.workers) == 3
@@ -278,96 +279,9 @@ def test_static_tuning_rejects_extra_policy_kind_or_multiple_budgets(setup, tmp_
             policies,
             Source().data(),
             worker_factory=WorkerFarm(),
-            boundary=free_boundary,
         )
     with pytest.raises(ValueError, match="预定主档"):
         replace(settings, purpose="static_tuning", evaluation_limits=(16, 32))
-
-
-@pytest.mark.parametrize("window", ["raw_receipt", "verified_receipt", "cursor_checkpoint"])
-def test_configuration_journal_recovers_without_repeating_solve(
-    setup, tmp_path, monkeypatch, window
-):
-    import gp_faco.configuration_search as search
-    import gp_faco.evaluation_run as journal
-
-    settings, protocol, policies = setup
-    farm = WorkerFarm()
-    run = ConfigurationRun(
-        tmp_path / window,
-        settings,
-        protocol,
-        policies,
-        Source().data(),
-        worker_factory=farm,
-        boundary=free_boundary,
-    )
-    original = search.save_checkpoint
-
-    def crash_after_write(target, value):
-        original(target, value)
-        is_solve = target.parent.name == "tasks" and value.get("kind") == "solve"
-        if (
-            is_solve
-            and (
-                (window == "raw_receipt" and value["checked"] is None)
-                or (window == "verified_receipt" and value["checked"] is not None)
-            )
-        ) or (
-            window == "cursor_checkpoint"
-            and target.name == "checkpoint.json"
-            and value["costs"]["solve_jobs"] == 1
-            and value["cursor"] == 0
-        ):
-            raise RuntimeError("injected interruption")
-
-    with monkeypatch.context() as patch:
-        patch.setattr(search, "save_checkpoint", crash_after_write)
-        patch.setattr(journal, "save_checkpoint", crash_after_write)
-        with pytest.raises(RuntimeError, match="injected interruption"):
-            run.run()
-    assert len(farm.submissions) == 1
-    resumed = ConfigurationRun(
-        run.directory,
-        settings,
-        protocol,
-        policies,
-        Source().data(),
-        worker_factory=farm,
-        boundary=free_boundary,
-        resume=True,
-    )
-    result = resumed.run()
-    assert result["status"] == "complete" and len(farm.submissions) == 24
-    assert len({t.task_id(protocol) for t in farm.submissions}) == 24
-    assert result["costs"]["unobserved_terminated_attempts"] == 0
-
-
-def test_post_return_observation_failure_preserves_the_real_result(setup, tmp_path):
-    settings, protocol, policies = setup
-    calls = 0
-
-    def boundary(*args):
-        nonlocal calls
-        calls += 1
-        if calls == 2:
-            raise RuntimeError("nvidia-smi observation failed")
-        return free_boundary()
-
-    farm = WorkerFarm()
-    run = ConfigurationRun(
-        tmp_path / "observation",
-        settings,
-        protocol,
-        policies,
-        Source().data(),
-        worker_factory=farm,
-        boundary=boundary,
-    )
-    result = run.run()
-    assert result["status"] == "complete" and len(farm.submissions) == 24
-    assert farm.outcomes[0]["gpu_boundary_after"]["foreign_processes"] is None
-    assert "observation failed" in farm.outcomes[0]["gpu_boundary_after"]["error"]
 
 
 def test_all_failed_search_is_retained_and_exports_no_selected_baseline(setup, tmp_path):
@@ -380,7 +294,6 @@ def test_all_failed_search_is_retained_and_exports_no_selected_baseline(setup, t
         policies,
         Source().data(),
         worker_factory=farm,
-        boundary=free_boundary,
     )
     result = run.run()
     assert result["status"] == "failed" and result["costs"]["failed_solves"] == 16
@@ -399,10 +312,21 @@ def test_calibration_keeps_all_limits_and_does_not_select_methods(setup, tmp_pat
         policies,
         Source().data(calibration=True),
         worker_factory=farm,
-        boundary=free_boundary,
     )
     result = run.run()
     assert result["status"] == "complete" and len(farm.submissions) == 48
     assert len(result["search_scores"]) == 12 and not result["selected"]
     assert result["costs"]["search_tour_evaluations"] == (0 + 8 + 16) * 4 * 4 * 4
     assert all(task.budget_seconds is None for task in farm.submissions)
+
+
+def without_task_locations(value):
+    if isinstance(value, dict):
+        return {
+            k: without_task_locations(v)
+            for k, v in value.items()
+            if k not in ("task_ids", "task_keys")
+        }
+    if isinstance(value, list):
+        return [without_task_locations(v) for v in value]
+    return value

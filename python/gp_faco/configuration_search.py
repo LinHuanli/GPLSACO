@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import csv
 import fcntl
 import importlib.metadata
 import math
 import platform
 import random
-import subprocess
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -22,8 +20,6 @@ from gp_faco.worker import (
     BaselineTask,
     PersistentGpuWorker,
     WorkerProtocol,
-    content_hash,
-    file_hash,
     freeze_problems,
 )
 
@@ -32,6 +28,7 @@ from gp_faco.worker import (
 class SearchSettings:
     purpose: str = "calibration"
     evaluation_limits: tuple[int, ...] = (0, 256, 1024, 4096, 16384)
+    validation_evaluation_limit: int | None = None
     instances_per_panel: int = 16
     solver_seeds: tuple[int, ...] = (17, 29)
     order_seed: int = 90371
@@ -54,6 +51,11 @@ class SearchSettings:
         for value in (*self.evaluation_limits, *self.solver_seeds, self.order_seed):
             if type(value) is not int or not 0 <= value <= 0xFFFFFFFFFFFFFFFF:
                 raise ValueError("FE和seed必须是uint64整数")
+        if self.validation_evaluation_limit is not None and (
+            type(self.validation_evaluation_limit) is not int
+            or not 0 <= self.validation_evaluation_limit <= 0xFFFFFFFFFFFFFFFF
+        ):
+            raise ValueError("验证 FE 必须是非负整数")
         if not self.solver_seeds or len(set(self.solver_seeds)) != len(self.solver_seeds):
             raise ValueError("求解seed必须非空且不重复")
         if any(
@@ -113,38 +115,6 @@ class SearchData:
         return {p.instance_id: self.source.load_label(p.instance_id) for p in task.problems}
 
 
-def gpu_boundary(protocol: WorkerProtocol, worker_pid: int) -> dict:
-    """只检查目标UUID；外来进程数量进入记录，不公开他人的命令或PID。"""
-    started = time.perf_counter()
-    apps = subprocess.check_output(
-        ["nvidia-smi", "--query-compute-apps=gpu_uuid,pid", "--format=csv,noheader"], text=True
-    )
-    pids = {
-        int(row[1])
-        for row in csv.reader(apps.splitlines())
-        if row and row[0].strip() == protocol.gpu_uuid
-    }
-    row = next(
-        csv.reader(
-            subprocess.check_output(
-                [
-                    "nvidia-smi",
-                    f"--id={protocol.gpu_uuid}",
-                    "--query-gpu=memory.used,utilization.gpu",
-                    "--format=csv,noheader,nounits",
-                ],
-                text=True,
-            ).splitlines()
-        )
-    )
-    return {
-        "foreign_processes": len(pids - {worker_pid}),
-        "memory_used_mib": int(row[0]),
-        "utilization_percent": int(row[1]),
-        "query_seconds": time.perf_counter() - started,
-    }
-
-
 class ConfigurationRun(EvaluationRun):
     def __init__(
         self,
@@ -156,7 +126,6 @@ class ConfigurationRun(EvaluationRun):
         *,
         resume=False,
         worker_factory=PersistentGpuWorker,
-        boundary=gpu_boundary,
         event=None,
     ):
         self.directory = directory.resolve()
@@ -170,13 +139,13 @@ class ConfigurationRun(EvaluationRun):
             self._lease.close()
             raise RuntimeError("该配置搜索仍有协调进程，不能并发恢复") from None
         self.settings, self.protocol, self.data = settings, protocol, data
-        self._worker_factory, self._boundary, self._event_callback = worker_factory, boundary, event
+        self._worker_factory, self._event_callback = worker_factory, event
         self._worker, self._closed = None, False
         self.path = self.directory / "checkpoint.json"
         try:
             if not policies or any(type(p) is not BaselinePolicy for p in policies):
                 raise ValueError("需要显式非空基线配置族")
-            self.policies = {p.sha256: p for p in sorted(policies, key=lambda p: p.sha256)}
+            self.policies = {p.identifier: p for p in sorted(policies, key=lambda p: p.identifier)}
             if len(self.policies) != len(policies):
                 raise ValueError("配置族含重复身份")
             for policy in policies:
@@ -184,8 +153,17 @@ class ConfigurationRun(EvaluationRun):
             if settings.instances_per_panel * len(settings.solver_seeds) != protocol.colonies:
                 raise ValueError("配置搜索必须使用worker完整面板")
             if any(
-                limit % protocol.settings.ants or limit // protocol.settings.ants > 0xFFFFFFFF
-                for limit in settings.evaluation_limits
+                limit % protocol.settings.ants_for(n)
+                or limit // protocol.settings.ants_for(n) > 0xFFFFFFFF
+                for n in protocol.dimensions
+                for limit in (
+                    *settings.evaluation_limits,
+                    *(
+                        ()
+                        if settings.validation_evaluation_limit is None
+                        else (settings.validation_evaluation_limit,)
+                    ),
+                )
             ):
                 raise ValueError("FE档必须为完整蚂蚁批次且不超过uint32批次")
             if settings.selection_kinds and (
@@ -212,39 +190,37 @@ class ConfigurationRun(EvaluationRun):
                 order = list(self.policies)
                 rng.shuffle(order)
                 self.search_plan.extend(
-                    {"policy_sha256": sha, "limit": limit, "panel": panel}
-                    for sha in order
+                    {"policy_id": policy_id, "limit": limit, "panel": panel}
+                    for policy_id in order
                     for panel in range(len(self.panels["search"]))
                 )
             plan = {"panels": self.panels, "search": self.search_plan}
             self.manifest = json_value(
                 {
-                    "search_version": 1,
+                    "search_version": 2,
                     "settings": asdict(settings),
                     "worker_protocol": protocol.manifest(),
                     "data": {"pools": data.pools, "identity": data.identity},
                     "policies": [p.to_dict() for p in self.policies.values()],
-                    "plan_sha256": content_hash(plan),
                     "software": {
                         "python": platform.python_version(),
                         "numpy": importlib.metadata.version("numpy"),
                     },
-                    "sources": {
-                        str(p.relative_to(PROJECT)): file_hash(p)
-                        for p in sorted((PROJECT / "python/gp_faco").glob("*.py"))
-                    },
-                    "selection": "full grid; fixed validation; macro gap then policy hash per kind",
+                    "selection": (
+                        "full grid; fixed validation; macro gap then explicit "
+                        "policy parameters per kind"
+                    ),
                     "budget_kind": "search_tour_evaluations",
                     "wall_clock_limit": None,
-                    "gpu_occupancy": "task boundary samples; no continuous-monitoring claim",
+                    "gpu_occupancy": "idle device at worker startup",
                 }
             )
-            self.run_id = content_hash(self.manifest)
+            self.run_id = self.directory.name
             if resume:
                 self.state = load_checkpoint(self.path)
                 if (
                     type(self.state.get("version")) is not int
-                    or self.state["version"] != 1
+                    or self.state["version"] != 2
                     or self.state.get("phase") not in ("search", "validation", "complete", "failed")
                     or type(self.state.get("cursor")) is not int
                     or self.state["cursor"] < 0
@@ -276,7 +252,7 @@ class ConfigurationRun(EvaluationRun):
                 if any(p.name != ".run.lock" for p in self.directory.iterdir()):
                     raise FileExistsError("新搜索要求空目录；已有结果须显式resume")
                 self.state = {
-                    "version": 1,
+                    "version": 2,
                     "run_id": self.run_id,
                     "phase": "search",
                     "cursor": 0,
@@ -308,24 +284,24 @@ class ConfigurationRun(EvaluationRun):
                 }
                 save_checkpoint(self.directory / "manifest.json", self.manifest)
                 save_checkpoint(self.directory / "plan.json", plan)
-            self._save()
+            self._open_journal()
+            self._save(force=True)
         except BaseException:
             self._lease.close()
             raise
 
-    def _save(self):
-        save_checkpoint(self.path, self.state)
+    def _save(self, force=False):
+        if force or not self.path.exists():
+            if hasattr(self, "_journal"):
+                self.state["journal_position"] = self._journal.position
+            save_checkpoint(self.path, self.state)
 
     def _event(self, kind, **values):
         if self._event_callback:
             self._event_callback({"event": kind, "phase": self.state["phase"], **values})
 
     def _before_submit(self):
-        observation = self._boundary(self.protocol, self.state["active_worker"]["pid"])
-        self.state["admission"].append({"task_key": self.state["pending"]["key"], **observation})
-        self._save()
-        if observation["foreign_processes"]:
-            raise RuntimeError("目标GPU出现外来计算进程，当前任务尚未提交，保留待办")
+        pass
 
     def task(self, phase, index, job):
         panel = self.panels["search" if phase == "search" else "validation"][job["panel"]]
@@ -334,7 +310,7 @@ class ConfigurationRun(EvaluationRun):
             raise ValueError("已读取问题与冻结面板规模不符")
         return BaselineTask(
             f"{self.run_id}:{phase}:case{index}",
-            self.policies[job["policy_sha256"]],
+            self.policies[job["policy_id"]],
             problems,
             tuple((p.instance_id, seed) for p in problems for seed in self.settings.solver_seeds),
             job["limit"],
@@ -348,51 +324,21 @@ class ConfigurationRun(EvaluationRun):
         return json_value(asdict(checked)), time.perf_counter() - started
 
     def _submit(self, worker, task):
-        future = worker.submit(task)
-
-        # 仍通过通用事务等待原Future；返回后再取边界资源，不据观察超时另起任务。
-        class ObservedFuture:
-            def result(inner, timeout=None):
-                outcome = future.result(timeout=timeout)
-                try:
-                    observation = self._boundary(self.protocol, self.state["active_worker"]["pid"])
-                except Exception as error:
-                    # 实际结果已返回；资源观察失败不能令它丢失并触发第二次求解。
-                    observation = {
-                        "foreign_processes": None,
-                        "error": f"{type(error).__name__}: {error}",
-                    }
-                outcome["gpu_boundary_after"] = observation
-                return outcome
-
-        return ObservedFuture()
+        return worker.submit(task)
 
     def _aggregate(self, phase, plan):
         grouped = {}
         for index, job in enumerate(plan):
             task = self.task(phase, index, job)
-            key = content_hash(
-                {
-                    "run_id": self.run_id,
-                    "kind": "solve",
-                    "description": task.manifest(self.protocol),
-                }
-            )
-            record = load_checkpoint(self.directory / "tasks" / f"{key}.json")
-            if content_hash(record) != self.state["completed"].get(key):
-                raise ValueError("配置汇总的已完成任务记录改变")
-            verified, _ = self._score(task, record["outcome"])
-            if verified != record["checked"]:
-                raise ValueError("配置汇总的原始结果未通过再次独立核验")
+            key = task.occurrence_id
+            record = self._completed_record(key)
             result = PanelFitness(
                 **{
                     **record["checked"],
                     "members": tuple(tuple(v) for v in record["checked"]["members"]),
                 }
             )
-            grouped.setdefault(f"{job['limit']}/{job['policy_sha256']}", []).append(
-                (task, result, key)
-            )
+            grouped.setdefault(f"{job['limit']}/{job['policy_id']}", []).append((task, result, key))
         output = {}
         for key, records in grouped.items():
             tasks, scores = tuple(v[0] for v in records), tuple(v[1] for v in records)
@@ -423,21 +369,27 @@ class ConfigurationRun(EvaluationRun):
         shortlist = []
         for kind in self.settings.selection_kinds:
             ranked = sorted(
-                (score["fitness"], sha)
-                for sha, p in self.policies.items()
+                (score["fitness"], policy_id)
+                for policy_id, p in self.policies.items()
                 if p.kind == kind
-                and (score := self.state["search_scores"][f"{limit}/{sha}"])["fitness"] is not None
+                and (score := self.state["search_scores"][f"{limit}/{policy_id}"])["fitness"]
+                is not None
             )
             if not ranked:
                 self.state["phase"] = "failed"
                 return
             shortlist.extend(
-                sha for _, sha in ranked[: self.settings.validation_shortlist_per_kind]
+                policy_id for _, policy_id in ranked[: self.settings.validation_shortlist_per_kind]
             )
         self.state["shortlist"] = shortlist
+        limit = (
+            self.settings.validation_evaluation_limit
+            if self.settings.validation_evaluation_limit is not None
+            else limit
+        )
         self.state["validation_plan"] = [
-            {"policy_sha256": sha, "limit": limit, "panel": panel}
-            for sha in shortlist
+            {"policy_id": policy_id, "limit": limit, "panel": panel}
+            for policy_id in shortlist
             for panel in range(len(self.panels["validation"]))
         ]
         self._close_worker()
@@ -447,25 +399,29 @@ class ConfigurationRun(EvaluationRun):
         self.state["validation_scores"] = self._aggregate(
             "validation", self.state["validation_plan"]
         )
-        limit = self.settings.evaluation_limits[0]
+        limit = (
+            self.settings.validation_evaluation_limit
+            if self.settings.validation_evaluation_limit is not None
+            else self.settings.evaluation_limits[0]
+        )
         selected = {}
         for kind in self.settings.selection_kinds:
             ranked = sorted(
-                (score["fitness"], sha)
-                for sha in self.state["shortlist"]
-                if self.policies[sha].kind == kind
-                and (score := self.state["validation_scores"][f"{limit}/{sha}"])["fitness"]
+                (score["fitness"], policy_id)
+                for policy_id in self.state["shortlist"]
+                if self.policies[policy_id].kind == kind
+                and (score := self.state["validation_scores"][f"{limit}/{policy_id}"])["fitness"]
                 is not None
             )
             if not ranked:
                 self.state["phase"] = "failed"
                 return
-            fitness, sha = ranked[0]
+            fitness, policy_id = ranked[0]
             selected[kind] = {
-                "policy": self.policies[sha].to_dict(),
-                "policy_sha256": sha,
+                "policy": self.policies[policy_id].to_dict(),
+                "policy_id": policy_id,
                 "fitness": fitness,
-                **self.state["validation_scores"][f"{limit}/{sha}"],
+                **self.state["validation_scores"][f"{limit}/{policy_id}"],
             }
         self.state["selected"], self.state["phase"] = selected, "complete"
         self._immutable_record(
@@ -474,7 +430,6 @@ class ConfigurationRun(EvaluationRun):
                 "run_id": self.run_id,
                 "manifest": self.manifest,
                 "selected": selected,
-                "validation_scores_sha256": content_hash(self.state["validation_scores"]),
             },
         )
 
@@ -486,6 +441,7 @@ class ConfigurationRun(EvaluationRun):
         ):
             raise ValueError("暂停任务数必须为正整数")
         completed_here = 0
+        snapshot_safe = False
         try:
             if self.state["phase"] == "complete":
                 if self._aggregate("search", self.search_plan) != self.state["search_scores"]:
@@ -519,6 +475,7 @@ class ConfigurationRun(EvaluationRun):
                         failed=record["checked"]["error"] is not None,
                     )
                     if stop_after_tasks is not None and completed_here >= stop_after_tasks:
+                        snapshot_safe = True
                         return self.summary("paused")
                 if phase == "search":
                     self._finish_search()
@@ -527,11 +484,15 @@ class ConfigurationRun(EvaluationRun):
                 self._save()
             report = self.summary(self.state["phase"])
             save_checkpoint(self.directory / "summary.json", report)
+            snapshot_safe = True
             return report
         finally:
             try:
                 self._close_worker()
-                self._save()
+                # 已追加但尚未归集的返回必须留在快照位置之后，供恢复重放。
+                if snapshot_safe:
+                    self._save(force=True)
+                self._journal.close()
             finally:
                 self._closed = True
                 self._lease.close()

@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
+import argparse
 import difflib
-import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -13,12 +13,13 @@ PROJECT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
-    source = PROJECT.parent / "references/ACO-TSP-Adaptive-Tuning"
-    destination = PROJECT / ".deps/native-edge-guard"
-    lock = json.loads((PROJECT / "provenance/sources.lock.json").read_text())
-    for name, expected in lock["adaptive_faco"]["files"].items():
-        if hashlib.sha256((source / name).read_bytes()).hexdigest() != expected["sha256"]:
-            raise RuntimeError(f"原生源文件改变，需要重新审查: {name}")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--source", type=Path, default=PROJECT.parent / "references/FocusedACO")
+    parser.add_argument("--output", type=Path, default=PROJECT / ".deps/faco-2022-continuous")
+    args = parser.parse_args()
+    source, destination = args.source.resolve(), args.output.resolve()
+    if not destination.is_relative_to(PROJECT):
+        raise ValueError("适配副本必须在项目内")
     original = (source / "src/local_search.cpp").read_text()
     needle = "                        if (cost < curr) {"
     if original.count(needle) != 1:
@@ -42,9 +43,23 @@ def main() -> None:
                         if (removed == added) continue;
 """
     modified = original.replace(needle, guard + "\n" + needle)
+    # 两个 2-opt 重载的四处 gain 都保持原顺序；相邻边的恒等移动直接归零。
+    for neighbor, adjacent in (("b_next", "a_next"), ("b_prev", "a_prev")):
+        ending = f"- instance.get_distance({adjacent}, {neighbor});"
+        if modified.count(ending) != 2:
+            raise RuntimeError("原始两个 2-opt 重载的位置不符")
+        modified = modified.replace(
+            ending,
+            ending
+            + "\n                    "
+            + f"if ({neighbor} == a || b == {adjacent}) diff = 0;",
+        )
+
     destination.mkdir(parents=True, exist_ok=True)
     shutil.copytree(source / "src", destination / "src", dirs_exist_ok=True)
-    shutil.copy2(source / "LICENSE", destination / "LICENSE")
+    for notice in ("LICENSE", "README.md"):
+        if (source / notice).exists():
+            shutil.copy2(source / notice, destination / notice)
     (destination / "src/local_search.cpp").write_text(modified)
     difference = "".join(
         difflib.unified_diff(
@@ -54,19 +69,15 @@ def main() -> None:
             tofile="b/src/local_search.cpp",
         )
     )
-    (PROJECT / "provenance/native_edge_guard.patch").write_text(difference)
+    (destination / "continuous_distance.patch").write_text(difference)
     metadata = {
         "name": "FACO-Native-EdgeGuard",
-        "base": "Adaptive-Tuning snapshot pinned by sources.lock.json",
-        "scope": "initialization three_opt_nn identity-edge rejection only",
+        "base": str(source),
+        "scope": "continuous distance: 2-opt identity gains zero; 3-opt identity-edge rejection",
+        "adaptation_revision": 2,
         "not_unmodified_native": True,
-        "original_sha256": hashlib.sha256(original.encode()).hexdigest(),
-        "modified_sha256": hashlib.sha256(modified.encode()).hexdigest(),
-        "patch_sha256": hashlib.sha256(difference.encode()).hexdigest(),
     }
-    (PROJECT / "provenance/native_edge_guard.json").write_text(
-        json.dumps(metadata, indent=2) + "\n"
-    )
+    (destination / "adaptation.json").write_text(json.dumps(metadata, indent=2) + "\n")
     print(json.dumps(metadata))
 
 

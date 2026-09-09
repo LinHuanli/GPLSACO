@@ -11,10 +11,19 @@ namespace gp_faco::cuda_detail {
 
 struct CoordinateDistance {
     const double* xy;
+    const double* cached = nullptr;
+    Node dimension = 0;
     __device__ CoordinateDistance for_ant(Node) const { return *this; }
     __host__ __device__ double operator()(Node a, Node b) const {
+        if (cached) return cached[static_cast<std::size_t>(a) * dimension + b];
+#if defined(GPFACO_SEARCH_FP32)
+        const float x = static_cast<float>(xy[a * 2]) - static_cast<float>(xy[b * 2]);
+        const float y = static_cast<float>(xy[a * 2 + 1]) - static_cast<float>(xy[b * 2 + 1]);
+        return sqrtf(x * x + y * y);
+#else
         const double x = xy[a * 2] - xy[b * 2], y = xy[a * 2 + 1] - xy[b * 2 + 1];
         return sqrt(x * x + y * y);
+#endif
     }
 };
 
@@ -34,9 +43,9 @@ __device__ inline double uniform53(curandStatePhilox4_32_10_t& state) {
     return static_cast<double>(((hi << 32) | lo) >> 11) * 0x1.0p-53;
 }
 
-template<class Allowed>
-__device__ bool available_node(const std::uint8_t* visited, const Node* tour,
-    const Node* position, Node n, Node current, Node node, const Allowed& allowed) {
+template<class Allowed, class TourNode>
+__device__ bool available_node(const std::uint8_t* visited, const TourNode* tour,
+    const TourNode* position, Node n, Node current, Node node, const Allowed& allowed) {
     if (node >= n || visited[node]) return false;
     // 无约束的主实验路径保留原有visited筛选，不额外执行图/重连判断。
     if constexpr (std::is_same_v<Allowed, UnrestrictedEdges>) return true;
@@ -74,10 +83,10 @@ struct StochasticChoices {
         return node;
     }
 
-    template<class Distance, class Allowed>
+    template<class Distance, class Allowed, class TourNode>
     __device__ Node next(Node ant, Node current, const std::uint8_t* visited,
-                         Node step, Node n, Distance distance, const Node* tour,
-                         const Node* position, const Allowed& allowed) const {
+                         Node step, Node n, Distance distance, const TourNode* tour,
+                         const TourNode* position, const Allowed& allowed) const {
         auto random = random_state(seed, batch, ant, step);
         const double uniform = uniform53(random);
         double total = 0;
@@ -136,8 +145,11 @@ struct StochasticChoices {
 struct BatchCoordinateDistance {
     const double* xy;
     Node n, ants;
+    const double* cached = nullptr;
+    Node geometry_count = 0;
     __device__ CoordinateDistance for_ant(Node ant) const {
-        return {xy + static_cast<std::size_t>(ant / ants) * n * 2};
+        const auto colony = static_cast<std::size_t>(geometry_count ? (ant / ants) % geometry_count : ant / ants);
+        return {xy + colony * n * 2, cached ? cached + colony * n * n : nullptr, n};
     }
 };
 
@@ -147,11 +159,13 @@ struct BatchStochasticChoices {
     const double* products;
     const std::uint64_t* seeds;
     Node primary_width, backup_width, batch, ants;
+    Node geometry_count = 0;
     __device__ StochasticChoices for_ant(Node ant, Node n) const {
         const auto colony = ant / ants;
         const auto base = static_cast<std::size_t>(colony) * n;
-        return {primary + base * primary_width,
-                backup_width ? backup + base * backup_width : nullptr,
+        const auto geometry = static_cast<std::size_t>(geometry_count ? colony % geometry_count : colony) * n;
+        return {primary + geometry * primary_width,
+                backup_width ? backup + geometry * backup_width : nullptr,
                 products + base * primary_width, primary_width, backup_width, batch,
                 seeds[colony], nullptr, nullptr};
     }
@@ -160,7 +174,7 @@ struct BatchStochasticChoices {
         return static_cast<std::size_t>(ant / ants) * n;
     }
     __device__ std::size_t candidate_offset(Node ant, Node n, Node width) const {
-        return parent_offset(ant, n) * width;
+        return static_cast<std::size_t>(geometry_count ? (ant / ants) % geometry_count : ant / ants) * n * width;
     }
 };
 

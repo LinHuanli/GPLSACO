@@ -19,10 +19,11 @@ struct DevicePheromoneView {
 
 static __global__ void initialize_control(Node n, const Node* all_initial, const double* costs,
     Node* all_parent_positions, Node* all_archive, Node* all_archive_positions, ControllerState* controls,
-    bool force_collisions = false) {
+    bool force_collisions = false, Node geometry_count = 0) {
     const Node colony = blockIdx.x;
     const auto base = static_cast<std::size_t>(colony) * n;
-    const auto* initial = all_initial + base;
+    const auto geometry = geometry_count ? colony % geometry_count : colony;
+    const auto* initial = all_initial + static_cast<std::size_t>(geometry) * n;
     auto* tours = all_archive + base * archive_capacity;
     auto* positions = all_archive_positions + base * archive_capacity;
     for (Node i = threadIdx.x; i < n * archive_capacity; i += blockDim.x) {
@@ -35,7 +36,7 @@ static __global__ void initialize_control(Node n, const Node* all_initial, const
     if (threadIdx.x == 0) {
         auto& state = controls[colony]; state = {};
         state.archive_size = 1;
-        state.archive_cost[0] = state.tracked_global = state.tracked_epoch = costs[colony];
+        state.archive_cost[0] = state.tracked_global = state.tracked_epoch = costs[geometry];
         state.archive_identity[0] = force_collisions ? TourFingerprint{} : fingerprint({initial, nullptr, n});
         state.active_identity = state.epoch_identity = state.archive_identity[0];
     }
@@ -86,7 +87,18 @@ struct ArchivePool {
         return canonical_less(view(a), view(b));
     }
     __device__ bool duplicate(Node a, Node b) const {
+        if (a == b) return true;
         return identity(a) == identity(b) && same_tour(view(a), view(b));
+    }
+    __device__ Node better(Node a, Node b) const {
+        if (a == UINT32_MAX) return b;
+        if (b == UINT32_MAX) return a;
+        if (a == b) return a;
+        if (cost(a) != cost(b)) return cost(a) < cost(b) ? a : b;
+        if (identity(a) != identity(b)) return identity(a) < identity(b) ? a : b;
+        const int order = canonical_compare(view(a), view(b));
+        if (order) return order < 0 ? a : b;
+        return min(a, b);  // 完全相等时保留原串行循环中最先出现的候选。
     }
 };
 
@@ -108,22 +120,43 @@ static __global__ void update_control(Node n, Node ants, const Node* all_tours, 
     __shared__ Node chosen[archive_capacity], count;
     __shared__ double costs[archive_capacity];
     __shared__ TourFingerprint selected_identities[archive_capacity];
+    __shared__ Node best[128];
     if (threadIdx.x == 0) {
         const bool improved = state.global_cost < control.tracked_global;
         chosen[0] = improved ? archive_capacity + state.iteration_best : 0;
         count = 1;
-        for (Node slot = 1; slot < archive_capacity; ++slot) {
-            Node selected = UINT32_MAX;
-            for (Node candidate = 0; candidate < archive_capacity + ants; ++candidate) {
+    }
+    __syncthreads();
+    // 一个线程最多负责两个候选；排除状态跨档案slot复用，只比较新选入的路线。
+    bool excluded[2]{};
+    for (Node slot = 1; slot < archive_capacity; ++slot) {
+        Node selected = UINT32_MAX;
+        // 每个线程筛选不同候选；比较规则与串行选择相同，原有碰撞后邻接比较保留。
+        for (Node candidate = threadIdx.x; candidate < archive_capacity + ants; candidate += blockDim.x) {
+                const Node local = candidate / blockDim.x;
+                // 正式128蚂蚁走缓存路径；其他诊断形状保持通用循环。
+                const bool cached = ants <= 128;
+                if (cached && excluded[local]) continue;
                 if (candidate < archive_capacity && candidate >= control.archive_size) continue;
                 if (pool.cost(candidate) > state.global_cost * (1 + archive_quality_band)) continue;
                 bool duplicate = false;
-                for (Node j = 0; j < count; ++j) if (pool.duplicate(candidate, chosen[j])) { duplicate = true; break; }
-                if (!duplicate && (selected == UINT32_MAX || pool.less(candidate, selected))) selected = candidate;
-            }
-            if (selected == UINT32_MAX) break;
-            chosen[count++] = selected;
+                for (Node j = cached ? count - 1 : 0; j < count; ++j)
+                    if (pool.duplicate(candidate, chosen[j])) { duplicate = true; break; }
+                if (cached) excluded[local] = duplicate;
+                if (!duplicate) selected = pool.better(selected, candidate);
         }
+        best[threadIdx.x] = selected;
+        __syncthreads();
+        for (Node stride = blockDim.x / 2; stride; stride /= 2) {
+            if (threadIdx.x < stride) best[threadIdx.x] = pool.better(best[threadIdx.x], best[threadIdx.x + stride]);
+            __syncthreads();
+        }
+        if (best[0] == UINT32_MAX) break;
+        if (threadIdx.x == 0) chosen[count++] = best[0];
+        __syncthreads();
+    }
+    if (threadIdx.x == 0) {
+        const bool improved = state.global_cost < control.tracked_global;
         for (Node i = 0; i < count; ++i) { costs[i] = pool.cost(chosen[i]); selected_identities[i] = pool.identity(chosen[i]); }
         double returned = 0, work = 0;
         for (Node ant = 0; ant < ants; ++ant) {
@@ -170,14 +203,18 @@ static __global__ void build_control_features(Node n, Node width, Node colony_co
     const Node* all_parent, const Node* all_parent_positions, const Node* all_archive,
     const Node* all_archive_positions, const ControllerState* controls, const Colony* colonies,
     const double* all_trails, const std::uint32_t* experiment_masks, StartRegions* regions,
-    Node* alternatives, std::uint32_t* masks, float* features) {
+    Node* alternatives, std::uint32_t* masks, float* features, Node geometry_count = 0,
+    std::uint32_t regional_mask = 15, const std::uint32_t* program_masks = nullptr) {
     const Node colony = blockIdx.x;
     const auto base = static_cast<std::size_t>(colony) * n;
+    const Node geometry = geometry_count ? colony % geometry_count : colony;
+    if (program_masks) regional_mask = program_masks[colony / geometry_count];
+    const auto geometry_base = static_cast<std::size_t>(geometry) * n;
     const TourView active{all_parent + base, all_parent_positions + base, n};
     const auto* archive = all_archive + base * archive_capacity;
     const auto* positions = all_archive_positions + base * archive_capacity;
     const auto& control = controls[colony]; const auto& state = colonies[colony];
-    const auto* samples = all_samples + colony * sample_capacity;
+    const auto* samples = all_samples + geometry * sample_capacity;
     const Node sample_count = n < sample_capacity ? n : sample_capacity;
     __shared__ Node alternative;
     __shared__ float gap[2], difference;
@@ -208,22 +245,56 @@ static __global__ void build_control_features(Node n, Node width, Node colony_co
         regions[colony].count = n < region_capacity ? n : region_capacity;
     }
     __syncthreads();
-    if (threadIdx.x >= 8) return;
-    const Node mode = threadIdx.x / 4, region = threadIdx.x % 4;
+    // 每区域16线程分别计算节点贡献，lane0仍按原顺序累加，保持逐位数值语义。
+    const Node group = threadIdx.x / 16, lane = threadIdx.x % 16;
+    const Node mode = group / 4, region = group % 4;
     const bool valid = mode == 0 || alternative < archive_capacity;
     auto* nodes = regions[colony].nodes[mode][region];
-    for (Node i = 0; i < region_capacity; ++i) nodes[i] = 0;
+    __shared__ double contributions[128][5];
     float regional[4]{};
-    if (valid) {
+    if (lane == 0) {
+        for (Node i = 0; i < region_capacity; ++i) nodes[i] = 0;
+        if (valid) {
+            const TourView reference = mode == 0 ? active : TourView{archive + alternative * n, positions + alternative * n, n};
+            build_region(reference, all_primary + geometry_base * width, width, keys[colony], batch, mode, region, nodes);
+        }
+    }
+    __syncthreads();
+    auto* values = contributions[threadIdx.x];
+    for (Node i = 0; i < 5; ++i) values[i] = 0;
+    if (valid && lane < regions[colony].count) {
         const TourView reference = mode == 0 ? active : TourView{archive + alternative * n, positions + alternative * n, n};
-        TourView views[archive_capacity];
-        for (Node i = 0; i < control.archive_size; ++i) views[i] = {archive + i * n, positions + i * n, n};
-        const auto* primary = all_primary + base * width;
-        build_region(reference, primary, width, keys[colony], batch, mode, region, nodes);
-        region_features(reference, nodes, regions[colony].count, views, control.archive_size,
-            all_scale + base, epsilons[colony], state.minimum, state.maximum,
-            CoordinateDistance{all_xy + base * 2},
-            DevicePheromoneView{primary, all_trails + base * width, width, state.default_trail}, regional);
+        const Node node = nodes[lane], previous = reference.predecessor(node), next = reference.successor(node);
+        if (regional_mask & 1) {
+            const CoordinateDistance distance{all_xy + geometry_base * 2};
+            const double scale = all_scale[geometry_base + node] < epsilons[geometry] ? epsilons[geometry] : all_scale[geometry_base + node];
+            values[0] = unit_clip(((0.5 * distance(node, previous) + 0.5 * distance(node, next)) / scale - 1) / 3);
+        }
+        const Node neighbors[2]{previous, next};
+        const DevicePheromoneView pheromone{all_primary + geometry_base * width, all_trails + base * width, width, state.default_trail};
+        for (Node k = 0; k < 2; ++k) {
+            const Node neighbor = neighbors[k];
+            if (regional_mask & 2) for (Node j = 0; j < control.archive_size; ++j)
+                values[1] += !TourView{archive + j * n, positions + j * n, n}.contains(node, neighbor);
+            if (regional_mask & 4) values[2 + k] = state.minimum == state.maximum ? 1 :
+                unit_clip((pheromone(node, neighbor) - state.minimum) / (state.maximum - state.minimum));
+            if (regional_mask & 8) values[4] += !has_node(nodes, regions[colony].count, neighbor);
+        }
+    }
+    __syncthreads();
+    if (lane != 0) return;
+    if (valid) {
+        double excess = 0, disagreement = 0, strength = 0, dispersion = 0;
+        const Node count = regions[colony].count;
+        for (Node i = 0; i < count; ++i) {
+            const auto* v = contributions[group * 16 + i];
+            excess += v[0]; disagreement += v[1];
+            strength += v[2]; strength += v[3]; dispersion += v[4];
+        }
+        regional[0] = static_cast<float>(excess / count);
+        regional[1] = static_cast<float>(disagreement / (2 * count * control.archive_size));
+        regional[2] = static_cast<float>(strength / (2 * count));
+        regional[3] = static_cast<float>(dispersion / (2 * count));
     }
     for (Node level = 0; level < 4; ++level) {
         const Node action = mode * 16 + region * 4 + level;
@@ -242,7 +313,8 @@ static __global__ void apply_control_action(Node n, Node ants, Node primary_widt
     double* all_trails, const double* all_heuristic, double* all_products, Node* all_targets,
     Node* all_tours, Node* all_positions, Node* all_parent_positions_per_ant, Node* all_scratch,
     Node* all_pending, std::uint8_t* all_visited, double* all_gains, FacoDiagnosticInfo* all_info,
-    TourFingerprint* all_identities, bool initializing = false, EscapeFootprints footprints = {}) {
+    TourFingerprint* all_identities, bool initializing = false, EscapeFootprints footprints = {},
+    Node geometry_count = 0, bool compact_workspace = false) {
     const Node colony = blockIdx.x, action = actions[colony];
     const auto base = static_cast<std::size_t>(colony) * n;
     const Node target = 2u << (action % 4);
@@ -269,8 +341,12 @@ static __global__ void apply_control_action(Node n, Node ants, Node primary_widt
     }
     for (Node i = threadIdx.x; i < n * primary_width; i += blockDim.x) {
         const auto index = base * primary_width + i;
-        all_trails[index] = state.maximum; all_products[index] = state.maximum * all_heuristic[index];
+        const auto geometry_index = geometry_count ?
+            static_cast<std::size_t>(colony % geometry_count) * n * primary_width + i : index;
+        all_trails[index] = state.maximum; all_products[index] = state.maximum * all_heuristic[geometry_index];
     }
+    // 紧凑生产路径在构造内完整覆盖有效工作区，无需重启时重复清空数 GiB 暂存数据。
+    if (compact_workspace) return;
     for (std::size_t i = threadIdx.x; i < static_cast<std::size_t>(ants) * n; i += blockDim.x) {
         const auto index = base * ants + i;
         all_tours[index] = tour[i % n];

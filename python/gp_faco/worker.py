@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import csv
-import hashlib
 import importlib
-import json
 import math
 import multiprocessing
 import os
@@ -29,38 +27,15 @@ from gp_faco.program_ir import Program
 PROJECT = Path(__file__).resolve().parents[2]
 
 
-def content_hash(value: object) -> str:
-    payload = json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
-    return hashlib.sha256(payload.encode()).hexdigest()
+def faco_ants(dimension: int) -> int:
+    """2022 论文 §5.6 的向上取整公式，整数实现避免平方根边界误差。"""
+    if type(dimension) is not int or dimension < 3:
+        raise ValueError("TSP 规模必须为至少 3 的整数")
+    return 64 * (math.isqrt(dimension - 1) // 16 + 1)
 
 
-def file_hash(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def implementation_hash() -> str:
-    return content_hash(
-        {
-            name: file_hash(PROJECT / "python/gp_faco" / name)
-            for name in (
-                "worker.py",
-                "fitness.py",
-                "data.py",
-                "program_ir.py",
-                "primitives.py",
-                "baseline_policy.py",
-                "factorial_policy.py",
-                "behavior.py",
-                "graph_catalog.py",
-                "graph_matching.py",
-            )
-        }
-    )
-
-
-def coordinate_hash(instance: Instance) -> str:
-    xy = np.asarray(instance.coordinates, dtype="<f8")
-    return hashlib.sha256(b"ordered-continuous-fp64-v1\0" + xy.tobytes()).hexdigest()
+def preparation_id(problems) -> str:
+    return f"prepare-{problems[0].dimension}-{problems[0].instance_id}"
 
 
 def freeze_problems(values) -> tuple[Instance, ...]:
@@ -70,20 +45,17 @@ def freeze_problems(values) -> tuple[Instance, ...]:
             raise TypeError("worker问题必须是无标签Instance")
         if type(value.instance_id) is not str or not value.instance_id:
             raise ValueError("实例身份必须为非空字符串")
-        xy = tuple(tuple(0.0 if x == 0 else float(x) for x in point) for point in value.coordinates)
-        problems.append(Instance(value.instance_id, xy, value.distance_spec))
+        problems.append(value)
     problems.sort(key=lambda p: p.instance_id)
     ids = [problem.instance_id for problem in problems]
     if not ids or len(set(ids)) != len(ids) or len({p.dimension for p in problems}) != 1:
         raise ValueError("面板必须包含同规模且身份不同的问题")
-    if len({coordinate_hash(p) for p in problems}) != len(ids):
-        raise ValueError("一个面板不得重复登记同一有序点集")
     return tuple(problems)
 
 
 @dataclass(frozen=True)
 class SolverSettings:
-    ants: int = 32
+    ants: int = 0
     primary_width: int = 16
     backup_width: int = 64
     ls_width: int = 20
@@ -106,7 +78,7 @@ class SolverSettings:
             value = getattr(self, name)
             if type(value) is not int or not 0 <= value <= 0xFFFFFFFFFFFFFFFF:
                 raise ValueError(f"{name}必须是非负整数")
-        if not 1 <= self.ants <= 128 or self.primary_width < 2 or self.ls_width < 1:
+        if not 0 <= self.ants <= 4096 or self.primary_width < 2 or self.ls_width < 1:
             raise ValueError("蚂蚁数量或候选宽度无效")
         for name in ("primary_width", "backup_width", "ls_width"):
             if getattr(self, name) > 0xFFFFFFFF:
@@ -123,13 +95,17 @@ class SolverSettings:
         ):
             raise ValueError("信息素参数范围无效")
 
+    def ants_for(self, dimension: int) -> int:
+        return self.ants or faco_ants(dimension)
+
 
 @dataclass(frozen=True)
 class WorkerProtocol:
     gpu_uuid: str
     gpu_model: str
     driver_version: str
-    binary_sha256: str
+    build_id: str = "v2-exact"
+    numeric_backend: str = field(default="exact", kw_only=True)
     dimensions: tuple[int, ...] = (500, 1000)
     colonies: int = 32
     settings: SolverSettings = field(default_factory=SolverSettings)
@@ -139,18 +115,18 @@ class WorkerProtocol:
     constraint_mode: str = "unrestricted"
     graph_prior_kind: str | None = None
     graph_catalog_path: str | None = None
-    graph_catalog_sha256: str | None = None
-    implementation_sha256: str = field(init=False)
+    distributed: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "dimensions", tuple(self.dimensions))
-        object.__setattr__(self, "implementation_sha256", implementation_hash())
-        if not re.fullmatch(r"GPU-[0-9a-fA-F-]{36}", self.gpu_uuid):
+        if not (self.distributed and self.gpu_uuid == "pool") and not re.fullmatch(r"GPU-[0-9a-fA-F-]{36}", self.gpu_uuid):
             raise ValueError("需要完整GPU UUID")
         if not self.gpu_model or not self.driver_version:
             raise ValueError("必须显式指定同型号GPU和driver")
-        if not re.fullmatch(r"[0-9a-f]{64}", self.binary_sha256):
-            raise ValueError("需要扩展二进制SHA256")
+        if self.numeric_backend not in ("exact", "fp32", "fp32_fast"):
+            raise ValueError("未知数值后端")
+        if self.gpu_model != "NVIDIA RTX A5000":
+            raise ValueError("当前实验只允许 RTX A5000")
         if (
             not self.dimensions
             or len(set(self.dimensions)) != len(self.dimensions)
@@ -173,15 +149,12 @@ class WorkerProtocol:
             raise ValueError("未知图限制模式")
         catalog = None
         if self.constraint_mode == "unrestricted":
-            if any(
-                v is not None
-                for v in (self.graph_prior_kind, self.graph_catalog_path, self.graph_catalog_sha256)
-            ):
+            if any(v is not None for v in (self.graph_prior_kind, self.graph_catalog_path)):
                 raise ValueError("普通worker不能携带图先验或图目录")
         else:
             if self.graph_prior_kind not in ("ALPHA", "POPMUSIC"):
                 raise ValueError("图worker必须固定一个先验类型")
-            catalog = GraphCatalog(PROJECT, self.graph_catalog_path, self.graph_catalog_sha256)
+            catalog = GraphCatalog(PROJECT, self.graph_catalog_path)
             catalog.require_settings(self.settings)
             if self.constraint_mode == "escape" and (
                 self.settings.primary_width > 16
@@ -189,7 +162,7 @@ class WorkerProtocol:
                 or self.settings.ls_width > 20
             ):
                 raise ValueError("Escape超出已验证物理槽位上限")
-        # 不将整份目录反复展开到每个task/checkpoint；manifest已绑定完整文件SHA。
+        # 图目录只读取一次；任务记录实例编号与实际图参数。
         object.__setattr__(self, "_graph_catalog", catalog)
 
     @property
@@ -204,11 +177,12 @@ class WorkerProtocol:
     def manifest(self) -> dict:
         return {
             **asdict(self),
-            "protocol_version": 5,
+            "protocol_version": 6,
+            "local_search_spec": "checklist_2opt_identity_zero_v2",
             "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
-            "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+            "instance_key_policy": "dataset_record_ordinal_v2",
             "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
-            "submission_boundary": "native_whole_panel_completed_and_verified",
+            "submission_boundary": "whole_panel_returned_final_tours_scored_once",
             "gpu_lease_policy": "git_common_root_uuid_lock_v1",
             **(
                 {
@@ -222,8 +196,8 @@ class WorkerProtocol:
         }
 
     @property
-    def sha256(self) -> str:
-        return content_hash(self.manifest())
+    def identifier(self) -> str:
+        return f"{self.build_id}-{self.constraint_mode}-{self.graph_prior_kind or 'knn'}"
 
 
 def _normalize_task_members(task):
@@ -250,8 +224,9 @@ def _task_manifest(task, protocol):
     if task.dimension not in protocol.dimensions or len(task.replicas) != protocol.colonies:
         raise ValueError("任务与worker固定规模/形状不符")
     if task.evaluation_limit_per_colony is not None and (
-        task.evaluation_limit_per_colony % protocol.settings.ants
-        or task.evaluation_limit_per_colony // protocol.settings.ants > 0xFFFFFFFF
+        task.evaluation_limit_per_colony % protocol.settings.ants_for(task.dimension)
+        or task.evaluation_limit_per_colony // protocol.settings.ants_for(task.dimension)
+        > 0xFFFFFFFF
     ):
         raise ValueError("次数限额必须为ants整批且批次数不超出uint32")
     if protocol.graph_catalog is not None and task.evaluation_limit_per_colony is None:
@@ -259,9 +234,9 @@ def _task_manifest(task, protocol):
     return {
         "occurrence_id": task.occurrence_id,
         **task.controller_identity(),
-        "protocol_sha256": protocol.sha256,
+        "protocol_id": protocol.identifier,
         "dimension": task.dimension,
-        "problems": [(p.instance_id, coordinate_hash(p)) for p in task.problems],
+        "problems": [p.instance_id for p in task.problems],
         **protocol.graph_identity(task.problems),
         "replicas": task.replicas,
         "budget_seconds": task.budget_seconds,
@@ -294,7 +269,7 @@ class SolveTask:
         if counted:
             if (
                 type(self.evaluation_limit_per_colony) is not int
-                or not 0 <= self.evaluation_limit_per_colony <= 128 * 0xFFFFFFFF
+                or not 0 <= self.evaluation_limit_per_colony <= 4096 * 0xFFFFFFFF
                 or self.budget_seconds is not None
                 or self.program.feature_spec_id != 2
                 or self.preparation_mode not in ("cached", "end_to_end")
@@ -352,17 +327,17 @@ class SolveTask:
         return self.problems[0].dimension
 
     @property
-    def controller_sha256(self) -> str:
-        return self.program.sha256
+    def controller_id(self) -> str:
+        return self.program.identifier
 
     def controller_identity(self) -> dict:
-        return {"program_sha256": self.program.sha256}
+        return {"program_id": self.program.identifier}
 
     def manifest(self, protocol: WorkerProtocol) -> dict:
         return _task_manifest(self, protocol)
 
     def task_id(self, protocol: WorkerProtocol) -> str:
-        return content_hash(self.manifest(protocol))
+        return self.occurrence_id
 
 
 @dataclass(frozen=True)
@@ -383,13 +358,13 @@ class FactorialTask(SolveTask):
             raise TypeError("record_behavior必须是bool")
 
     @property
-    def controller_sha256(self):
-        return content_hash(self.controller_identity())
+    def controller_id(self):
+        return f"{self.program.identifier}-{self.factorial_policy.identifier}"
 
     def controller_identity(self):
         return {
-            "program_sha256": self.program.sha256,
-            "factorial_policy_sha256": self.factorial_policy.sha256,
+            "program_id": self.program.identifier,
+            "factorial_policy_id": self.factorial_policy.identifier,
             "factorial_policy": self.factorial_policy.to_dict(),
         }
 
@@ -414,7 +389,7 @@ class BaselineTask:
         _normalize_task_members(self)
         if (
             type(self.evaluation_limit_per_colony) is not int
-            or not 0 <= self.evaluation_limit_per_colony <= 128 * 0xFFFFFFFF
+            or not 0 <= self.evaluation_limit_per_colony <= 4096 * 0xFFFFFFFF
             or self.preparation_mode not in ("cached", "end_to_end")
         ):
             raise ValueError("基线任务需要整数FE限额及无扣费准备模式")
@@ -425,12 +400,12 @@ class BaselineTask:
         return self.problems[0].dimension
 
     @property
-    def controller_sha256(self) -> str:
-        return self.policy.sha256
+    def controller_id(self) -> str:
+        return self.policy.identifier
 
     def controller_identity(self) -> dict:
         return {
-            "baseline_policy_sha256": self.policy.sha256,
+            "baseline_policy_id": self.policy.identifier,
             "baseline_policy": self.policy.to_dict(),
             "controller_kind": self.policy.kind,
         }
@@ -439,7 +414,19 @@ class BaselineTask:
         return _task_manifest(self, protocol)
 
     def task_id(self, protocol: WorkerProtocol) -> str:
-        return content_hash(self.manifest(protocol))
+        return self.occurrence_id
+
+
+@dataclass(frozen=True)
+class FacoTask(BaselineTask):
+    """节点重定位 FACO 固定对照：MNE 8、全路线均匀起点、不重启。"""
+
+    @property
+    def controller_id(self):
+        return "gpu-faco-mne8-uniform-no-restart"
+
+    def controller_identity(self):
+        return {"controller_kind": "gpu_faco_without_gp", "mne": 8}
 
 
 # 以下状态仅由spawn子进程初始化；协调进程不导入CUDA扩展。
@@ -449,15 +436,17 @@ _registered: dict = {}
 _registration_fees: dict = {}
 _engine_generations: dict = {}
 _assigned_charges: dict = {}
+_population_engines: dict = {}
 _protocol: WorkerProtocol | None = None
 _native = None
 _lease = None
 
 
-def _settings_object():
+def _settings_object(dimension):
     settings = _native.FixedFacoSettings()
     for name, value in asdict(_protocol.settings).items():
         setattr(settings, name, value)
+    settings.ants = _protocol.settings.ants_for(dimension)
     return settings
 
 
@@ -465,7 +454,7 @@ def _replace_engine(dimension: int) -> None:
     # 只在任务边界替换通用缓冲；容量策略属于公开protocol，不在批内作隐式释放。
     _engines.pop(dimension, None)
     _engines[dimension] = _native.FacoBatchEngine(
-        dimension, _protocol.colonies, _settings_object(), _protocol.constraint_mode
+        dimension, _protocol.colonies, _settings_object(dimension), _protocol.constraint_mode
     )
     _registered[dimension] = {}
     _registration_fees[dimension] = {}
@@ -483,7 +472,7 @@ def _wait_for_idle(protocol):
         if any(
             row and row[0].strip() == protocol.gpu_uuid for row in csv.reader(apps.splitlines())
         ):
-            raise RuntimeError("指定GPU已有计算进程，worker不启动")
+            raise BlockingIOError("指定GPU已有计算进程，worker不启动")
         device = subprocess.check_output(
             [
                 "nvidia-smi",
@@ -513,14 +502,10 @@ def _initialize(protocol: WorkerProtocol) -> None:
     global _protocol, _native, _lease, _runtime
     started = time.perf_counter()
     _protocol = protocol
-    if implementation_hash() != protocol.implementation_sha256:
-        raise RuntimeError("启动期间worker源码身份改变")
     if protocol.execution_host != platform.node():
         raise RuntimeError("执行host与任务协议不符，不能混用准备费用")
     directory = (PROJECT / protocol.extension_directory).resolve()
     binary = directory / "gp_faco_ext.so"
-    if file_hash(binary) != protocol.binary_sha256:
-        raise RuntimeError("CUDA扩展与冻结的任务协议指纹不同")
     for relative in (".tmp", ".cache/cuda"):
         (PROJECT / relative).mkdir(parents=True, exist_ok=True)
     # 各隔离工作树必须使用同一UUID锁，不能各自在自己的.tmp中持有无关锁。
@@ -538,11 +523,6 @@ def _initialize(protocol: WorkerProtocol) -> None:
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     _lease = lock_path.open("a")
     fcntl.flock(_lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    if protocol.graph_catalog is not None:
-        # spawn期间重验目录身份；子进程不能依赖协调端更早读取的可变文件。
-        catalog = GraphCatalog(PROJECT, protocol.graph_catalog_path, protocol.graph_catalog_sha256)
-        catalog.require_settings(protocol.settings)
-        object.__setattr__(protocol, "_graph_catalog", catalog)
     device, idle_observations = _wait_for_idle(protocol)
     os.environ["CUDA_VISIBLE_DEVICES"] = protocol.gpu_uuid
     os.environ["CUDA_CACHE_PATH"] = str(PROJECT / ".cache/cuda")
@@ -551,62 +531,60 @@ def _initialize(protocol: WorkerProtocol) -> None:
     _native = importlib.import_module("gp_faco_ext")
     if Path(_native.__file__).resolve() != binary:
         raise RuntimeError("实际导入了其他路径的CUDA扩展")
+    if _native.numeric_backend != protocol.numeric_backend:
+        raise RuntimeError("构建数值后端与实验参数不符")
     device_info = _native.cuda_device_info()
     if device_info["name"] != protocol.gpu_model:
         raise RuntimeError("CUDA可见设备未绑定到指定GPU")
     for n in protocol.dimensions:
         _replace_engine(n)
+    from gp_faco.remote import process_receipt
+
     _runtime = {
+        **process_receipt(),
         "pid": os.getpid(),
         "host": platform.node(),
         "start_method": multiprocessing.get_start_method(),
-        "protocol_sha256": protocol.sha256,
+        "protocol_id": protocol.identifier,
         "device_before_start": device.strip(),
         "device": device_info,
         "startup_seconds": time.perf_counter() - started,
-        "binary_sha256": protocol.binary_sha256,
+        "build_id": protocol.build_id,
         "gpu_lock_path": str(lock_path),
         "constraint_mode": protocol.constraint_mode,
         "graph_prior_kind": protocol.graph_prior_kind,
-        "graph_catalog_sha256": protocol.graph_catalog_sha256,
         "idle_observations": idle_observations,
     }
 
 
-def _ready() -> dict:
+def _initialize_and_ready(protocol) -> dict:
+    # 初始化作为首个任务返回原始异常；资源竞争不能被进程池包装成不可区分的崩溃。
+    _initialize(protocol)
     return dict(_runtime)
 
 
 def _register(problems: tuple[Instance, ...]) -> tuple[dict, dict]:
     n = problems[0].dimension
-    problem_keys = {p.instance_id: int(coordinate_hash(p)[:16], 16) for p in problems}
+    # 数据集提供稳定的行编号，配对结果不依赖注册顺序或坐标摘要。
+    problem_keys = {p.instance_id: p.numeric_id for p in problems}
+    if any(key <= 0 for key in problem_keys.values()):
+        raise ValueError("GPU 实例必须有稳定的正 numeric_id")
     new_keys = set(problem_keys.values()) - _registered[n].keys()
     if len(_registered[n]) + len(new_keys) > _protocol.maximum_registered_per_dimension:
         _replace_engine(n)
     fees = {}
-    graph_ids = {
-        row["instance_id"]: row
-        for row in _protocol.graph_identity(problems).get("graph_inputs", ())
-    }
     for problem in problems:
-        key, fingerprint = problem_keys[problem.instance_id], coordinate_hash(problem)
-        if graph_ids:
-            fingerprint = content_hash(graph_ids[problem.instance_id])
-        old = _registered[n].get(key)
-        if old is not None and old != fingerprint:
-            raise ValueError("实例key发生64位碰撞或已注册图身份改变")
-        if graph_ids:
-            if old is None:
+        key = problem.numeric_id
+        if key not in _registered[n]:
+            coordinates = np.asarray(problem.coordinates, dtype=np.float64)
+            if _protocol.graph_catalog is not None:
                 graph = _protocol.graph_catalog.load_graph(problem, _protocol.graph_prior_kind)
-                _registration_fees[n][key] = _engines[n].register_graph_problem(
-                    key, np.asarray(problem.coordinates, dtype=np.float64), graph
-                )
-            fees[problem.instance_id] = dict(_registration_fees[n][key])
-        else:
-            fees[problem.instance_id] = _engines[n].register_problem(
-                key, np.asarray(problem.coordinates, dtype=np.float64)
-            )
-        _registered[n][key] = fingerprint
+                fee = _engines[n].register_graph_problem(key, coordinates, graph)
+            else:
+                fee = _engines[n].register_problem(key, coordinates)
+            _registration_fees[n][key] = fee
+            _registered[n][key] = problem.instance_id
+        fees[problem.instance_id] = dict(_registration_fees[n][key])
     return problem_keys, fees
 
 
@@ -614,15 +592,15 @@ def _prepare(problems: tuple[Instance, ...]) -> dict:
     started = time.perf_counter()
     n = problems[0].dimension
     description = {
-        "protocol_sha256": _protocol.sha256,
+        "protocol_id": _protocol.identifier,
         "dimension": n,
-        "problems": [(p.instance_id, coordinate_hash(p)) for p in problems],
+        "problems": [p.instance_id for p in problems],
         **_protocol.graph_identity(problems),
     }
     output = {
         **description,
         "kind": "preparation",
-        "preparation_id": content_hash(description),
+        "preparation_id": preparation_id(problems),
         "worker_pid": os.getpid(),
     }
     try:
@@ -645,7 +623,7 @@ def _execute(task: SolveTask | BaselineTask | FactorialTask) -> dict:
     identity = task.task_id(_protocol)
     output = {
         "task_id": identity,
-        "protocol_sha256": _protocol.sha256,
+        "protocol_id": _protocol.identifier,
         **task.controller_identity(),
         "occurrence_id": task.occurrence_id,
         "dimension": task.dimension,
@@ -668,7 +646,11 @@ def _execute(task: SolveTask | BaselineTask | FactorialTask) -> dict:
             raise ValueError("该实例已有冻结费用，任务必须显式携带同一费用")
         keys = np.asarray([problem_keys[name] for name, _ in task.replicas], dtype=np.uint64)
         seeds = np.asarray([seed for _, seed in task.replicas], dtype=np.uint64)
-        if type(task) is FactorialTask:
+        if type(task) is FacoTask:
+            native_result = _engines[n].evaluate_faco_evaluations(
+                keys, seeds, task.evaluation_limit_per_colony, 8, task.preparation_mode
+            )
+        elif type(task) is FactorialTask:
             native_result = _engines[n].evaluate_factorial_evaluations(
                 keys,
                 seeds,
@@ -722,6 +704,116 @@ def _execute(task: SolveTask | BaselineTask | FactorialTask) -> dict:
     return output
 
 
+def _population_members(tasks, protocol):
+    if not tasks or len(tasks) > 128 or protocol.constraint_mode != "unrestricted":
+        raise ValueError("种群批次需要 1..128 个普通 FACO 个体")
+    first = tasks[0]
+
+    def signature(t):
+        return (
+            type(t),
+            t.dimension,
+            t.replicas,
+            t.evaluation_limit_per_colony,
+            t.preparation_mode,
+            t.experiment_mask,
+            t.preparation_charges,
+            getattr(t, "factorial_policy", None),
+            tuple((p.instance_id, p.numeric_id) for p in t.problems),
+        )
+
+    expected = signature(first)
+    for task in tasks:
+        if type(task) not in (SolveTask, FactorialTask) or signature(task) != expected:
+            raise ValueError("种群批次必须共享实例、seed、预算、mask 和析因设置")
+        if task.evaluation_limit_per_colony is None or task.preparation_mode != "cached":
+            raise ValueError("种群批次只接受 cached 的评价次数入口")
+        if getattr(task, "record_behavior", False):
+            raise ValueError("行为诊断使用独立单程序入口")
+        task.manifest(protocol)
+    return first
+
+
+def _execute_population(tasks) -> dict:
+    started = time.perf_counter()
+    first = _population_members(tasks, _protocol)
+    n, count = first.dimension, len(tasks)
+    if count == 1 and n not in _population_engines:
+        return {"members": [_execute(first)]}
+    outputs = [
+        {
+            "task_id": task.task_id(_protocol),
+            "protocol_id": _protocol.identifier,
+            **task.controller_identity(),
+            "occurrence_id": task.occurrence_id,
+            "dimension": n,
+            "worker_pid": os.getpid(),
+            **_protocol.graph_identity(task.problems),
+        }
+        for task in tasks
+    ]
+    try:
+        registration_started = time.perf_counter()
+        cached = _population_engines.get(n)
+        incoming = {p.numeric_id for p in first.problems}
+        if cached is not None and (
+            cached["count"] < count
+            or len(cached["registered"] | incoming) > _protocol.maximum_registered_per_dimension
+        ):
+            del _population_engines[n]
+            cached = None
+        if cached is None:
+            cached = {
+                "count": count,
+                "engine": _native.FacoBatchEngine(
+                    n, _protocol.colonies, _settings_object(n), population_size=count
+                ),
+                "registered": set(),
+                "fees": {},
+            }
+            _population_engines[n] = cached
+        engine = cached["engine"]
+        for problem in first.problems:
+            key = problem.numeric_id
+            if key not in cached["registered"]:
+                cached["fees"][problem.instance_id] = engine.register_problem(
+                    key, np.asarray(problem.coordinates, dtype=np.float64)
+                )
+                cached["registered"].add(key)
+        keys_by_name = {p.instance_id: p.numeric_id for p in first.problems}
+        keys = np.asarray([keys_by_name[name] for name, _ in first.replicas], dtype=np.uint64)
+        seeds = np.asarray([seed for _, seed in first.replicas], dtype=np.uint64)
+        registration = time.perf_counter() - registration_started
+        results = engine.evaluate_population_evaluations(
+            keys,
+            seeds,
+            first.evaluation_limit_per_colony,
+            [task.program.to_dict() for task in tasks],
+            first.experiment_mask,
+            factorial_policy=first.factorial_policy.to_dict()
+            if type(first) is FactorialTask
+            else None,
+        )
+        for output, result in zip(outputs, results, strict=True):
+            output.update(
+                status="completed",
+                native_result=result,
+                registration_seconds=registration / count,
+                registered_problems=len(cached["registered"]),
+                registration_fees={
+                    p.instance_id: cached["fees"][p.instance_id] for p in first.problems
+                },
+            )
+    except Exception as error:
+        for output in outputs:
+            output.update(status="failed", error=f"{type(error).__name__}: {error}")
+    elapsed = time.perf_counter() - started
+    for output in outputs:
+        output["worker_seconds"] = elapsed / count
+        output["population_worker_seconds"] = elapsed
+    return {"members": outputs}
+
+
 class PersistentGpuWorker:
     """每worker一个活动任务；Future超时不会重启进程或重新提交任务。"""
 
@@ -732,10 +824,8 @@ class PersistentGpuWorker:
         self._executor = ProcessPoolExecutor(
             max_workers=1,
             mp_context=multiprocessing.get_context("spawn"),
-            initializer=_initialize,
-            initargs=(protocol,),
         )
-        self._ready_future = self._executor.submit(_ready)
+        self._ready_future = self._executor.submit(_initialize_and_ready, protocol)
         self._active: Future | None = None
         self._closed = False
 
@@ -743,7 +833,7 @@ class PersistentGpuWorker:
         return self._ready_future.result(timeout=timeout)
 
     def submit(self, task: SolveTask | BaselineTask | FactorialTask) -> Future:
-        if type(task) not in (SolveTask, BaselineTask, FactorialTask):
+        if type(task) not in (SolveTask, BaselineTask, FactorialTask, FacoTask):
             raise TypeError("worker仅接受已验证的GP、基线或析因任务")
         task.manifest(self.protocol)
         self._check_idle()
@@ -760,6 +850,13 @@ class PersistentGpuWorker:
         self.protocol.graph_identity(frozen)
         self._check_idle()
         self._active = self._executor.submit(_prepare, frozen)
+        return self._active
+
+    def submit_population(self, tasks) -> Future:
+        tasks = tuple(tasks)
+        _population_members(tasks, self.protocol)
+        self._check_idle()
+        self._active = self._executor.submit(_execute_population, tasks)
         return self._active
 
     def _check_idle(self) -> None:

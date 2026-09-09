@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import hashlib
 import math
-import struct
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -14,8 +12,10 @@ class Instance:
     instance_id: str
     coordinates: tuple[tuple[float, float], ...]
     distance_spec: str = "continuous_euclidean_fp64"
+    numeric_id: int = 0
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "coordinates", tuple(tuple(p) for p in self.coordinates))
         if len(self.coordinates) < 3:
             raise ValueError("TSP 至少需要三个节点")
         if any(len(p) != 2 or not all(math.isfinite(v) for v in p) for p in self.coordinates):
@@ -79,14 +79,6 @@ def read_record(path: Path, row: int = 0) -> tuple[Instance, Label]:
             if index == row:
                 return parse_record(line, f"{path.name}:{row}")
     raise IndexError(f"文件中不存在行 {row}: {path}")
-
-
-def point_set_hash(instance: Instance) -> str:
-    """检测同一点集的节点置换；不声称识别旋转或子采样亲缘。"""
-    digest = hashlib.sha256()
-    for x, y in sorted(instance.coordinates):
-        digest.update(struct.pack("<dd", 0.0 if x == 0 else x, 0.0 if y == 0 else y))
-    return digest.hexdigest()
 
 
 def write_explicit_tsplib(instance: Instance, path: Path) -> None:

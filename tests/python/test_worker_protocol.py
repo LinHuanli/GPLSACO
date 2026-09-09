@@ -13,9 +13,9 @@ from gp_faco.worker import SolverSettings, SolveTask, WorkerProtocol
 def protocol():
     return WorkerProtocol(
         "GPU-056fae3f-b504-efe0-2d9d-b1186860e643",
-        "unit-test-device",
+        "NVIDIA RTX A5000",
         "0",
-        "0" * 64,
+        "test-build",
         dimensions=(3, 4),
         colonies=4,
     )
@@ -55,8 +55,8 @@ def valid_outcome(t, p):
         )
     return {
         "task_id": t.task_id(p),
-        "protocol_sha256": p.sha256,
-        "program_sha256": t.program.sha256,
+        "protocol_id": p.identifier,
+        "program_id": t.program.identifier,
         "occurrence_id": t.occurrence_id,
         "dimension": t.dimension,
         "status": "completed",
@@ -87,9 +87,9 @@ def test_identity_covers_occurrence_hardware_and_order(protocol):
         replace(t, preparation_mode="end_to_end"),
         replace(t, experiment_mask=0xFFFF),
     )
-    assert all(v.task_id(protocol) != original for v in variations)
-    assert t.task_id(replace(protocol, driver_version="1")) != original
-    assert t.task_id(replace(protocol, settings=SolverSettings(ants=4))) != original
+    assert all(v.manifest(protocol) != t.manifest(protocol) for v in variations)
+    assert replace(protocol, driver_version="1").manifest() != protocol.manifest()
+    assert replace(protocol, settings=SolverSettings(ants=4)).manifest() != protocol.manifest()
     assert "label" not in t.manifest(protocol) and "coordinates" not in t.manifest(protocol)
 
 
@@ -141,18 +141,19 @@ def test_external_failure_keeps_whole_panel(protocol, kind):
 
 def test_macro_average_and_out_of_order_identity(protocol):
     a, b = task(), task("generation0:individual0:scale4", 4)
+    b = replace(b, program=a.program)
     # n=3中a的一个seed为0，b的三个seed均30，实例平均15；n=4实例平均50。
     first = PanelFitness(
         a.task_id(protocol),
-        protocol.sha256,
-        a.program.sha256,
+        protocol.identifier,
+        a.program.identifier,
         3,
         tuple((name, seed, 0.0 if name == "a3" else 30.0) for name, seed in a.replicas),
     )
     second = PanelFitness(
         b.task_id(protocol),
-        protocol.sha256,
-        b.program.sha256,
+        protocol.identifier,
+        b.program.identifier,
         4,
         tuple((name, seed, 50.0) for name, seed in b.replicas),
     )
@@ -164,9 +165,7 @@ def test_macro_average_and_out_of_order_identity(protocol):
     with pytest.raises(ValueError):
         aggregate_panels((a, b), protocol, (second, first, first), (3, 4))
     with pytest.raises(ValueError):
-        aggregate_panels(
-            (a, b), protocol, (second, replace(first, protocol_sha256="foreign")), (3, 4)
-        )
+        aggregate_panels((a, b), protocol, (second, replace(first, protocol_id="foreign")), (3, 4))
     repeated = replace(a, occurrence_id="another-actual-evaluation")
     repeated_result = replace(first, task_id=repeated.task_id(protocol))
     with pytest.raises(ValueError):
@@ -179,7 +178,7 @@ def test_bad_labels_abort_instead_of_random_training(protocol):
     with pytest.raises(ValueError):
         score_panel(t, protocol, outcome, {})
     key = t.problems[0].instance_id
-    labels[key] = replace(labels[key], cost=100)
+    labels[key] = replace(labels[key], cost=float("nan"))
     with pytest.raises(ValueError):
         score_panel(t, protocol, outcome, labels)
 
@@ -188,7 +187,7 @@ def test_frozen_fee_table_is_complete_and_part_of_task_identity(protocol):
     original = task()
     charges = tuple((p.instance_id, 0.001, 0.02) for p in original.problems)
     frozen = replace(original, preparation_charges=charges)
-    assert frozen.task_id(protocol) != original.task_id(protocol)
+    assert frozen.manifest(protocol) != original.manifest(protocol)
     assert replace(frozen, preparation_charges=tuple(reversed(charges))).task_id(
         protocol
     ) == frozen.task_id(protocol)

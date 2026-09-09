@@ -8,7 +8,7 @@ namespace gp_faco {
 
 struct BatchTask { std::uint64_t instance_key, seed; };
 
-// 原生缓冲保留实际ABI字节；正式文件另由manifest固定native与SHA256。
+// 原生缓冲保留实际 ABI 字节，读取时检查结构版本和缓冲形状。
 struct CountedStateBuffer {
     std::string name;
     std::uint64_t element_bytes = 0, planes = 1;
@@ -29,7 +29,6 @@ struct CountedState {
     // 主机已提交incumbent也属于状态，不能用设备global的近似成本重新择优。
     std::vector<CountedStateIncumbent> incumbents;
     std::vector<CountedStateBuffer> buffers;
-    std::uint64_t checksum = 0;
 
     void seal();
     void validate() const;

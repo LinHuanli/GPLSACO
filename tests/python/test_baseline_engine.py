@@ -75,7 +75,9 @@ def test_native_baselines_counts_routes_and_state_isolation(n):
 def test_baseline_binding_rejects_ambiguous_or_incompatible_configs():
     import gp_faco_ext as native
 
-    engine = native.FacoBatchEngine(5, 1, native.FixedFacoSettings())
+    settings = native.FixedFacoSettings()
+    settings.ants = 32  # 此接口错误测试明确使用 32 FE 的工程批次。
+    engine = native.FacoBatchEngine(5, 1, settings)
     engine.register_problem(11, np.random.default_rng(70).random((5, 2)))
     keys, seeds = np.array([11], dtype=np.uint64), np.array([17], dtype=np.uint64)
     for changed in (

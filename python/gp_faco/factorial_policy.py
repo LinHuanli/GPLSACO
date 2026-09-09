@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 from dataclasses import dataclass
 
 from gp_faco.baseline_policy import BaselinePolicy
@@ -53,6 +51,5 @@ class FactorialPolicy:
         )
 
     @property
-    def sha256(self):
-        encoded = json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"), allow_nan=False)
-        return hashlib.sha256(encoded.encode()).hexdigest()
+    def identifier(self):
+        return f"{self.variant}-{self.baseline_policy.identifier}"

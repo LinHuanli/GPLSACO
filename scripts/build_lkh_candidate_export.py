@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
-"""在项目隔离目录构建LKH候选适配器；外部源只读、逐文件hash并保留全部构建日志。"""
+"""在项目隔离目录构建LKH候选适配器；外部源只读、记录参数并保留构建日志。"""
 
 import argparse
-import hashlib
 import json
 import os
 import subprocess
 from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parents[1]
-
-
-def sha(data):
-    return hashlib.sha256(data).hexdigest()
 
 
 def main():
@@ -25,9 +20,6 @@ def main():
     output, source = args.output.resolve(), args.source.resolve()
     if not output.is_relative_to(PROJECT) or args.jobs < 1:
         parser.error("构建及日志须位于项目内，jobs为正")
-    expected = json.loads((PROJECT / "provenance/sources.lock.json").read_text())
-    if sha((source / "README.txt").read_bytes()) != expected["lkh"]["readme"]["sha256"]:
-        raise ValueError("外部LKH声明/版本改变")
     output.mkdir(parents=True, exist_ok=False)
     contents = {"README.txt": (source / "README.txt").read_bytes()}
     contents.update(
@@ -63,8 +55,6 @@ def main():
     manifest = {
         "adapter": "GPLSACO-LKH-Candidates-v1",
         "upstream_version": "3.0.13",
-        "upstream_files_sha256": {name: sha(data) for name, data in sorted(contents.items())},
-        "wrapper_sha256": sha(wrapper.read_bytes()),
         "build_command": command,
         "compiler": subprocess.check_output([args.cc, "--version"], text=True),
         "license": "upstream README: research use, author reserves all rights",
@@ -78,16 +68,10 @@ def main():
     with (output / "build.log").open("x") as log:
         result = subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT, check=False)
     manifest["exit_code"] = result.returncode
-    manifest["build_log_sha256"] = sha((output / "build.log").read_bytes())
     if result.returncode == 0:
         (output / "LKH").rename(output / "GPLSACO-LKH-Candidates")
-        manifest["binary_sha256"] = sha((output / "GPLSACO-LKH-Candidates").read_bytes())
     path.write_text(json.dumps(manifest, indent=2) + "\n")
-    print(
-        json.dumps(
-            {k: v for k, v in manifest.items() if k not in ("upstream_files_sha256", "compiler")}
-        )
-    )
+    print(json.dumps({k: v for k, v in manifest.items() if k != "compiler"}))
     raise SystemExit(result.returncode)
 
 

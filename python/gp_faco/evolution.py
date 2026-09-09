@@ -91,7 +91,7 @@ def ranking_key(individual: Individual) -> tuple:
     if math.isnan(value) or value == -math.inf:
         raise ValueError("fitness只能是有限值或显式失败的+infinity")
     program = export_tree(individual)
-    return value, len(individual), program.sha256
+    return value, len(individual), program.key
 
 
 def individual_from_program(program: Program, pset) -> Individual:
@@ -114,6 +114,7 @@ def individual_from_program(program: Program, pset) -> Individual:
             del stack[-primitive.arity :]
             stack.append([primitive] + [node for child in children for node in child])
     individual = Individual(stack[0], program.feature_spec_id)
+    individual.program_id = program.identifier
     if export_tree(individual) != program:
         raise ValueError("checkpoint程序不是本项目规范化导出的IR")
     return individual
@@ -178,7 +179,8 @@ class Evolution:
                 )
                 for _ in range(self.settings.population)
             ]
-        for individual in self.population:
+        for index, individual in enumerate(self.population):
+            individual.program_id = f"g001-i{index + 1:03d}"
             export_tree(individual)
 
     def begin_panel(self, panel_id: str) -> None:
@@ -190,13 +192,13 @@ class Evolution:
             del individual.fitness.values
             individual.evaluated_panel = None
 
-    def assign(self, index: int, value: float, panel_id: str, program_sha256: str) -> None:
+    def assign(self, index: int, value: float, panel_id: str, program_id: str) -> None:
         if panel_id != self.panel_id or self.panel_id is None:
             raise ValueError("返回分数属于其他代面板")
         if type(index) is not int or not 0 <= index < len(self.population):
             raise ValueError("个体位置越界")
         individual = self.population[index]
-        if individual.fitness.valid or export_tree(individual).sha256 != program_sha256:
+        if individual.fitness.valid or individual.program_id != program_id:
             raise ValueError("重复赋值或程序身份不符")
         if type(value) not in (int, float) or math.isnan(value) or value == -math.inf:
             raise ValueError("无效fitness")
@@ -248,7 +250,8 @@ class Evolution:
         self.population = elites + offspring
         self.generation += 1
         self.panel_id = None
-        for individual in self.population:
+        for index, individual in enumerate(self.population):
+            individual.program_id = f"g{self.generation + 1:03d}-i{index + 1:03d}"
             del individual.fitness.values
             individual.evaluated_panel = None
             if self._over_limit(individual):
@@ -265,7 +268,10 @@ class Evolution:
             raise ValueError("只有已评价的最终代才能形成验证shortlist")
         programs = [Program.from_dict(v["program"]) for v in self.winners]
         programs.extend(export_tree(v) for v in self.population)
-        return tuple(sorted({p.sha256: p for p in programs}.values(), key=lambda p: p.sha256))
+        unique = {}
+        for program in programs:
+            unique.setdefault(program.key, program)
+        return tuple(unique[key] for key in sorted(unique))
 
     def state_dict(self) -> dict:
         return {

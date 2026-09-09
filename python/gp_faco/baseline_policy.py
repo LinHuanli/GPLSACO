@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 import math
 from dataclasses import asdict, dataclass, fields
+from itertools import product
 
 
 @dataclass(frozen=True)
@@ -92,6 +91,43 @@ class BaselinePolicy:
         return cls(**value)
 
     @property
-    def sha256(self) -> str:
-        encoded = json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"), allow_nan=False)
-        return hashlib.sha256(encoded.encode()).hexdigest()
+    def identifier(self) -> str:
+        return "-".join(str(value) for value in self.to_dict().values())
+
+
+def policy_grid(spec):
+    """由预登记笛卡尔积展开全部配置；不读取数据或根据结果追加参数。"""
+    output = []
+    static = spec["static"]
+    for level, region in product(spec["mne_levels"], spec["regions"]):
+        variants = [{"restart_mode": "none"}]
+        variants.extend(
+            {"restart_mode": "periodic", "restart_period": value} for value in static["periods"]
+        )
+        variants.extend(
+            {"restart_mode": "bernoulli", "restart_probability": value}
+            for value in static["probabilities"]
+        )
+        output.extend(
+            BaselinePolicy(mne_level=level, max_mne_level=level, region=region, **v)
+            for v in variants
+        )
+    rule = spec["rule"]
+    restarts = [(0, 0), *product(rule["restart_thresholds"], rule["cooldowns"])]
+    for base, maximum, region in product(spec["mne_levels"], spec["mne_levels"], spec["regions"]):
+        if maximum < base:
+            continue
+        for step in [0] if maximum == base else rule["stagnation_steps"]:
+            output.extend(
+                BaselinePolicy(
+                    kind="rule",
+                    mne_level=base,
+                    max_mne_level=maximum,
+                    region=region,
+                    stagnation_step=step,
+                    restart_stagnation=threshold,
+                    restart_cooldown=cooldown,
+                )
+                for threshold, cooldown in restarts
+            )
+    return tuple(output)

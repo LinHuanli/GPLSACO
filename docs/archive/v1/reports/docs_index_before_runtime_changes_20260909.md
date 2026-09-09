@@ -1,0 +1,41 @@
+# 研究文档索引
+
+本组文档将 [v4 研究方案](../../../reports/archive/design/GP_ACO_TSP_Research_Proposal_v4.md) 转换为可以实现、测试和预注册的工作包。原方案中的建议参数不自动成为已验证配置；本组文档中标注为“开发候选”的定义须在正式测试前冻结。
+
+**最新用户指示：进化与ACO主实验按evaluation次数终止，尽量不设时间上限。** [次数协议](../../../reports/archive/planning/12_evaluation_count_protocol.md)优先于前序wall-clock主预算描述；次数入口与实际训练恢复已有[开发验收](../../../reports/archive/reports/2026-09-08_evaluation_counts.md)，历史计时结果作为工程/资源证据保留。
+
+E1机制所需的[完整状态分叉与真实面板验收](../../../reports/archive/reports/2026-09-09_e1_state_fork_engine.md)已在隔离分支完成；每个分支从同一快照恢复并按相同额外FE继续。正式分层采样与效应统计仍待执行，主训练和E3继续使用原冻结底座。
+
+E2已完成[动作限制、真实跨二进制对照及独立重训/恢复验收](../../../reports/archive/reports/2026-09-09_e2_factorial_engine.md)，174调用/1,425,408 FE通过；完整设计已登记M00选择、五seed重训与统计。[逐批行为记录与实际worker验收](../../../reports/archive/reports/2026-09-09_e2_behavior_engine.md)现已完成，主要接受证据112调用/917,504 FE；正式执行仍待主基线及五个E1 Full选择、完整入口与身份封存。
+
+| 顺序 | 文档 | 解决的问题 |
+|---|---|---|
+| 1 | [范围与关键决策](../../../reports/archive/planning/01_scope_and_decisions.md) | 研究贡献、歧义、哪些假设可能失败 |
+| 2 | [数据与标签](../../../reports/archive/planning/02_data_and_labels.md) | 格式、距离、最优性依据、划分和防泄漏 |
+| 3 | [FACO 语义与外部基线](../../../reports/archive/planning/03_faco_semantics_and_baselines.md) | 原生与共同扩展如何区分、源码怎样核验 |
+| 4 | [C++/CUDA 架构](../../../reports/archive/planning/04_solver_and_cuda.md) | 内存、控制事务、计时、并行边界 |
+| 5 | [GP 与程序契约](../../../reports/archive/planning/05_gp_and_program_ir.md) | 特征编号、数值规则、演化与验证选择 |
+| 6 | [验收与质量门槛](../../../reports/archive/planning/06_validation_gates.md) | 什么证据允许进入下一阶段 |
+| 7 | [公共实验与统计](../../../reports/archive/planning/07_evaluation_and_statistics.md) | 预算、失败、推断单位和结果格式 |
+| 8 | [资源与执行顺序](../../../reports/archive/planning/08_execution_and_resources.md) | 环境、GPU、训练成本、Git 与里程碑 |
+| 9 | [主底座控制层契约](../../../reports/archive/planning/09_control_contract.md) | 档案、区域、十二特征、完整重启和碰撞边界 |
+| 10 | [代际训练、费用与恢复契约](../../../reports/archive/planning/10_training_state_contract.md) | 标准DEAP、固定面板/费用、可信checkpoint、验证与导出 |
+| 11 | [成本剖析与时间入口校准](../../../reports/archive/planning/11_profiling_and_calibration.md) | 分层GPU/CPU成本、插桩语义、旧截止路径的工程证据 |
+| 12 | [评价次数主协议](../../../reports/archive/planning/12_evaluation_count_protocol.md) | 用户补充后的计数单位、终止规则、progress特征及冻结顺序 |
+| 13 | [Static/Rule共同底座契约](../../../reports/archive/planning/13_baseline_control_contract.md) | 参数族、独立重启随机流、停滞升级/冷却、mask及开发调优边界 |
+| 14 | [开发集FE校准与基线配置搜索](../../../reports/archive/planning/14_baseline_search_and_fe_calibration.md) | 480任务次数曲线、776配置完整调优、固定验证选择及恢复/资源账目 |
+| 16 | [E1完整训练与冻结顺序](../../../reports/archive/planning/16_e1_freeze_and_execution.md) | 128×50×5、Full/NoFeedback独立重训、全部数据/面板身份及与基线调优的并行边界 |
+| E1 | [反馈价值](../../../reports/archive/experiments/E1_feedback.md) | 完整程序、去反馈重训及状态分叉 |
+| E2 | [两尺度关系](../../../reports/archive/experiments/E2_factorial.md) | 2×2 析因与交互 |
+| E3 | [候选与出口](../../../reports/archive/experiments/E3_candidates_and_escape.md) | Hard/Escape 的可执行定义与公平性 |
+| E4 | [冻结迁移](../../../reports/archive/experiments/E4_transfer.md) | 10K、TSPLIB、失败与适用范围 |
+
+用户进一步允许使用任何实时空闲的兼容GPU，先用`gpu-free`发现再核查UUID占用；型号与计时分列。十个完整E1训练已启动，见[启动与快照审计](../../../reports/archive/reports/2026-09-09_e1_training_launch.md)。
+
+独立E3分支已完成[Hard/Escape及匹配图工程验收](https://github.com/LinHuanli/GPLSACO/blob/7c442af1247241bb4b8bcd9c1f7430041398f53b/docs/reports/2026-09-09_escape_engine.md)、[图worker与四条件开发训练/恢复](https://github.com/LinHuanli/GPLSACO/blob/ca7b7c9ef3df91b3126f6ebddf68e6f7197fe302/docs/reports/2026-09-09_graph_worker.md)，以及[正式协议与全部2,296实例/4,592成对图准备](https://github.com/LinHuanli/GPLSACO/blob/c12120199aca2595f57a5eca8b433e49949cd95c/docs/reports/2026-09-09_e3_formal_preparation.md)。完整图目录已独立审计并封存，A5000四条件worker也已通过核验；正式执行入口与分组启动已完成，四个Static已通过终态审计，20个GP继续全部预登记训练/验证。源码、二进制、worker图输入和审计快照均在项目内归档，原始候选收据单独保留；主分支活动训练的实现未变。
+
+当前事实以 [进度记录](../../../reports/archive/reports/progress.md) 和其链接的机器可读报告为准。历史 v4 中“已核查”“待安装”等描述保留为方案写作时点，不替代本地执行状态。
+
+E3已完成[四条件完整Static调优与策略封存](../../../reports/archive/reports/2026-09-09_e3_static_terminal.md)：5,280调用/692,060,160 FE通过终态审计；第20个GP已按原队列启动并通过111调用前缀审计。此前[19个GP启动前缀](../../../reports/archive/reports/2026-09-09_e3_formal_launch.md)保留原证据。20个完整GP及其验证、选择与TEST仍待完成；资源恢复和等待状态见[最新恢复报告](../../../reports/archive/reports/2026-09-09_formal_resource_recovery_v4.md)，主树活动底座未合入E3/E2改动。
+
+本轮已补齐[E1等待](../../../reports/archive/planning/25_e1_resource_wait.md)、[主基线等待](../../../reports/archive/planning/26_baseline_resource_wait.md)及[E3提交前等待](../../../reports/archive/planning/27_e3_unsubmitted_resource_wait.md)协议。已有运行保持原身份与完整次数，空闲设备用于后续独立任务；详见最新进度。

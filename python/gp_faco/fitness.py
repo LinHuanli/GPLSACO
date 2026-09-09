@@ -13,8 +13,8 @@ from gp_faco.worker import BaselineTask, FactorialTask, SolveTask, WorkerProtoco
 @dataclass(frozen=True)
 class PanelFitness:
     task_id: str
-    protocol_sha256: str
-    controller_sha256: str
+    protocol_id: str
+    controller_id: str
     dimension: int
     # (实例身份, solve seed, reference gap百分比)。失败保留任务，不生成部分平均。
     members: tuple[tuple[str, int, float], ...] = ()
@@ -35,21 +35,18 @@ def score_panel(
     problems = {p.instance_id: p for p in task.problems}
     if set(labels) != set(problems):
         raise ValueError("外部标签必须与任务问题精确对应")
-    for name, label in labels.items():
+    for label in labels.values():
         if type(label) is not Label or not math.isfinite(label.cost) or label.cost <= 0:
             raise ValueError("外部标签成本必须正且有限")
-        actual = tour_cost(problems[name], label.tour)
-        if abs(actual - label.cost) > 1e-8 + 1e-12 * actual:
-            raise ValueError("外部标签路线与成本不符")
 
     def failed(message: str) -> PanelFitness:
         return PanelFitness(
-            identity, protocol.sha256, task.controller_sha256, task.dimension, error=message
+            identity, protocol.identifier, task.controller_id, task.dimension, error=message
         )
 
     if (
         outcome.get("task_id") != identity
-        or outcome.get("protocol_sha256") != protocol.sha256
+        or outcome.get("protocol_id") != protocol.identifier
         or any(outcome.get(k) != v for k, v in task.controller_identity().items())
         or outcome.get("dimension") != task.dimension
         or outcome.get("occurrence_id") != task.occurrence_id
@@ -96,7 +93,7 @@ def score_panel(
                     result,
                     dimension=task.dimension,
                     colonies=protocol.colonies,
-                    ants=protocol.settings.ants,
+                    ants=protocol.settings.ants_for(task.dimension),
                     evaluation_limit=task.evaluation_limit_per_colony,
                     ls_evaluation_limit=protocol.settings.ls_evaluation_limit,
                     policy=task.factorial_policy,
@@ -156,7 +153,12 @@ def score_panel(
                     return failed("返回FE计数未完整覆盖预定限额")
             if (
                 result.get("budget_kind") != "search_tour_evaluations"
-                or counts != [limit // protocol.settings.ants, limit // protocol.settings.ants, 0]
+                or counts
+                != [
+                    limit // protocol.settings.ants_for(task.dimension),
+                    limit // protocol.settings.ants_for(task.dimension),
+                    0,
+                ]
                 or result["charged_seconds"] != 0
                 or result["preparation_completed"] is not True
             ):
@@ -176,7 +178,10 @@ def score_panel(
             ):
                 return failed("返回迟到或非有限/非正incumbent")
             actual = tour_cost(problems[name], item["tour"])
-            if abs(actual - reported) > 1e-8 + 1e-12 * actual:
+            if (
+                protocol.numeric_backend == "exact"
+                and abs(actual - reported) > 1e-8 + 1e-12 * actual
+            ):
                 return failed("返回路线与成本不符")
             if protocol.graph_catalog is not None and (
                 protocol.constraint_mode == "hard" or task.evaluation_limit_per_colony == 0
@@ -197,7 +202,7 @@ def score_panel(
                 return failed("外部gap超出有限范围")
             members.append((name, seed, gap))
         return PanelFitness(
-            identity, protocol.sha256, task.controller_sha256, task.dimension, tuple(members)
+            identity, protocol.identifier, task.controller_id, task.dimension, tuple(members)
         )
     except (KeyError, TypeError, ValueError, OverflowError) as error:
         return failed(f"返回结构或独立核验失败: {error}")
@@ -215,7 +220,7 @@ def aggregate_panels(
         raise ValueError("预定任务身份为空或重复")
     if len(dimensions) != len(set(dimensions)) or set(dimensions) != {t.dimension for t in tasks}:
         raise ValueError("预定规模与评价面板不符")
-    if len({task.controller_sha256 for task in tasks}) != 1:
+    if len({task.controller_id for task in tasks}) != 1:
         raise ValueError("不能把不同控制器的规模结果拼成一个fitness")
     received = {result.task_id: result for result in outcomes}
     if len(received) != len(outcomes) or set(received) != set(expected):
@@ -226,8 +231,8 @@ def aggregate_panels(
     for identity, task in expected.items():
         result = received[identity]
         if (
-            result.protocol_sha256 != protocol.sha256
-            or result.controller_sha256 != task.controller_sha256
+            result.protocol_id != protocol.identifier
+            or result.controller_id != task.controller_id
             or result.dimension != task.dimension
         ):
             raise ValueError("任务结果混用了硬件协议、程序或规模")

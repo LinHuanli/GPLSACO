@@ -139,7 +139,7 @@ def static_policies(config):
             BaselinePolicy(mne_level=level, max_mne_level=level, region=region, **value)
             for value in variants
         )
-    require(len({p.sha256 for p in output}) == len(output), "Static配置身份重复")
+    require(len({p.identifier for p in output}) == len(output), "Static配置身份重复")
     return tuple(output)
 
 

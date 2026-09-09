@@ -20,7 +20,7 @@ namespace py = pybind11;
 namespace {
 
 gp_faco::Program read_program(const py::dict& dictionary) {
-    if (dictionary.size() != 6) throw std::invalid_argument("IR 字段数量错误");
+    if (dictionary.size() != 6 && !(dictionary.size() == 7 && dictionary.contains("program_id"))) throw std::invalid_argument("IR 字段数量错误");
     // JSON bool 与整数在 Python 中有继承关系，不能让 true 冒充版本 1。
     for (const char* name : {"ir_version", "numeric_spec_id", "feature_spec_id"}) {
         if (!PyLong_CheckExact(dictionary[name].ptr())) {
@@ -53,6 +53,41 @@ gp_faco::Program read_program(const py::dict& dictionary) {
     }
     gp_faco::validate_program(program);
     return program;
+}
+
+gp_faco::ControllerProgram read_controller(const py::dict& dictionary) {
+    gp_faco::ControllerProgram c;
+    if (dictionary.contains("opcode")) { c.trees[0] = read_program(dictionary); }
+    else {
+        if (dictionary.size() != 4 || !PyLong_CheckExact(dictionary["controller_version"].ptr()) ||
+            py::cast<int>(dictionary["controller_version"]) != 1)
+            throw std::invalid_argument("未知控制器版本或字段");
+        const auto kind = py::cast<std::string>(dictionary["representation"]);
+        if (kind != "joint_single" && kind != "conditional_three") throw std::invalid_argument("未知控制器表示");
+        c.kind = kind == "conditional_three";
+        const auto trees = py::cast<std::vector<py::dict>>(dictionary["trees"]);
+        if (trees.size() != (c.kind ? 3u : 1u)) throw std::invalid_argument("控制器角色树数量错误");
+        for (unsigned i = 0; i < trees.size(); ++i) c.trees[i] = read_program(trees[i]);
+    }
+    gp_faco::validate_controller(c);
+    return c;
+}
+
+py::list controller_stages(const float* scores, std::uint32_t mask, int action) {
+    py::list stages;
+    unsigned prefix = 0;
+    for (unsigned role = 0; role < 3; ++role) {
+        const unsigned width = role == 0 ? 2 : 4, stride = role == 0 ? 16 : role == 1 ? 4 : 1;
+        const unsigned offset = role == 0 ? 0 : role == 1 ? 2 : 6;
+        py::dict stage; py::list legal;
+        for (unsigned i = 0; i < width; ++i)
+            legal.append(bool((mask >> (prefix + i * stride)) & ((1u << stride) - 1u)));
+        const unsigned selected = (action - prefix) / stride;
+        stage["scores"] = std::vector<float>(scores + offset, scores + offset + width);
+        stage["legal"] = legal; stage["selected"] = selected;
+        stages.append(stage); prefix += selected * stride;
+    }
+    return stages;
 }
 
 using FeatureArray = py::array_t<float, py::array::c_style>;
@@ -259,6 +294,65 @@ py::dict batch_output(const gp_faco::BatchEvaluation& result, const std::string&
         output["total_tour_evaluations"] = result.total_tour_evaluations;
     }
     output["elapsed_seconds"] = result.elapsed_seconds;
+    if (result.population_size > 1) {
+        output["population_size"] = result.population_size;
+        output["population_actual_seconds"] = result.population_actual_seconds;
+        output["time_accounting"] = "equal_share_of_population_batch";
+    }
+    if (result.production_kernel_milliseconds != std::array<double, gp_faco::gpu_profile_stage_count>{}) {
+        py::dict stages;
+        for (unsigned i = 0; i < result.production_kernel_milliseconds.size(); ++i)
+            stages[gp_faco::gpu_profile_stage_names[i]] = result.production_kernel_milliseconds[i];
+        output["production_kernel_milliseconds"] = stages;
+    }
+    if (!result.checkpoint_iterations.empty()) {
+        py::list checkpoints;
+        const auto colonies = result.incumbents.size();
+        const auto n = result.incumbents.front().tour.size();
+        for (std::size_t i = 0; i < result.checkpoint_iterations.size(); ++i) {
+            py::dict checkpoint; py::list tours;
+            checkpoint["iterations"] = result.checkpoint_iterations[i];
+            for (std::size_t colony = 0; colony < colonies; ++colony) {
+                const auto first = result.checkpoint_tours.begin() + (i * colonies + colony) * n;
+                tours.append(std::vector<gp_faco::Node>(first, first + n));
+            }
+            checkpoint["tours"] = tours; checkpoints.append(checkpoint);
+        }
+        output["checkpoints"] = checkpoints;
+    }
+    if (!result.decisions.empty()) {
+        py::list decisions;
+        for (const auto& trace : result.decisions) {
+            const auto count = trace.actions.size();
+            for (std::size_t colony = 0; colony < count; ++colony) {
+                py::dict row; py::list features, scores;
+                row["iteration"] = trace.iteration; row["colony"] = colony;
+                row["legal_mask"] = trace.masks[colony]; row["action"] = trace.actions[colony];
+                for (unsigned feature = 0; feature < 12; ++feature) {
+                    const auto first = trace.features.begin() + (feature * count + colony) * 32;
+                    features.append(std::vector<float>(first, first + 32));
+                }
+                for (unsigned action = 0; action < 32; ++action) {
+                    const float value = trace.scores[colony * 32 + action];
+                    scores.append(std::isfinite(value) ? py::cast(value) : py::none());
+                }
+                row["features"] = features;
+                if (trace.conditional_three) row["stages"] = controller_stages(
+                    trace.scores.data() + colony * 32, trace.masks[colony], trace.actions[colony]);
+                else if (!trace.fixed_policy) row["scores"] = scores;
+                decisions.append(row);
+            }
+        }
+        output["decisions"] = decisions;
+    }
+    if (!result.profile.batches.empty()) {
+        py::dict profile;
+        std::vector<double> stages(gp_faco::gpu_profile_stage_count, 0.0);
+        for (const auto& batch : result.profile.batches)
+            for (unsigned i = 0; i < stages.size(); ++i) stages[i] += batch.gpu_milliseconds[i];
+        for (unsigned i = 0; i < stages.size(); ++i) profile[gp_faco::gpu_profile_stage_names[i]] = stages[i];
+        output["kernel_milliseconds"] = profile;
+    }
     output["actual_seconds"] = result.actual_seconds;
     output["charged_seconds"] = result.charged_seconds;
     output["last_batch_completed_seconds"] = result.last_batch_completed_seconds;
@@ -328,7 +422,7 @@ template<class T> std::vector<T> state_buffer(const gp_faco::CountedState& state
 py::dict counted_state_output(const gp_faco::CountedState& state) {
     state.validate();
     py::dict out, settings;
-    out["state_spec_id"] = 1; out["native_abi_bound"] = true; out["checksum"] = state.checksum;
+    out["state_spec_id"] = 2; out["native_abi_bound"] = true;
     out["dimension"] = state.dimension; out["colonies"] = state.colonies;
     out["completed_batches"] = state.completed_batches;
     out["completed_evaluations_per_colony"] = state.completed_batches * state.settings.ants;
@@ -404,6 +498,8 @@ py::dict profiling_output(const gp_faco::EvaluationProfile& profile) {
 }  // namespace
 
 PYBIND11_MODULE(gp_faco_ext, module) {
+    module.attr("numeric_backend") = GPFACO_NUMERIC_BACKEND;
+    module.attr("campaign_interface_version") = 1;
     module.doc() = "GP评分、固定迭代与并发截止FACO接口；在线GP控制在原生Engine内执行";
     module.def("score_cpu", [](const py::dict& p, const FeatureArray& f, const MaskArray& m) {
         return score(p, f, m, false);
@@ -460,19 +556,21 @@ PYBIND11_MODULE(gp_faco_ext, module) {
         }, py::arg("colony"));
     py::class_<gp_faco::FacoBatchEngine>(module, "FacoBatchEngine")
         .def(py::init([](const py::object& n, const py::object& count,
-                         const gp_faco::FixedFacoSettings& settings, const std::string& constraint_mode) {
+                         const gp_faco::FixedFacoSettings& settings, const std::string& constraint_mode,
+                         const py::object& population_size) {
             if (!PyLong_CheckExact(n.ptr()) || !PyLong_CheckExact(count.ptr()))
                 throw std::invalid_argument("dimension/colonies必须为整数");
             const auto dimension = py::cast<gp_faco::Node>(n), colonies = py::cast<gp_faco::Node>(count);
             const auto copied = settings;
+            const auto population = read_node(population_size);
             if (constraint_mode != "unrestricted" && constraint_mode != "hard" && constraint_mode != "escape")
                 throw std::invalid_argument("未知或尚未验证的图约束模式");
             const auto mode = constraint_mode == "hard" ? gp_faco::ConstraintMode::Hard
                 : constraint_mode == "escape" ? gp_faco::ConstraintMode::Escape : gp_faco::ConstraintMode::Unrestricted;
             py::gil_scoped_release release;
-            return std::make_unique<gp_faco::FacoBatchEngine>(dimension, colonies, copied, mode);
+            return std::make_unique<gp_faco::FacoBatchEngine>(dimension, colonies, copied, mode, population);
         }), py::arg("dimension"), py::arg("colonies"), py::arg("settings"),
-            py::arg("constraint_mode") = "unrestricted")
+            py::arg("constraint_mode") = "unrestricted", py::arg("population_size") = 1)
         .def("register_graph_problem", [](gp_faco::FacoBatchEngine& engine, const py::object& key,
                                           const Coordinates& xy, const py::dict& dictionary) {
             if (xy.ndim() != 2 || xy.shape(1) != 2)
@@ -600,9 +698,31 @@ PYBIND11_MODULE(gp_faco_ext, module) {
         }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
            py::arg("budget_seconds"), py::arg("program"),
            py::arg("preparation_mode") = "cached_charged", py::arg("experiment_mask") = UINT32_MAX)
+        .def("evaluate_faco_evaluations", [](gp_faco::FacoBatchEngine& engine,
+                const Keys& keys, const Keys& seeds, const py::object& evaluations,
+                gp_faco::Node mne, const std::string& mode,
+                const std::vector<std::uint64_t>& checkpoints, bool events_only) {
+            if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size())
+                throw std::invalid_argument("FACO 次数入口需要完整任务数组");
+            if (mode != "cached" && mode != "end_to_end") throw std::invalid_argument("未知准备模式");
+            std::vector<gp_faco::BatchTask> tasks;
+            for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            gp_faco::BatchDiagnosticControls controls; controls.checkpoint_iterations = checkpoints;
+            controls.profile_events_only = events_only;
+            const auto limit = read_unsigned(evaluations);
+            const auto preparation = preparation_mode(mode == "cached" ? "cached_charged" : mode);
+            gp_faco::BatchEvaluation result;
+            { py::gil_scoped_release release;
+              result = engine.evaluate_faco_evaluations(tasks, limit, mne, preparation, controls); }
+            return batch_output(result, mode);
+        }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
+           py::arg("evaluation_limit_per_colony"), py::arg("mne") = 8, py::arg("preparation_mode") = "cached",
+           py::kw_only(), py::arg("checkpoint_iterations") = std::vector<std::uint64_t>{}, py::arg("profile_events_only") = false)
         .def("evaluate_program_evaluations", [](gp_faco::FacoBatchEngine& engine,
                 const Keys& keys, const Keys& seeds, const py::object& evaluations,
-                const py::dict& dictionary, const std::string& mode, const py::object& mask, const py::object& record) {
+                const py::dict& dictionary, const std::string& mode, const py::object& mask, const py::object& record,
+                const std::vector<std::uint64_t>& checkpoints, bool profile, bool events_only,
+                const std::vector<std::uint64_t>& decision_iterations) {
             if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size() ||
                 !PyLong_CheckExact(evaluations.ptr()) || !PyLong_CheckExact(mask.ptr()))
                 throw std::invalid_argument("次数入口需要整数限额与完整任务数组");
@@ -618,7 +738,10 @@ PYBIND11_MODULE(gp_faco_ext, module) {
             const auto preparation = preparation_mode(mode == "cached" ? "cached_charged" : mode);
             std::vector<gp_faco::BatchTask> tasks;
             for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
-            const auto observation = behavior_controls(record);
+            auto observation = behavior_controls(record);
+            observation.checkpoint_iterations = checkpoints; observation.profile = profile;
+            observation.profile_events_only = events_only;
+            observation.decision_iterations = decision_iterations;
             gp_faco::BatchEvaluation result;
             {
                 py::gil_scoped_release release;
@@ -628,10 +751,75 @@ PYBIND11_MODULE(gp_faco_ext, module) {
         }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
            py::arg("evaluation_limit_per_colony"), py::arg("program"),
            py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX,
-           py::kw_only(), py::arg("record_behavior") = false)
+           py::kw_only(), py::arg("record_behavior") = false,
+           py::arg("checkpoint_iterations") = std::vector<std::uint64_t>{}, py::arg("profile") = false,
+           py::arg("profile_events_only") = false,
+           py::arg("decision_iterations") = std::vector<std::uint64_t>{})
+        .def("evaluate_controller_evaluations", [](gp_faco::FacoBatchEngine& engine,
+                const Keys& keys, const Keys& seeds, const py::object& evaluations,
+                const py::dict& dictionary, std::uint32_t mask,
+                const std::vector<std::uint64_t>& decision_iterations) {
+            if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size())
+                throw std::invalid_argument("控制器需要完整共用面板");
+            const auto controller = read_controller(dictionary); const auto limit = read_unsigned(evaluations);
+            std::vector<gp_faco::BatchTask> tasks;
+            for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            gp_faco::BatchDiagnosticControls observation; observation.decision_iterations = decision_iterations;
+            gp_faco::BatchEvaluation result;
+            { py::gil_scoped_release release;
+              result = engine.evaluate_controller_evaluations(tasks, limit, controller, mask, observation); }
+            return batch_output(result, "cached");
+        }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
+           py::arg("evaluation_limit_per_colony"), py::arg("controller"),
+           py::arg("experiment_mask") = UINT32_MAX, py::kw_only(),
+           py::arg("decision_iterations") = std::vector<std::uint64_t>{})
+        .def("evaluate_population_evaluations", [](gp_faco::FacoBatchEngine& engine,
+                const Keys& keys, const Keys& seeds, const py::object& evaluations,
+                const std::vector<py::dict>& dictionaries, const py::object& mask,
+                const py::object& factorial_dictionary, bool events_only) {
+            if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size())
+                throw std::invalid_argument("种群入口需要完整共用面板");
+            const auto limit = read_unsigned(evaluations);
+            const auto experiment_mask = read_node(mask);
+            std::vector<gp_faco::Program> programs;
+            std::vector<gp_faco::ControllerProgram> controllers;
+            bool conditional = false;
+            for (const auto& dictionary : dictionaries) {
+                if (dictionary.contains("opcode")) {
+                    programs.push_back(read_program(dictionary));
+                    gp_faco::ControllerProgram c; c.trees[0] = programs.back(); controllers.push_back(c);
+                } else {
+                    const auto c = read_controller(dictionary); controllers.push_back(c);
+                    programs.push_back(c.trees[0]); conditional = conditional || c.kind;
+                }
+            }
+            std::vector<gp_faco::BatchTask> tasks;
+            for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            gp_faco::FactorialPolicy factorial;
+            const bool has_factorial = !factorial_dictionary.is_none();
+            if (has_factorial) factorial = read_factorial(py::cast<py::dict>(factorial_dictionary));
+            std::vector<gp_faco::BatchEvaluation> results;
+            gp_faco::BatchDiagnosticControls observation;
+            observation.profile_events_only = events_only;
+            { py::gil_scoped_release release;
+              results = engine.evaluate_population_evaluations(tasks, limit, programs, experiment_mask,
+                  has_factorial ? &factorial : nullptr, observation, conditional ? &controllers : nullptr); }
+            py::list output;
+            for (const auto& result : results) {
+                auto item = batch_output(result, "cached");
+                if (has_factorial) item["factorial_policy"] = factorial_output(factorial);
+                output.append(item);
+            }
+            return output;
+        }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
+           py::arg("evaluation_limit_per_colony"), py::arg("programs"),
+           py::arg("experiment_mask") = UINT32_MAX, py::kw_only(), py::arg("factorial_policy") = py::none(),
+           py::arg("profile_events_only") = false)
         .def("evaluate_baseline_evaluations", [](gp_faco::FacoBatchEngine& engine,
                 const Keys& keys, const Keys& seeds, const py::object& evaluations,
-                const py::dict& dictionary, const std::string& mode, const py::object& mask, const py::object& record) {
+                const py::dict& dictionary, const std::string& mode, const py::object& mask, const py::object& record,
+                const std::vector<std::uint64_t>& checkpoints, bool profile, bool events_only,
+                const std::vector<std::uint64_t>& decisions) {
             if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size())
                 throw std::invalid_argument("基线次数入口需要完整任务数组");
             if (mode != "cached" && mode != "end_to_end")
@@ -642,7 +830,9 @@ PYBIND11_MODULE(gp_faco_ext, module) {
             const auto preparation = preparation_mode(mode == "cached" ? "cached_charged" : mode);
             std::vector<gp_faco::BatchTask> tasks;
             for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
-            const auto observation = behavior_controls(record);
+            auto observation = behavior_controls(record);
+            observation.checkpoint_iterations = checkpoints; observation.profile = profile;
+            observation.profile_events_only = events_only; observation.decision_iterations = decisions;
             gp_faco::BatchEvaluation result;
             {
                 py::gil_scoped_release release;
@@ -654,7 +844,10 @@ PYBIND11_MODULE(gp_faco_ext, module) {
         }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
            py::arg("evaluation_limit_per_colony"), py::arg("policy"),
            py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX,
-           py::kw_only(), py::arg("record_behavior") = false)
+           py::kw_only(), py::arg("record_behavior") = false,
+           py::arg("checkpoint_iterations") = std::vector<std::uint64_t>{}, py::arg("profile") = false,
+           py::arg("profile_events_only") = false,
+           py::arg("decision_iterations") = std::vector<std::uint64_t>{})
         .def("evaluate_factorial_evaluations", [](gp_faco::FacoBatchEngine& engine,
                 const Keys& keys, const Keys& seeds, const py::object& evaluations,
                 const py::dict& dictionary, const py::dict& policy_dictionary,
@@ -814,6 +1007,27 @@ PYBIND11_MODULE(gp_faco_ext, module) {
     module.def("score_cuda", [](const py::dict& p, const FeatureArray& f, const MaskArray& m) {
         return score(p, f, m, true);
     }, py::arg("program"), py::arg("features").noconvert(), py::arg("masks").noconvert());
+    module.def("score_controller_cuda", [](const py::dict& dictionary, const FeatureArray& features,
+                                             const MaskArray& masks) {
+        const auto controller = read_controller(dictionary);
+        if (features.ndim() != 3 || features.shape(0) != 12 || features.shape(2) != 32 ||
+            masks.ndim() != 1 || masks.shape(0) != features.shape(1)) throw std::invalid_argument("特征形状错误");
+        const std::vector<float> values(features.data(), features.data() + features.size());
+        const std::vector<std::uint32_t> legality(masks.data(), masks.data() + masks.size());
+        gp_faco::Scores result;
+        { py::gil_scoped_release release; result = gp_faco::score_controller_cuda(controller, values, legality); }
+        py::dict output; output["actions"] = result.actions;
+        if (controller.kind) {
+            py::list stages;
+            for (unsigned i = 0; i < masks.size(); ++i)
+                stages.append(controller_stages(result.scores.data() + i * 32, legality[i], result.actions[i]));
+            output["stages_by_colony"] = stages;
+        } else {
+            py::array_t<float> scores({masks.size(), static_cast<py::ssize_t>(32)});
+            std::copy(result.scores.begin(), result.scores.end(), scores.mutable_data()); output["scores"] = scores;
+        }
+        return output;
+    }, py::arg("controller"), py::arg("features").noconvert(), py::arg("masks").noconvert());
     module.def("cuda_device_info", []() {
         cudaDeviceProp properties{};
         int device = 0;

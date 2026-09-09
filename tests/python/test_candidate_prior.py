@@ -100,7 +100,6 @@ def test_native_candidate_member_distance_and_seed_replay(tmp_path, kind, n):
     for key in (
         "rows",
         "distance_rows",
-        "native_nodes_sha256",
         "node_pi",
         "directed_slots",
         "undirected_edges",

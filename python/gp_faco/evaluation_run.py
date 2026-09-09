@@ -5,28 +5,19 @@ from __future__ import annotations
 import copy
 import json
 import math
+import platform
 import time
 from concurrent.futures import TimeoutError
 from concurrent.futures.process import BrokenProcessPool
+from pathlib import Path
 
 from gp_faco.checkpoint import load_checkpoint, save_checkpoint
-from gp_faco.worker import content_hash
+from gp_faco.result_journal import ResultJournal
 
 
 def json_value(value):
     """规范化tuple/list以便checkpoint恢复后比较身份；不允许NaN/Infinity。"""
     return json.loads(json.dumps(value, allow_nan=False))
-
-
-def portable_outcome(value):
-    """非法非有限返回保留显式标记，外部核验判失败；JSON仍严格禁止NaN/Infinity。"""
-    if type(value) is float and not math.isfinite(value):
-        return {"invalid_float": repr(value)}
-    if isinstance(value, dict):
-        return {key: portable_outcome(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [portable_outcome(item) for item in value]
-    return value
 
 
 class EvaluationRun:
@@ -42,6 +33,11 @@ class EvaluationRun:
     def _ensure_worker(self):
         if self._worker is not None:
             return
+        runtime_path = self.directory / "worker_runtime.json"
+        if runtime_path.exists():
+            active = load_checkpoint(runtime_path)["active"]
+            if active and self._previous_worker_active(active):
+                raise RuntimeError("上一 worker 仍可能运行，不能重复提交已在 GPU 执行的种群")
         self._worker = self._worker_factory(self.protocol)
         while True:
             try:
@@ -51,11 +47,13 @@ class EvaluationRun:
                 self._event("waiting_worker_startup")
         if (
             runtime["host"] != self.protocol.execution_host
-            or runtime["protocol_sha256"] != self.protocol.sha256
+            or runtime["protocol_id"] != self.protocol.identifier
         ):
             raise RuntimeError("worker实际身份与训练协议不符")
         self.state["active_worker"] = runtime
         self.state["worker_history"].append({"phase": self.state["phase"], **runtime})
+        # 只在 worker 启停写小记录；代际大快照之外也能识别首代遗留的活动进程。
+        save_checkpoint(runtime_path, {"active": runtime})
         self._save()
         self._event("worker_ready", pid=runtime["pid"])
 
@@ -63,6 +61,7 @@ class EvaluationRun:
         if self._worker is not None:
             self._worker.close()  # shutdown等待实际终态，不能因观察超时杀进程。
             self._worker = None
+            save_checkpoint(self.directory / "worker_runtime.json", {"active": None})
         self.state["active_worker"] = None
 
     def _wait(self, future):
@@ -73,38 +72,63 @@ class EvaluationRun:
                 self.state["costs"]["observer_timeouts"] += 1
                 self._event("waiting_same_future", operation=self.state["pending"]["key"])
 
+    @staticmethod
+    def operation_key(kind, description):
+        return (
+            description["occurrence_id"]
+            if kind in ("solve", "population")
+            else description["preparation_id"]
+        )
+
+    def _open_journal(self):
+        self._journal = ResultJournal(self.directory / "results.jsonl")
+        self._returned = {}
+        self._population_scores = {}
+        for offset, record in self._journal.trailing(self.state.get("journal_position", 0)):
+            key = record["key"]
+            self._returned[key] = offset
+            if record["checked"] is not None and key not in self.state["completed"]:
+                self._record_completed(record, offset)
+
+    def _completed_record(self, key):
+        location = self.state["completed"][key]
+        if isinstance(location, (list, tuple)):
+            return self._population_member(self._journal.read(location[0]), location[1])
+        return self._journal.read(location)
+
+    def _completed_score(self, key):
+        location = self.state["completed"][key]
+        if not isinstance(location, (list, tuple)):
+            return self._completed_record(key)["checked"]
+        offset, index = location
+        if offset not in self._population_scores:
+            self._population_scores[offset] = self._journal.read(offset)["checked"]
+        # 只缓存已完成 occurrence 的紧凑评分；不反复解析整个种群的数千条路线。
+        # 不按程序去重，也不会为新的代际 occurrence 跳过 FE。
+        return self._population_scores[offset][index]["checked"]
+
+    @staticmethod
+    def _population_member(record, index):
+        """一个完整种群批次只落盘一次；逐个体记录用普通字节位置和成员下标读取。"""
+        description = record["description"]["members"][index]
+        return {
+            "key": description["occurrence_id"],
+            "kind": "solve",
+            "description": description,
+            "outcome": record["outcome"]["members"][index],
+            **record["checked"][index],
+            "attempts": record["attempts"],
+        }
+
     def _operation(self, kind, description, submit, validate):
-        """先记录任务，再提交；结果先原子落盘，再更新完成表，允许恢复中间窗口。"""
-        key = content_hash({"run_id": self.run_id, "kind": kind, "description": description})
-        path = self.directory / "tasks" / f"{key}.json"
-        pending = self.state["pending"]
-        if pending is not None and pending["key"] != key:
-            # 已完成的前置任务可重读，不能跳过真正未完成的位置。
-            if key not in self.state["completed"]:
-                raise ValueError("当前任务与checkpoint待完成身份不符")
-        if path.exists():
-            record = load_checkpoint(path)
-            if (
-                record["key"] != key
-                or record["kind"] != kind
-                or record["description"] != json_value(description)
-            ):
-                raise ValueError("任务产物身份不符")
-            checked, evaluation_seconds = validate(record["outcome"])
-            if record["checked"] is None and key not in self.state["completed"]:
-                record.update(checked=checked, evaluation_seconds=evaluation_seconds)
-                save_checkpoint(path, record)
-            if checked != record["checked"]:
-                raise ValueError("任务产物与重新独立核验结果不符")
-            if key in self.state["completed"]:
-                if self.state["completed"][key] != content_hash(record):
-                    raise ValueError("已完成任务产物摘要改变")
-                return record, False
-            self._record_completed(record)
-            return record, True
+        """完整结果追加一次；恢复时直接读取已评分结果，不重复求解或路线评分。"""
+        key = self.operation_key(kind, description)
         if key in self.state["completed"]:
-            raise FileNotFoundError("已完成任务产物丢失，不能悄悄重新评价")
-        if pending is None:
+            return self._completed_record(key), False
+        record = None
+        if key in self._returned:
+            record = self._journal.read(self._returned[key])
+        if record is None:
             pending = {
                 "key": key,
                 "kind": kind,
@@ -112,75 +136,86 @@ class EvaluationRun:
                 "attempts": [],
             }
             self.state["pending"] = pending
-            self._save()
-        elif pending["description"] != json_value(description):
-            raise ValueError("待完成任务内容改变")
-        while True:
-            if len(pending["attempts"]) > self.settings.infrastructure_retries:
-                outcome = {"status": "failed", "error": "基础设施重试耗尽；保留完整任务失败"}
-                if kind == "solve":
-                    outcome.update(
-                        {
-                            name: description[name]
-                            for name in (
-                                "protocol_sha256",
-                                "program_sha256",
-                                "baseline_policy_sha256",
-                                "baseline_policy",
-                                "controller_kind",
-                                "occurrence_id",
-                                "dimension",
-                            )
-                            if name in description
-                        }
+            while True:
+                self._ensure_worker()
+                self._before_submit()
+                attempt = {"status": "running", "worker_pid": self.state["active_worker"]["pid"]}
+                pending["attempts"].append(attempt)
+                started = time.perf_counter()
+                try:
+                    outcome = self._wait(submit(self._worker))
+                except BrokenProcessPool as error:
+                    attempt.update(
+                        status="broken_process_pool",
+                        error=str(error),
+                        observed_seconds=time.perf_counter() - started,
                     )
-                    outcome["task_id"] = content_hash(description)
+                    self.state["costs"]["infrastructure_failures"] += 1
+                    self._close_worker()
+                    if len(pending["attempts"]) <= self.settings.infrastructure_retries:
+                        continue
+                    outcome = {
+                        "status": "failed",
+                        "error": "基础设施重试耗尽",
+                        **description,
+                        "task_id": key,
+                    }
+                    if kind == "population":
+                        outcome = {
+                            "members": [
+                                {
+                                    "status": "failed",
+                                    "error": "基础设施重试耗尽",
+                                    **member,
+                                    "task_id": member["occurrence_id"],
+                                }
+                                for member in description["members"]
+                            ]
+                        }
+                attempt.update(status="returned", observed_seconds=time.perf_counter() - started)
                 break
-            self._ensure_worker()
-            self._before_submit()
-            attempt = {"status": "running", "worker_pid": self.state["active_worker"]["pid"]}
-            pending["attempts"].append(attempt)
-            self._save()
-            started = time.perf_counter()
-            try:
-                outcome = self._wait(submit(self._worker))
-            except BrokenProcessPool as error:
-                attempt.update(
-                    status="broken_process_pool",
-                    error=str(error),
-                    observed_seconds=time.perf_counter() - started,
-                )
-                self.state["costs"]["infrastructure_failures"] += 1
-                self._close_worker()
-                self._save()
-                self._event("confirmed_worker_failure", attempt=len(pending["attempts"]))
-                continue
-            attempt.update(status="returned", observed_seconds=time.perf_counter() - started)
-            break  # 普通求解失败也是一个已完成返回，绝不挑好结果重试。
-        # 先保存真实返回，再核验；无效准备/标签导致核验抛错时也不能把普通返回当作崩溃重试。
-        outcome = portable_outcome(outcome)
-        record = {
-            "key": key,
-            "kind": kind,
-            "description": json_value(description),
-            "outcome": outcome,
-            "checked": None,
-            "evaluation_seconds": 0.0,
-            "attempts": copy.deepcopy(pending["attempts"]),
-        }
-        save_checkpoint(path, record)
-        checked, evaluation_seconds = validate(outcome)
+            record = {
+                "key": key,
+                "kind": kind,
+                "description": json_value(description),
+                "outcome": outcome,
+                "checked": None,
+                "evaluation_seconds": 0.0,
+                "attempts": copy.deepcopy(pending["attempts"]),
+            }
+        try:
+            checked, evaluation_seconds = validate(record["outcome"])
+        except BaseException:
+            # 评分异常仍保留已经完成的原生返回，恢复时不能再次求解。
+            self._returned[key] = self._journal.append(record)
+            raise
         record.update(checked=checked, evaluation_seconds=evaluation_seconds)
-        save_checkpoint(path, record)
-        self._record_completed(record)
+        # 共享池已经逐片保存完整原始返回。评分成功后的训练日志只保留成本、工作量与引用，
+        # 不再复制数千条tour；已评分恢复使用checked，原始路线可由raw_record定位。
+        members = record["outcome"].get("members", [record["outcome"]])
+        for member in members:
+            if member.get("raw_record"):
+                native = member.get("native_result", {})
+                member["native_result"] = {**native, "items": [
+                    {k: v for k, v in item.items() if k != "tour"} for item in native.get("items", [])]}
+        offset = self._journal.append(record)
+        self._record_completed(record, offset)
         return record, True
 
-    def _record_completed(self, record):
+    def _record_completed(self, record, offset):
         key = record["key"]
         if key in self.state["completed"]:
             raise ValueError("重复归集任务")
-        self.state["completed"][key] = content_hash(record)
+        self.state["completed"][key] = offset
         self.state["pending"] = None
+        if record["kind"] == "population":
+            self._population_scores[offset] = record["checked"]
+            # 整批返回和评分同处一行，崩溃后全部恢复，不能只保存已遍历到的几个个体。
+            for index in range(len(record["checked"])):
+                self._record_completed(self._population_member(record, index), [offset, index])
+            self.state["costs"].setdefault("population_batches", 0)
+            self.state["costs"]["population_batches"] += 1
+            return
         costs = self.state["costs"]
         costs["worker_seconds"] += record["outcome"].get("worker_seconds", 0.0)
         costs["evaluator_seconds"] += record["evaluation_seconds"]
@@ -213,7 +248,14 @@ class EvaluationRun:
                 value = native.get(field, 0)
                 if type(value) is int and value >= 0:
                     costs[field] += value
-        self._save()
 
     def _before_submit(self):
         """具体实验可在任务边界记录资源/设备占用；不把观察等待当成算法截止。"""
+
+    def _previous_worker_active(self, active):
+        if getattr(self.settings, "portable_a5000", False):
+            from gp_faco.remote import process_alive
+
+            # 只在启动/恢复边界确认旧 worker 终态；失联时保守等待，不能重叠求解。
+            return process_alive(active)
+        return active["host"] != platform.node() or Path(f"/proc/{active['pid']}").exists()

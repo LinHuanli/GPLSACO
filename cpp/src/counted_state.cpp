@@ -12,7 +12,8 @@
 namespace gp_faco {
 namespace {
 using Bytes = std::vector<std::uint8_t>;
-constexpr std::uint64_t format_magic = 0x3154534f43414647ULL;
+constexpr std::uint64_t format_magic = 0x3254534f43414647ULL;
+constexpr std::uint64_t legacy_magic = 0x3154534f43414647ULL;
 void require(bool value, const char* message) {
     if (!value) throw std::invalid_argument(message);
 }
@@ -27,11 +28,6 @@ void integer(Bytes& out, std::uint64_t value) {
 void real(Bytes& out, double value) {
     static_assert(sizeof(double) == sizeof(std::uint64_t));
     std::uint64_t bits; std::memcpy(&bits, &value, sizeof(bits)); integer(out, bits);
-}
-std::uint64_t hash_bytes(const Bytes& bytes, std::size_t size) {
-    std::uint64_t value = 14695981039346656037ULL;
-    for (std::size_t i = 0; i < size; ++i) value = (value ^ bytes[i]) * 1099511628211ULL;
-    return value;
 }
 Bytes payload(const CountedState& s) {
     Bytes out;
@@ -62,7 +58,7 @@ Bytes payload(const CountedState& s) {
 void structure(const CountedState& s) {
     const auto& c = s.settings;
     require(s.dimension >= 3 && s.colonies >= 1 && s.colonies <= 128 &&
-        c.ants >= 1 && c.ants <= 1024 && s.tasks.size() == s.colonies && s.incumbents.size() == s.colonies,
+        c.ants >= 1 && c.ants <= 4096 && s.tasks.size() == s.colonies && s.incumbents.size() == s.colonies,
         "快照形状或任务无效");
     for (const auto& item : s.incumbents) {
         require(item.tour.size() == s.dimension && std::isfinite(item.cost) && item.cost > 0,
@@ -86,7 +82,7 @@ void structure(const CountedState& s) {
 struct Reader {
     const Bytes& data;
     std::size_t cursor = 0, end;
-    explicit Reader(const Bytes& bytes) : data(bytes), end(bytes.size() >= 8 ? bytes.size() - 8 : 0) {}
+    explicit Reader(const Bytes& bytes) : data(bytes), end(bytes.size()) {}
     std::uint64_t integer() {
         require(cursor <= end && end - cursor >= 8, "快照元数据截断");
         std::uint64_t value = 0;
@@ -113,22 +109,20 @@ bool same_settings(const FixedFacoSettings& a, const FixedFacoSettings& b) {
     return settings_tuple(a) == settings_tuple(b);
 }
 void CountedState::seal() {
-    structure(*this); const auto bytes = payload(*this); checksum = hash_bytes(bytes, bytes.size());
+    structure(*this);
 }
 void CountedState::validate() const {
-    structure(*this); const auto bytes = payload(*this);
-    require(checksum == hash_bytes(bytes, bytes.size()), "快照内容校验失败");
+    structure(*this);
 }
 std::vector<std::uint8_t> CountedState::serialize() const {
-    validate(); auto out = payload(*this); integer(out, checksum); return out;
+    return payload(*this);
 }
 CountedState CountedState::deserialize(const Bytes& bytes) {
     require(bytes.size() >= 16, "快照文件截断");
-    std::uint64_t expected = 0;
-    for (unsigned i = 0; i < 8; ++i)
-        expected |= static_cast<std::uint64_t>(bytes[bytes.size() - 8 + i]) << (8 * i);
-    require(expected == hash_bytes(bytes, bytes.size() - 8), "快照文件校验失败");
-    Reader r(bytes); require(r.integer() == format_magic, "未知快照格式");
+    Reader r(bytes); const auto magic = r.integer();
+    require(magic == format_magic || magic == legacy_magic, "未知快照格式");
+    // 历史尾部元数据只跳过，不读取或重新计算。
+    if (magic == legacy_magic) r.end -= 8;
     CountedState s; s.dimension = r.node(); s.colonies = r.node();
     auto& c = s.settings;
     c.ants = r.node(); c.primary_width = r.node(); c.backup_width = r.node(); c.ls_width = r.node();
@@ -155,7 +149,7 @@ CountedState CountedState::deserialize(const Bytes& bytes) {
         buffer.planes = r.integer(); const auto size = r.integer(); buffer.bytes = r.bytes(size);
         s.buffers.push_back(std::move(buffer));
     }
-    require(r.cursor == r.end, "快照尾部存在额外数据"); s.checksum = expected; s.validate(); return s;
+    require(r.cursor == r.end, "快照尾部存在额外数据"); s.validate(); return s;
 }
 CountedState CountedState::select_colony(Node colony) const {
     validate(); require(colony < colonies, "快照colony越界");

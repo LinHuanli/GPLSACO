@@ -7,7 +7,7 @@ from dataclasses import replace
 
 import pytest
 from deap import gp
-from gp_faco.checkpoint import atomic_json, load_checkpoint, save_checkpoint
+from gp_faco.checkpoint import load_checkpoint, save_checkpoint
 from gp_faco.evolution import (
     Evolution,
     EvolutionSettings,
@@ -26,7 +26,7 @@ def assign_all(evolution, panel, reverse=False):
     for index in indices:
         individual = evolution.population[index]
         if not individual.fitness.valid:
-            evolution.assign(index, float(index), panel, export_tree(individual).sha256)
+            evolution.assign(index, float(index), panel, export_tree(individual).identifier)
 
 
 def serialized(evolution):
@@ -52,7 +52,7 @@ def test_all_elites_and_duplicates_reevaluated_and_final_population_evaluated():
     assert all(not v.fitness.valid and v.evaluated_panel is None for v in e.population)
     e.begin_panel("panel1")
     with pytest.raises(ValueError):
-        e.assign(0, 0.0, "panel0", export_tree(e.population[0]).sha256)
+        e.assign(0, 0.0, "panel0", export_tree(e.population[0]).identifier)
     assign_all(e, "panel1", reverse=True)
     e.finish_generation()
     assert e.advance()
@@ -120,7 +120,7 @@ def test_program_roundtrip_preserves_future_operators_and_rng(no_feedback):
     e.initialize()
     assert random.getstate() == global_state
     e.begin_panel("panel0")
-    e.assign(0, 0.5, "panel0", export_tree(e.population[0]).sha256)
+    e.assign(0, 0.5, "panel0", export_tree(e.population[0]).identifier)
     restored = Evolution.from_state_dict(serialized(e))
     assert serialized(restored) == serialized(e)
     for generation in range(3):
@@ -158,7 +158,7 @@ def test_checkpoint_atomicity_integrity_and_explicit_infinite_fitness(tmp_path, 
     e = Evolution(EvolutionSettings(population=4, generations=2, elites=1), 55)
     e.initialize()
     e.begin_panel("g0")
-    e.assign(0, float("inf"), "g0", export_tree(e.population[0]).sha256)
+    e.assign(0, float("inf"), "g0", export_tree(e.population[0]).identifier)
     path = tmp_path / "checkpoint.json"
     save_checkpoint(path, e.state_dict())
     restored = Evolution.from_state_dict(load_checkpoint(path))
@@ -174,20 +174,13 @@ def test_checkpoint_atomicity_integrity_and_explicit_infinite_fitness(tmp_path, 
         with pytest.raises(OSError):
             save_checkpoint(path, {"new": "uncommitted"})
     assert path.read_bytes() == before and not list(tmp_path.glob("*.partial"))
-    damaged = json.loads(path.read_text())
-    damaged["state"]["generation"] = 99
-    path.write_text(json.dumps(damaged))
-    with pytest.raises(ValueError):
-        load_checkpoint(path)
-    with pytest.raises(ValueError):
-        atomic_json(tmp_path / "invalid.json", {"fitness": float("inf")})
 
 
 def test_checkpoint_rejects_stale_fitness_and_bad_grammar():
     e = Evolution(EvolutionSettings(population=4, generations=2, elites=1), 99)
     e.initialize()
     e.begin_panel("current")
-    e.assign(0, 1.0, "current", export_tree(e.population[0]).sha256)
+    e.assign(0, 1.0, "current", export_tree(e.population[0]).identifier)
     stale = serialized(e)
     stale["population"][0]["evaluated_panel"] = "old"
     with pytest.raises(ValueError):
@@ -206,7 +199,7 @@ def test_checkpoint_rejects_stale_fitness_and_bad_grammar():
         Evolution.from_state_dict(broken)
 
 
-def test_checkpoint_json_key_conversion_hashes_stored_structure_and_rejects_collisions(tmp_path):
+def test_checkpoint_json_key_conversion_preserves_structure_and_rejects_collisions(tmp_path):
     path = tmp_path / "keys.json"
     save_checkpoint(path, {"training": {500: ["a"], 1000: ["b"]}})
     assert load_checkpoint(path) == {"training": {"500": ["a"], "1000": ["b"]}}

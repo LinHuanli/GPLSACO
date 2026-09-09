@@ -1,0 +1,567 @@
+{
+  "observed_at": "2026-09-10T01:00:20.131354+12:00",
+  "scope": "第12代训练冠军与截至第10代的固定开发监控；不是最终验证或测试",
+  "generation_12": [
+    {
+      "seed": 1103,
+      "completed_generation": 12,
+      "winner": {
+        "expression": "mne_level",
+        "fitness": 0.19232554755380382,
+        "generation": 11,
+        "panel_id": "panel-012",
+        "program": {
+          "constant_bits": [],
+          "feature_spec_id": 2,
+          "ir_version": 1,
+          "numeric_spec_id": 1,
+          "opcode": [
+            0
+          ],
+          "operand": [
+            5
+          ],
+          "program_id": "g012-i001"
+        }
+      },
+      "source": "artifacts/v2/round-tsp500-3seed/training/full-seed1103/generations/0011.json"
+    },
+    {
+      "seed": 2207,
+      "completed_generation": 12,
+      "winner": {
+        "expression": "mne_level",
+        "fitness": 0.19232554755380382,
+        "generation": 11,
+        "panel_id": "panel-012",
+        "program": {
+          "constant_bits": [],
+          "feature_spec_id": 2,
+          "ir_version": 1,
+          "numeric_spec_id": 1,
+          "opcode": [
+            0
+          ],
+          "operand": [
+            5
+          ],
+          "program_id": "g012-i001"
+        }
+      },
+      "source": "artifacts/v2/round-tsp500-3seed/training/full-seed2207/generations/0011.json"
+    },
+    {
+      "seed": 3313,
+      "completed_generation": 12,
+      "winner": {
+        "expression": "ADD(ADD(0.0, mne_level), SUB(pheromone_strength, stagnation))",
+        "fitness": 0.1806118549459182,
+        "generation": 11,
+        "panel_id": "panel-012",
+        "program": {
+          "constant_bits": [
+            0
+          ],
+          "feature_spec_id": 2,
+          "ir_version": 1,
+          "numeric_spec_id": 1,
+          "opcode": [
+            1,
+            0,
+            2,
+            0,
+            0,
+            3,
+            2
+          ],
+          "operand": [
+            0,
+            5,
+            0,
+            10,
+            1,
+            0,
+            0
+          ],
+          "program_id": "g012-i126"
+        }
+      },
+      "source": "artifacts/v2/round-tsp500-3seed/training/full-seed3313/generations/0011.json"
+    }
+  ],
+  "monitored_candidates": [
+    {
+      "seed": 1103,
+      "generation": 5,
+      "dev_gap_percent": 0.24983940284838413,
+      "winner": {
+        "expression": "SUB(mne_level, ADD(ref_gap, MUL(MUL(ref_gap, stagnation), ADD(region_excess, ref_diff))))",
+        "fitness": 0.18904414363786204,
+        "generation": 4,
+        "panel_id": "panel-005",
+        "program": {
+          "constant_bits": [],
+          "feature_spec_id": 2,
+          "ir_version": 1,
+          "numeric_spec_id": 1,
+          "opcode": [
+            0,
+            0,
+            0,
+            0,
+            4,
+            0,
+            0,
+            2,
+            4,
+            2,
+            3
+          ],
+          "operand": [
+            5,
+            6,
+            6,
+            1,
+            0,
+            8,
+            7,
+            0,
+            0,
+            0,
+            0
+          ],
+          "program_id": "g005-i018"
+        }
+      },
+      "baselines": {
+        "faco_2022_continuous_identity_guard": {
+          "faco_gap_percent": 0.22922802141566584,
+          "gp_gap_percent": 0.24983940284838413,
+          "improvement_pp": -0.02061138143271829,
+          "scales": [
+            {
+              "dimension": 500,
+              "faco_gap_percent": 0.22922802141566584,
+              "gp_gap_percent": 0.24983940284838413,
+              "improvement_pp": -0.02061138143271829,
+              "win_rate": 0.5
+            }
+          ],
+          "win_rate": 0.5
+        },
+        "gpu_faco_mne8_uniform_no_restart": {
+          "faco_gap_percent": 0.23152922443580304,
+          "gp_gap_percent": 0.24983940284838413,
+          "improvement_pp": -0.01831017841258109,
+          "scales": [
+            {
+              "dimension": 500,
+              "faco_gap_percent": 0.23152922443580304,
+              "gp_gap_percent": 0.24983940284838413,
+              "improvement_pp": -0.01831017841258109,
+              "win_rate": 0.375
+            }
+          ],
+          "win_rate": 0.375
+        }
+      },
+      "source": "artifacts/v2/round-tsp500-3seed/training/full-seed1103/learning_curve.json"
+    },
+    {
+      "seed": 1103,
+      "generation": 10,
+      "dev_gap_percent": 0.20147008029899743,
+      "winner": {
+        "expression": "ABS(mne_level)",
+        "fitness": 0.21081288931324438,
+        "generation": 9,
+        "panel_id": "panel-010",
+        "program": {
+          "constant_bits": [],
+          "feature_spec_id": 2,
+          "ir_version": 1,
+          "numeric_spec_id": 1,
+          "opcode": [
+            0,
+            7
+          ],
+          "operand": [
+            5,
+            0
+          ],
+          "program_id": "g010-i001"
+        }
+      },
+      "baselines": {
+        "faco_2022_continuous_identity_guard": {
+          "faco_gap_percent": 0.22922802141566584,
+          "gp_gap_percent": 0.20147008029899743,
+          "improvement_pp": 0.027757941116668405,
+          "scales": [
+            {
+              "dimension": 500,
+              "faco_gap_percent": 0.22922802141566584,
+              "gp_gap_percent": 0.20147008029899743,
+              "improvement_pp": 0.027757941116668405,
+              "win_rate": 0.5
+            }
+          ],
+          "win_rate": 0.5
+        },
+        "gpu_faco_mne8_uniform_no_restart": {
+          "faco_gap_percent": 0.23152922443580304,
+          "gp_gap_percent": 0.20147008029899743,
+          "improvement_pp": 0.030059144136805604,
+          "scales": [
+            {
+              "dimension": 500,
+              "faco_gap_percent": 0.23152922443580304,
+              "gp_gap_percent": 0.20147008029899743,
+              "improvement_pp": 0.030059144136805604,
+              "win_rate": 0.5
+            }
+          ],
+          "win_rate": 0.5
+        }
+      },
+      "source": "artifacts/v2/round-tsp500-3seed/training/full-seed1103/learning_curve.json"
+    },
+    {
+      "seed": 2207,
+      "generation": 5,
+      "dev_gap_percent": 0.2550340916028043,
+      "winner": {
+        "expression": "AQ(mne_level, archive_disagreement)",
+        "fitness": 0.2027054708533843,
+        "generation": 4,
+        "panel_id": "panel-005",
+        "program": {
+          "constant_bits": [],
+          "feature_spec_id": 2,
+          "ir_version": 1,
+          "numeric_spec_id": 1,
+          "opcode": [
+            0,
+            0,
+            8
+          ],
+          "operand": [
+            5,
+            9,
+            0
+          ],
+          "program_id": "g005-i024"
+        }
+      },
+      "baselines": {
+        "faco_2022_continuous_identity_guard": {
+          "faco_gap_percent": 0.22922802141566584,
+          "gp_gap_percent": 0.2550340916028043,
+          "improvement_pp": -0.025806070187138486,
+          "scales": [
+            {
+              "dimension": 500,
+              "faco_gap_percent": 0.22922802141566584,
+              "gp_gap_percent": 0.2550340916028043,
+              "improvement_pp": -0.025806070187138486,
+              "win_rate": 0.375
+            }
+          ],
+          "win_rate": 0.375
+        },
+        "gpu_faco_mne8_uniform_no_restart": {
+          "faco_gap_percent": 0.23152922443580304,
+          "gp_gap_percent": 0.2550340916028043,
+          "improvement_pp": -0.023504867167001287,
+          "scales": [
+            {
+              "dimension": 500,
+              "faco_gap_percent": 0.23152922443580304,
+              "gp_gap_percent": 0.2550340916028043,
+              "improvement_pp": -0.023504867167001287,
+              "win_rate": 0.4375
+            }
+          ],
+          "win_rate": 0.4375
+        }
+      },
+      "source": "artifacts/v2/round-tsp500-3seed/training/full-seed2207/learning_curve.json"
+    },
+    {
+      "seed": 2207,
+      "generation": 10,
+      "dev_gap_percent": 0.20147008029899743,
+      "winner": {
+        "expression": "mne_level",
+        "fitness": 0.21081288931324438,
+        "generation": 9,
+        "panel_id": "panel-010",
+        "program": {
+          "constant_bits": [],
+          "feature_spec_id": 2,
+          "ir_version": 1,
+          "numeric_spec_id": 1,
+          "opcode": [
+            0
+          ],
+          "operand": [
+            5
+          ],
+          "program_id": "g010-i001"
+        }
+      },
+      "baselines": {
+        "faco_2022_continuous_identity_guard": {
+          "faco_gap_percent": 0.22922802141566584,
+          "gp_gap_percent": 0.20147008029899743,
+          "improvement_pp": 0.027757941116668405,
+          "scales": [
+            {
+              "dimension": 500,
+              "faco_gap_percent": 0.22922802141566584,
+              "gp_gap_percent": 0.20147008029899743,
+              "improvement_pp": 0.027757941116668405,
+              "win_rate": 0.5
+            }
+          ],
+          "win_rate": 0.5
+        },
+        "gpu_faco_mne8_uniform_no_restart": {
+          "faco_gap_percent": 0.23152922443580304,
+          "gp_gap_percent": 0.20147008029899743,
+          "improvement_pp": 0.030059144136805604,
+          "scales": [
+            {
+              "dimension": 500,
+              "faco_gap_percent": 0.23152922443580304,
+              "gp_gap_percent": 0.20147008029899743,
+              "improvement_pp": 0.030059144136805604,
+              "win_rate": 0.5
+            }
+          ],
+          "win_rate": 0.5
+        }
+      },
+      "source": "artifacts/v2/round-tsp500-3seed/training/full-seed2207/learning_curve.json"
+    },
+    {
+      "seed": 3313,
+      "generation": 5,
+      "dev_gap_percent": 0.2222411094401508,
+      "winner": {
+        "expression": "MUL(archive_disagreement, mne_level)",
+        "fitness": 0.18303175105661013,
+        "generation": 4,
+        "panel_id": "panel-005",
+        "program": {
+          "constant_bits": [],
+          "feature_spec_id": 2,
+          "ir_version": 1,
+          "numeric_spec_id": 1,
+          "opcode": [
+            0,
+            0,
+            4
+          ],
+          "operand": [
+            9,
+            5,
+            0
+          ],
+          "program_id": "g005-i123"
+        }
+      },
+      "baselines": {
+        "faco_2022_continuous_identity_guard": {
+          "faco_gap_percent": 0.22922802141566584,
+          "gp_gap_percent": 0.2222411094401508,
+          "improvement_pp": 0.006986911975515042,
+          "scales": [
+            {
+              "dimension": 500,
+              "faco_gap_percent": 0.22922802141566584,
+              "gp_gap_percent": 0.2222411094401508,
+              "improvement_pp": 0.006986911975515042,
+              "win_rate": 0.5
+            }
+          ],
+          "win_rate": 0.5
+        },
+        "gpu_faco_mne8_uniform_no_restart": {
+          "faco_gap_percent": 0.23152922443580304,
+          "gp_gap_percent": 0.2222411094401508,
+          "improvement_pp": 0.009288114995652241,
+          "scales": [
+            {
+              "dimension": 500,
+              "faco_gap_percent": 0.23152922443580304,
+              "gp_gap_percent": 0.2222411094401508,
+              "improvement_pp": 0.009288114995652241,
+              "win_rate": 0.4375
+            }
+          ],
+          "win_rate": 0.4375
+        }
+      },
+      "source": "artifacts/v2/round-tsp500-3seed/training/full-seed3313/learning_curve.json"
+    },
+    {
+      "seed": 3313,
+      "generation": 10,
+      "dev_gap_percent": 0.1726050205664978,
+      "winner": {
+        "expression": "ADD(MIN(mne_level, ABS(region_dispersion)), return_rate)",
+        "fitness": 0.19736627017244435,
+        "generation": 9,
+        "panel_id": "panel-010",
+        "program": {
+          "constant_bits": [],
+          "feature_spec_id": 2,
+          "ir_version": 1,
+          "numeric_spec_id": 1,
+          "opcode": [
+            0,
+            0,
+            7,
+            5,
+            0,
+            2
+          ],
+          "operand": [
+            5,
+            11,
+            0,
+            0,
+            2,
+            0
+          ],
+          "program_id": "g010-i034"
+        }
+      },
+      "baselines": {
+        "faco_2022_continuous_identity_guard": {
+          "faco_gap_percent": 0.22922802141566584,
+          "gp_gap_percent": 0.1726050205664978,
+          "improvement_pp": 0.05662300084916805,
+          "scales": [
+            {
+              "dimension": 500,
+              "faco_gap_percent": 0.22922802141566584,
+              "gp_gap_percent": 0.1726050205664978,
+              "improvement_pp": 0.05662300084916805,
+              "win_rate": 0.5625
+            }
+          ],
+          "win_rate": 0.5625
+        },
+        "gpu_faco_mne8_uniform_no_restart": {
+          "faco_gap_percent": 0.23152922443580304,
+          "gp_gap_percent": 0.1726050205664978,
+          "improvement_pp": 0.05892420386930525,
+          "scales": [
+            {
+              "dimension": 500,
+              "faco_gap_percent": 0.23152922443580304,
+              "gp_gap_percent": 0.1726050205664978,
+              "improvement_pp": 0.05892420386930525,
+              "win_rate": 0.5625
+            }
+          ],
+          "win_rate": 0.5625
+        }
+      },
+      "source": "artifacts/v2/round-tsp500-3seed/training/full-seed3313/learning_curve.json"
+    }
+  ],
+  "best_monitored": {
+    "seed": 3313,
+    "generation": 10,
+    "dev_gap_percent": 0.1726050205664978,
+    "winner": {
+      "expression": "ADD(MIN(mne_level, ABS(region_dispersion)), return_rate)",
+      "fitness": 0.19736627017244435,
+      "generation": 9,
+      "panel_id": "panel-010",
+      "program": {
+        "constant_bits": [],
+        "feature_spec_id": 2,
+        "ir_version": 1,
+        "numeric_spec_id": 1,
+        "opcode": [
+          0,
+          0,
+          7,
+          5,
+          0,
+          2
+        ],
+        "operand": [
+          5,
+          11,
+          0,
+          0,
+          2,
+          0
+        ],
+        "program_id": "g010-i034"
+      }
+    },
+    "baselines": {
+      "faco_2022_continuous_identity_guard": {
+        "faco_gap_percent": 0.22922802141566584,
+        "gp_gap_percent": 0.1726050205664978,
+        "improvement_pp": 0.05662300084916805,
+        "scales": [
+          {
+            "dimension": 500,
+            "faco_gap_percent": 0.22922802141566584,
+            "gp_gap_percent": 0.1726050205664978,
+            "improvement_pp": 0.05662300084916805,
+            "win_rate": 0.5625
+          }
+        ],
+        "win_rate": 0.5625
+      },
+      "gpu_faco_mne8_uniform_no_restart": {
+        "faco_gap_percent": 0.23152922443580304,
+        "gp_gap_percent": 0.1726050205664978,
+        "improvement_pp": 0.05892420386930525,
+        "scales": [
+          {
+            "dimension": 500,
+            "faco_gap_percent": 0.23152922443580304,
+            "gp_gap_percent": 0.1726050205664978,
+            "improvement_pp": 0.05892420386930525,
+            "win_rate": 0.5625
+          }
+        ],
+        "win_rate": 0.5625
+      }
+    },
+    "source": "artifacts/v2/round-tsp500-3seed/training/full-seed3313/learning_curve.json"
+  },
+  "illustrative_output": {
+    "kind": "手工指定同一区域的数值示意，非真实求解回放",
+    "region_dispersion": 0.625,
+    "return_rate": 0.2,
+    "mne_values": [
+      2,
+      4,
+      8,
+      16
+    ],
+    "mne_level": [
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "scores": [
+      0.44999998807907104,
+      0.699999988079071,
+      0.824999988079071,
+      0.824999988079071
+    ],
+    "preferred_mne_within_this_region": 8
+  }
+}

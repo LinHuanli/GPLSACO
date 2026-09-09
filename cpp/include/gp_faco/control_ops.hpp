@@ -55,23 +55,27 @@ GPFACO_CONTROL_HD inline TourFingerprint fingerprint(TourView view) {
     return result;
 }
 
+// 合法 Hamiltonian 环从城市0按规范方向读取，与逐节点 successor 追踪完全相同。
+// 连续数组索引避免相同路线比较中的依赖访存，并一次返回三种比较结果。
+GPFACO_CONTROL_HD inline int canonical_compare(TourView a, TourView b) {
+    const bool forward_a = a.successor(0) < a.predecessor(0);
+    const bool forward_b = b.successor(0) < b.predecessor(0);
+    Node pa = a.positions[0], pb = b.positions[0];
+    for (Node i = 1; i < a.n; ++i) {
+        pa = forward_a ? (pa + 1 == a.n ? 0 : pa + 1) : (pa == 0 ? a.n - 1 : pa - 1);
+        pb = forward_b ? (pb + 1 == b.n ? 0 : pb + 1) : (pb == 0 ? b.n - 1 : pb - 1);
+        const Node left = a.tour[pa], right = b.tour[pb];
+        if (left != right) return left < right ? -1 : 1;
+    }
+    return 0;
+}
+
 GPFACO_CONTROL_HD inline bool same_tour(TourView a, TourView b) {
-    if (a.n != b.n) return false;
-    for (Node node = 0; node < a.n; ++node)
-        if (!b.contains(node, a.successor(node)) || !b.contains(node, a.predecessor(node))) return false;
-    return true;
+    return a.n == b.n && canonical_compare(a, b) == 0;
 }
 
 GPFACO_CONTROL_HD inline bool canonical_less(TourView a, TourView b) {
-    const bool forward_a = a.successor(0) < a.predecessor(0);
-    const bool forward_b = b.successor(0) < b.predecessor(0);
-    Node left = 0, right = 0;
-    for (Node i = 1; i < a.n; ++i) {
-        left = forward_a ? a.successor(left) : a.predecessor(left);
-        right = forward_b ? b.successor(right) : b.predecessor(right);
-        if (left != right) return left < right;
-    }
-    return false;
+    return canonical_compare(a, b) < 0;
 }
 
 struct ControlRandom {

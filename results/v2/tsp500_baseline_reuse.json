@@ -1,0 +1,1 @@
+{"by_kind":{"baseline_gpu":{"jobs":58,"missing_members":112,"reused_members":928},"baseline_native":{"jobs":58,"missing_members":112,"reused_members":928}},"missing_members_require_computation":true,"scope":"baseline_coverage_before_launch","status":"passed","training_iterations":1000}

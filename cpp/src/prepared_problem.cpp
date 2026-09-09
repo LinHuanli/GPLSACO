@@ -17,6 +17,11 @@ void require(bool condition, const char* message) {
 }
 
 FixedFacoSettings normalized_settings(FixedFacoSettings c, Node n) {
+    if (c.ants == 0) {
+        Node groups = 1;
+        while (static_cast<std::uint64_t>(256) * groups * groups < n) ++groups;
+        c.ants = 64 * groups;
+    }
     require(n >= 3 && n <= 10000 && c.ants > 0 && c.ants <= 4096 && c.primary_width >= 2 &&
             c.ls_width > 0 && std::isfinite(c.beta) && c.beta > 0 && c.retention >= 0 &&
             c.retention < 1 && c.p_best > 0 && c.p_best < 1 && c.epoch_source_probability >= 0 &&

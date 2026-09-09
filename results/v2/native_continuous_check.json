@@ -1,0 +1,31 @@
+{
+  "scope": "two_development_instances_engineering_check",
+  "adaptation_revision": 2,
+  "rows": [
+    {
+      "dimension": 500,
+      "instance_id": "70d5adc0475ab61ae0b8c07eb8ee818fe5031b4812cbe2bc389d8eb5e33b27eb",
+      "seed": 17,
+      "iterations": 5000,
+      "cost": 16.57017263915426,
+      "gap_percent": 0.09984768246265041,
+      "total_seconds": 3.6591349880000004,
+      "initial_route_count": 24,
+      "adaptation_revision": 2,
+      "method": "faco_2022_continuous_identity_guard"
+    },
+    {
+      "dimension": 1000,
+      "instance_id": "71c6680808d066cb44e62ad8b85ea0cde9a827a9428ce7277d7a701170e0cf19",
+      "seed": 17,
+      "iterations": 5000,
+      "cost": 23.14044624421824,
+      "gap_percent": 0.34562290300221843,
+      "total_seconds": 4.966525683,
+      "initial_route_count": 24,
+      "adaptation_revision": 2,
+      "method": "faco_2022_continuous_identity_guard"
+    }
+  ],
+  "previous": "revision1 targeted continuous distances and 3-opt identities; current revision also zeros 2-opt identity gains"
+}

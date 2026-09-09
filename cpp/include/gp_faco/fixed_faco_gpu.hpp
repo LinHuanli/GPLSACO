@@ -8,7 +8,7 @@ namespace gp_faco {
 
 // 固定迭代开发求解器；预算/GP/档案事务由后续Engine层接入。
 struct FixedFacoSettings {
-    Node ants = 32;
+    Node ants = 0;  // 0 按 2022 论文随规模确定，正数仅供显式开发实验。
     Node primary_width = 16;
     Node backup_width = 64;
     Node ls_width = 20;

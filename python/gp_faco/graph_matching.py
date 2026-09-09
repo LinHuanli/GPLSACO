@@ -7,13 +7,10 @@ import random
 from dataclasses import asdict, dataclass
 
 from gp_faco.data import Instance, validate_tour
-from gp_faco.worker import content_hash, coordinate_hash
 
 
 def engine_graph_spec(graph: dict) -> dict:
-    """核验缓存身份后，只向在线Engine交付六个无标签图字段。"""
-    if graph.get("sha256") != content_hash({k: v for k, v in graph.items() if k != "sha256"}):
-        raise ValueError("图缓存内容与冻结身份不符")
+    """只向在线 Engine 交付六个无标签图字段；实际节点检查在首次注册完成。"""
     return {
         field: graph[field]
         for field in ("graph_spec_id", "common_initial_tour", "edges", "primary", "backup", "ls")
@@ -43,7 +40,7 @@ def match_graphs(problem: Instance, initial_tour: tuple[int, ...], priors: dict,
         settings = GraphSettings()
     if type(problem) is not Instance or type(settings) is not GraphSettings:
         raise TypeError("需要无标签Instance与显式图设置")
-    n, fingerprint = problem.dimension, coordinate_hash(problem)
+    n = problem.dimension
     validate_tour(initial_tour, n)
     if set(priors) != {"ALPHA", "POPMUSIC"}:
         raise ValueError("图匹配必须同时提供两个已核验先验")
@@ -58,7 +55,7 @@ def match_graphs(problem: Instance, initial_tour: tuple[int, ...], priors: dict,
             or prior["prior_spec_id"] != 1
             or type(prior["dimension"]) is not int
             or prior["dimension"] != n
-            or prior["coordinate_sha256"] != fingerprint
+            or prior.get("instance_id", problem.instance_id) != problem.instance_id
             or (prior["settings"]["kind"] != kind or len(prior["rows"]) != n)
         ):
             raise ValueError("先验与坐标/方法身份不符")
@@ -116,7 +113,7 @@ def match_graphs(problem: Instance, initial_tour: tuple[int, ...], priors: dict,
         for i in range(n)
     ]
     output = {}
-    for kind, prior in priors.items():
+    for kind in priors:
         edges, neighbors = edge_sets[kind], neighbor_sets[kind]
         primary, backup, ls = [], [], []
         for i, row in enumerate(neighbors):
@@ -135,12 +132,7 @@ def match_graphs(problem: Instance, initial_tour: tuple[int, ...], priors: dict,
             tail = tail_rows[kind][i][: tail_quota[i]]
             forbidden.update(tail)
             # 使用与ACO隔离的Python MT19937准备流；版本和全部输出入图身份。
-            seed = int(
-                content_hash(
-                    {"coordinates": fingerprint, "seed": settings.preparation_seed, "node": i}
-                )[:16],
-                16,
-            )
+            seed = (settings.preparation_seed << 96) | (problem.numeric_id << 32) | i
             pool = [j for j in range(n) if j not in forbidden]
             # 固定备用宽度不超过n-1-width，故两个先验均有足够的不重复均匀候选。
             sampled = random.Random(seed).sample(pool, uniforms)
@@ -150,7 +142,7 @@ def match_graphs(problem: Instance, initial_tour: tuple[int, ...], priors: dict,
             "graph_spec_id": 1,
             "matching_spec_id": 2,
             "dimension": n,
-            "coordinate_sha256": fingerprint,
+            "instance_id": problem.instance_id,
             "common_initial_tour": list(initial_tour),
             "edges": [list(e) for e in sorted(edges)],
             "primary": primary,
@@ -158,7 +150,7 @@ def match_graphs(problem: Instance, initial_tour: tuple[int, ...], priors: dict,
             "ls": ls,
             "settings": asdict(settings),
             "prior_kind": kind,
-            "prior_sha256": content_hash(prior),
+            "prior_id": f"{problem.instance_id}-{kind}",
             "extra_edge_budget": target,
             "discarded_extra_edges": len(extras[kind]) - target,
             "degrees": [len(v) for v in neighbors],
@@ -169,7 +161,9 @@ def match_graphs(problem: Instance, initial_tour: tuple[int, ...], priors: dict,
                 "uniform_backup": [uniforms] * n,
             },
             "matching_policy": "paired-node minimum actual slots; full E0 edges retained",
-            "preparation_random_stream": "Python Random/MT19937; coordinate/node/seed SHA domain",
+            "preparation_random_stream": (
+                "Python Random/MT19937; explicit preparation seed, instance ordinal, node"
+            ),
         }
-        output[kind] = {**spec, "sha256": content_hash(spec)}
+        output[kind] = {**spec, "graph_id": f"{problem.instance_id}-{kind}"}
     return output

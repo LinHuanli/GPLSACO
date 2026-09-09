@@ -192,21 +192,21 @@ def test_observation_is_task_identity_and_preserves_controller_identity():
         Program((0,), (4,), feature_spec_id=2),
         (problem,),
         (("a", 17),),
-        evaluation_limit_per_colony=32,
+        evaluation_limit_per_colony=64,
         preparation_mode="cached",
         factorial_policy=FactorialPolicy("M10", BaselinePolicy()),
     )
     protocol = WorkerProtocol(
         "GPU-056fae3f-b504-efe0-2d9d-b1186860e643",
-        "test",
+        "NVIDIA RTX A5000",
         "0",
-        "0" * 64,
+        "test-build",
         dimensions=(5,),
         colonies=1,
     )
     observed = replace(task, record_behavior=True)
-    assert task.controller_sha256 == observed.controller_sha256
-    assert task.task_id(protocol) != observed.task_id(protocol)
+    assert task.controller_id == observed.controller_id
+    assert task.manifest(protocol) != observed.manifest(protocol)
     assert "behavior_spec_id" not in task.manifest(protocol)
     assert observed.manifest(protocol)["behavior_spec_id"] == 1
     for wrong in (1, None, "yes"):

@@ -7,13 +7,13 @@ import random
 import pytest
 from gp_faco.data import Instance
 from gp_faco.graph_matching import GraphSettings, match_graphs
-from gp_faco.worker import coordinate_hash
 
 
 def fixture():
     p = Instance(
         "seven",
         ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (2.0, 0.5), (3.0, 1.0), (2.0, 2.0), (0.0, 2.0)),
+        numeric_id=1,
     )
     priors = {}
     for kind in ("ALPHA", "POPMUSIC"):
@@ -32,7 +32,7 @@ def fixture():
         priors[kind] = {
             "prior_spec_id": 1,
             "dimension": 7,
-            "coordinate_sha256": coordinate_hash(p),
+            "instance_id": p.instance_id,
             "settings": {"kind": kind},
             "rows": rows,
         }
@@ -71,14 +71,14 @@ def test_exact_graph_budget_manual_priority_and_fixed_slots():
         ),
     )
     assert all(changed[k]["edges"] == result[k]["edges"] for k in result)
-    assert all(changed[k]["sha256"] != result[k]["sha256"] for k in result)
+    assert all(changed[k]["settings"] != result[k]["settings"] for k in result)
 
 
 def test_matching_rejects_wrong_identity_duplicate_nodes_and_initial_tour():
     p, priors = fixture()
     for kind in ("ALPHA", "POPMUSIC"):
         wrong = copy.deepcopy(priors)
-        wrong[kind]["coordinate_sha256"] = "0" * 64
+        wrong[kind]["instance_id"] = "foreign"
         with pytest.raises(ValueError):
             match_graphs(p, tuple(range(7)), wrong)
         wrong = copy.deepcopy(priors)
@@ -105,7 +105,7 @@ def test_actual_slots_match_per_node_with_unequal_degrees_and_prior_tails():
         priors[kind] = {
             "prior_spec_id": 1,
             "dimension": n,
-            "coordinate_sha256": coordinate_hash(problem),
+            "instance_id": problem.instance_id,
             "settings": {"kind": kind},
             "rows": rows,
         }

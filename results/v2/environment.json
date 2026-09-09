@@ -1,0 +1,25 @@
+{
+  "host": "cuda10.ecs.vuw.ac.nz",
+  "os": "Linux-7.0.11-arch1-1-x86_64-with-glibc2.43",
+  "cpu": {
+    "CPU(s):": "24",
+    "Model name:": "Intel(R) Xeon(R) Gold 6128 CPU @ 3.40GHz",
+    "Thread(s) per core:": "2",
+    "Core(s) per socket:": "6"
+  },
+  "python": "3.12.13",
+  "numpy": "2.5.3",
+  "scipy": "1.18.1",
+  "deap": "1.4",
+  "gpu": "NVIDIA RTX A5000",
+  "gpu_uuid": "GPU-00ccd67e-cb18-e37e-938e-a6339356c950",
+  "driver": "610.43.02",
+  "nvcc": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2026 NVIDIA Corporation\nBuilt on Fri_Apr_24_07:22:02_PM_PDT_2026\nCuda compilation tools, release 13.3, V13.3.33\nBuild cuda_13.3.r13.3/compiler.37862127_0",
+  "cuda_architecture": 86,
+  "build_type": "Release",
+  "full_gpu_matrix_max_n": 1500,
+  "original_cpu_threads": 8,
+  "native_initial_routes": 24,
+  "instance_initialization": "same CPU exact initialization shared by all GPU numeric candidates",
+  "integrity_digests": false
+}

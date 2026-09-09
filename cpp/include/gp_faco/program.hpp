@@ -23,6 +23,15 @@ struct Scores {
     std::vector<std::int32_t> actions;
 };
 
+// kind=0保持旧联合评分语义；kind=1按restart/region/mne顺序作条件选择。
+struct ControllerProgram {
+    std::uint32_t kind = 0;
+    Program trees[3]{};
+};
+void validate_controller(const ControllerProgram& controller);
+Scores score_controller_cuda(const ControllerProgram& controller, const std::vector<float>& features,
+                             const std::vector<std::uint32_t>& masks);
+
 void validate_program(const Program& program);
 void validate_features(const std::vector<float>& features,
                        const std::vector<std::uint32_t>& masks);

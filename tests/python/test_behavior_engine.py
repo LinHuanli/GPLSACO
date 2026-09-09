@@ -44,7 +44,19 @@ def test_counted_behavior_toggle_replay_and_complete_ledger(n, variant):
     repeat = engine.evaluate_factorial_evaluations(
         keys, seeds, 48, program, policy.to_dict(), "end_to_end", record_behavior=True
     )
-    assert causal(off) == causal(on) == causal(repeat)
+
+    # 生产路径返回设备增量成本，诊断路径按轮重算；求和舍入可能使等价闭环换起点。
+    # 控制状态和工作量仍须完全一致，路线必须有完全相同的无向边。
+    def edges(tour):
+        return sorted(tuple(sorted((tour[i - 1], node))) for i, node in enumerate(tour))
+
+    for other in (on, repeat):
+        left, right = causal(off), causal(other)
+        a, b = left.pop("items"), right.pop("items")
+        assert left == right
+        for (tour_a, cost_a), (tour_b, cost_b) in zip(a, b, strict=True):
+            assert edges(tour_a) == edges(tour_b)
+            assert cost_a == pytest.approx(cost_b, abs=1e-10, rel=0)
     assert "behavior" not in off
     assert on["behavior"] == repeat["behavior"]
     validate_behavior(on, **contract)

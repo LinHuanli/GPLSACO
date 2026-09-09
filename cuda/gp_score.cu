@@ -29,6 +29,26 @@ struct DeviceBuffer {
 
 }  // namespace
 
+Scores score_controller_cuda(const ControllerProgram& controller, const std::vector<float>& features,
+                             const std::vector<std::uint32_t>& masks) {
+    validate_controller(controller); validate_features(features, masks);
+    if (!controller.kind) return score_cuda(controller.trees[0], features, masks);
+    Scores output{std::vector<float>(masks.size() * 32), std::vector<std::int32_t>(masks.size())};
+    DeviceBuffer<float> f(features.size()), s(output.scores.size());
+    DeviceBuffer<std::uint32_t> m(masks.size());
+    DeviceBuffer<std::int32_t> a(masks.size());
+    DeviceBuffer<ControllerProgram> c(1);
+    checked(cudaMemcpy(f.pointer, features.data(), features.size()*sizeof(float), cudaMemcpyHostToDevice));
+    checked(cudaMemcpy(m.pointer, masks.data(), masks.size()*sizeof(std::uint32_t), cudaMemcpyHostToDevice));
+    checked(cudaMemcpy(c.pointer, &controller, sizeof(controller), cudaMemcpyHostToDevice));
+    cuda_detail::score_controllers<<<(masks.size()+3)/4,128>>>(c.pointer, f.pointer, m.pointer,
+        s.pointer, a.pointer, masks.size(), masks.size());
+    checked(cudaGetLastError());
+    checked(cudaMemcpy(output.scores.data(), s.pointer, output.scores.size()*sizeof(float), cudaMemcpyDeviceToHost));
+    checked(cudaMemcpy(output.actions.data(), a.pointer, output.actions.size()*sizeof(std::int32_t), cudaMemcpyDeviceToHost));
+    return output;
+}
+
 Scores score_cuda(const Program& program, const std::vector<float>& features,
                   const std::vector<std::uint32_t>& masks) {
     validate_program(program);

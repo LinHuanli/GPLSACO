@@ -1,0 +1,44 @@
+{
+  "experiment_version": 2,
+  "method_base": "node_relocation_faco",
+  "original_comparator": "FocusedACO_2022",
+  "ants": "64 * ceil(sqrt(n) / 16)",
+  "primary_iterations": 5000,
+  "training_iterations": null,
+  "training_iteration_selection": "development_curves",
+  "beta": 1.0,
+  "retention": 0.5,
+  "primary_width": 16,
+  "backup_width": 64,
+  "ls_width": 20,
+  "p_best": 0.1,
+  "epoch_source_probability": 0.01,
+  "fixed_mne": 8,
+  "numeric_backend": "exact",
+  "numeric_candidates": [
+    "exact",
+    "fp32",
+    "fp32_fast"
+  ],
+  "approximation_max_gap_increase_pp": 0.01,
+  "approximation_confidence": 0.95,
+  "minimum_end_to_end_speedup": 1.1,
+  "budget_unit": "constructed_ant_tours",
+  "wall_clock_limit": null,
+  "gpu_model": "NVIDIA RTX A5000",
+  "legacy_results": "v1_read_only_no_fitness_resume",
+  "local_search_spec": "checklist_2opt_identity_zero_v2",
+  "native_continuous_adaptation_revision": 2,
+  "gp_population_batch_size": 128,
+  "current_round": {
+    "seeds": [
+      1103,
+      2207,
+      3313
+    ],
+    "population": 128,
+    "generations": 50,
+    "protocol": "docs/experiments/round_three_seed_v2.md",
+    "training_horizon_record": "artifacts/v2/round-3seed/frozen.json"
+  }
+}

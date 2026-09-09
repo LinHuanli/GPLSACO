@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import struct
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from itertools import count
 
 import numpy as np
 
 from gp_faco.primitives import FUNCTIONS, feature_names
 
 OPERATORS = {opcode: (arity, function) for opcode, arity, function in FUNCTIONS.values()}
+_program_numbers = count(1)
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,9 @@ class Program:
     ir_version: int = 1
     numeric_spec_id: int = 1
     feature_spec_id: int = 1
+    program_id: str = field(
+        default_factory=lambda: f"program-{next(_program_numbers):06d}", compare=False
+    )
 
     def __post_init__(self) -> None:
         # 防止外部 list 在校验后被原地改写而绕过冻结契约。
@@ -77,6 +81,7 @@ class Program:
 
     def to_dict(self) -> dict:
         return {
+            "program_id": self.program_id,
             "ir_version": self.ir_version,
             "numeric_spec_id": self.numeric_spec_id,
             "feature_spec_id": self.feature_spec_id,
@@ -95,7 +100,7 @@ class Program:
             "operand",
             "constant_bits",
         }
-        if set(value) != expected:
+        if set(value) not in (expected, expected | {"program_id"}):
             raise ValueError("IR 字段缺失或未知")
         return cls(
             **{
@@ -108,8 +113,20 @@ class Program:
         return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))
 
     @property
-    def sha256(self) -> str:
-        return hashlib.sha256(self.to_json().encode()).hexdigest()
+    def identifier(self) -> str:
+        return self.program_id
+
+    @property
+    def key(self) -> tuple:
+        """算法内的精确 IR 元组：仅用于排序/验证候选去重，不缓存训练 fitness。"""
+        return (
+            self.ir_version,
+            self.numeric_spec_id,
+            self.feature_spec_id,
+            self.opcode,
+            self.operand,
+            self.constant_bits,
+        )
 
 
 def export_tree(tree, *, feature_spec_id: int | None = None) -> Program:
@@ -153,7 +170,15 @@ def export_tree(tree, *, feature_spec_id: int | None = None) -> Program:
 
     if visit(0, 0) != len(tree):
         raise ValueError("树有多余节点")
-    return Program(tuple(opcode), tuple(operand), tuple(constants), feature_spec_id=version)
+    if not getattr(tree, "program_id", None):
+        tree.program_id = f"program-{next(_program_numbers):06d}"
+    return Program(
+        tuple(opcode),
+        tuple(operand),
+        tuple(constants),
+        feature_spec_id=version,
+        program_id=tree.program_id,
+    )
 
 
 def evaluate(program: Program, features: np.ndarray) -> np.ndarray:

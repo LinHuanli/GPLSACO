@@ -103,12 +103,33 @@ void run(Node n, int metric, std::uint64_t cap, Node ants) {
     }
 }
 
+void identity_move_regression() {
+    // 三节点闭环没有真正的 2-opt 移动，但原浮点表达式会把恒等移动记成正 gain。
+    volatile double x = 0.3, y = 0.1;
+    require(x + y - y - x > 0, "恒等移动回归样例未触发浮点假增益");
+    const std::vector<double> matrix{0, .25, .3, .25, 0, .1, .3, .1, 0};
+    const gp_faco::CandidateRows rows{{1,2},{2,0},{1,0}};
+    const auto distance = [&](Node a, Node b) { return matrix[a * 3 + b]; };
+    gp_faco::CpuTour cpu({0,1,2}, distance);
+    gp_faco::DistanceOrderedCandidates candidates(rows, distance);
+    std::vector<Node> checklist{0,1,2};
+    const auto stats = cpu.checklist_two_opt(candidates, checklist, 1000);
+    require(stats.accepted_moves == 0 && cpu.order() == std::vector<Node>({0,1,2}),
+            "CPU 把恒等移动记成局部搜索改善");
+    gp_faco::FacoDiagnosticTask task;
+    task.tour = task.visit_order = {0,1,2}; task.mne_target = 2;
+    const auto result = gp_faco::cuda_faco_diagnostic(matrix, rows, {task}, 1000).front();
+    require(result.info.local_search.accepted_moves == 0 && result.tour == task.tour,
+            "CUDA 把恒等移动记成局部搜索改善");
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
     try {
         cudaDeviceProp device{};
         if (cudaGetDeviceProperties(&device, 0) != cudaSuccess) throw std::runtime_error("没有可用CUDA设备");
+        identity_move_regression();
         // --small供sanitizer加速，仍覆盖1K、三种距离、全部评价上限及4个MNE档。
         const bool small = argc == 3 && std::string(argv[2]) == "--small";
         const Node ants = small ? 4 : 16;

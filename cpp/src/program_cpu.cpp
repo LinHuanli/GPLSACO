@@ -8,6 +8,21 @@
 
 namespace gp_faco {
 
+void validate_controller(const ControllerProgram& c) {
+    if (c.kind > 1) throw std::invalid_argument("未知控制器表示");
+    unsigned total = 0;
+    for (unsigned role = 0; role < (c.kind ? 3u : 1u); ++role) {
+        const auto& p = c.trees[role]; validate_program(p); total += p.length;
+        if (p.feature_spec_id != 2) throw std::invalid_argument("控制器需要次数特征v2");
+        for (unsigned i = 0; c.kind && i < p.length; ++i) {
+            const auto f = p.operand[i];
+            if (p.opcode[i] == 0 && ((role == 0 && (f == 5 || f >= 8)) || (role == 1 && f == 5)))
+                throw std::invalid_argument("角色树使用尚未决定的动作特征");
+        }
+    }
+    if (total > 63) throw std::invalid_argument("个体总节点超过63");
+}
+
 void validate_program(const Program& p) {
     if (p.ir_version != 1 || p.numeric_spec_id != 1 ||
         (p.feature_spec_id != 1 && p.feature_spec_id != 2) ||

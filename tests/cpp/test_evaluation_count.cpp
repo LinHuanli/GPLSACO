@@ -97,10 +97,14 @@ int main(int argc, char** argv) {
         for (Node i = 0; i < colonies; ++i) {
             const auto solo = single.evaluate_program_evaluations({tasks[i]}, ants*batches, program,
                 PreparationMode::CachedCharged);
-            require(solo.incumbents[0].tour == reference.incumbents[i].tour &&
-                solo.incumbents[0].cost == reference.incumbents[i].cost &&
-                state(solo.completed_control_states[0]) == state(reference.completed_control_states[i]),
-                "相同FE下批量形状改变单实例结果");
+            require(solo.incumbents[0].tour == reference.incumbents[i].tour,
+                "相同FE下批量形状改变单实例路线");
+            // 生产入口返回设备累计成本，最终路线仅由外部 evaluator 重算一次。
+            // 诊断入口保留独立重算，二者只允许浮点累计误差，路线与控制状态仍须精确相同。
+            require(std::abs(solo.incumbents[0].cost - reference.incumbents[i].cost) <= 1e-10,
+                "设备累计成本与诊断最终评分不符");
+            require(state(solo.completed_control_states[0]) == state(reference.completed_control_states[i]),
+                "相同FE下批量形状改变单实例控制状态");
         }
         const auto zero = engine.evaluate_program_evaluations(tasks, 0, program, PreparationMode::EndToEnd);
         require(zero.completed_batches == 0 && zero.launched_batches == 0 &&

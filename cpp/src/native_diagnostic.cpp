@@ -37,7 +37,6 @@ int main(int argc, char** argv) {
         report["tour"] = result->route_;
         report["total_seconds"] = total_timer();
         report["label_input"] = false;
-        report["local_search_source_sha256"] = GPFACO_REFERENCE_LS_HASH;
         report["initial_route_count"] = omp_get_num_procs() / 2;
         report["scope"] = "native iteration-budget diagnostic, not wall-clock comparison";
         dump(options, report["args"]);

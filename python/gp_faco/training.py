@@ -7,6 +7,7 @@ import importlib.metadata
 import math
 import platform
 import random
+import statistics
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -21,10 +22,8 @@ from gp_faco.worker import (
     PersistentGpuWorker,
     SolveTask,
     WorkerProtocol,
-    content_hash,
-    coordinate_hash,
-    file_hash,
     freeze_problems,
+    preparation_id,
 )
 
 
@@ -46,15 +45,36 @@ class TrainingSettings:
     infrastructure_retries: int = 1
     scope: str = "engineering_development"
     budget_kind: str = "wall_clock"
+    validation_budgets: tuple[tuple[int, int], ...] = ()
+    monitoring_every: int = 0
+    population_batch_size: int = 1
+    portable_a5000: bool = False
 
     def __post_init__(self):
         object.__setattr__(self, "validation_seeds", tuple(self.validation_seeds))
         object.__setattr__(self, "budgets", tuple(tuple(v) for v in self.budgets))
+        object.__setattr__(
+            self, "validation_budgets", tuple(tuple(v) for v in self.validation_budgets)
+        )
+        if self.validation_budgets and (
+            {n for n, _ in self.validation_budgets} != {n for n, _ in self.budgets}
+            or any(type(v) is not int or v < 0 for _, v in self.validation_budgets)
+        ):
+            raise ValueError("验证 FE 预算必须覆盖训练规模")
+        if type(self.monitoring_every) is not int or self.monitoring_every < 0:
+            raise ValueError("监控间隔必须非负整数")
         if type(self.evolution) is not EvolutionSettings:
             raise TypeError("训练需要显式演化配置")
         if self.budget_kind not in ("wall_clock", "search_tour_evaluations"):
             raise ValueError("未知训练预算单位")
         counted = self.budget_kind == "search_tour_evaluations"
+        if (
+            type(self.population_batch_size) is not int
+            or not 1 <= self.population_batch_size <= 128
+        ):
+            raise ValueError("GPU 种群批次大小必须在 1..128")
+        if self.population_batch_size > 1 and (not counted or self.preparation_mode != "cached"):
+            raise ValueError("GPU 种群并行需要 cached 的评价次数协议")
         if self.evolution.feature_spec_id != (2 if counted else 1):
             raise ValueError("进化特征版本与预算单位不符")
         for value in (self.evolution_seed, self.panel_seed, *self.validation_seeds):
@@ -106,11 +126,18 @@ class TrainingData:
         training: dict[int, list[str]],
         validation: dict[int, list[str]],
         identity: dict,
+        *,
+        shared_panels=None,
+        monitoring_panels=None,
+        baseline_cache=None,
     ):
         self.source = source
         self.training = {n: tuple(sorted(ids)) for n, ids in training.items()}
         self.validation = {n: tuple(sorted(ids)) for n, ids in validation.items()}
         self.identity = json_value(identity)
+        self.shared_panels = json_value(shared_panels) if shared_panels is not None else None
+        self.monitoring_panels = json_value(monitoring_panels or [])
+        self.baseline_cache = baseline_cache
         if not identity or set(self.training) != set(self.validation):
             raise ValueError("数据身份或训练/验证规模不完整")
         all_ids = []
@@ -122,6 +149,11 @@ class TrainingData:
         if len(set(all_ids)) != len(all_ids):
             raise ValueError("训练、验证或规模之间有重复实例身份")
         self._instances = {}
+        if self.shared_panels is not None:
+            for generation in self.shared_panels:
+                for panel in generation["panels"]:
+                    if not set(panel["ids"]).issubset(self.training[panel["dimension"]]):
+                        raise ValueError("预先登记的训练面板不属于正式训练池")
 
     def problems(self, ids) -> tuple:
         for name in ids:
@@ -141,10 +173,7 @@ class TrainingData:
             {
                 "identity": self.identity,
                 **{
-                    role: {
-                        n: {"count": len(ids), "ids_sha256": content_hash(ids)}
-                        for n, ids in pool.items()
-                    }
+                    role: {n: {"count": len(ids)} for n, ids in pool.items()}
                     for role, pool in (("training", self.training), ("validation", self.validation))
                 },
             }
@@ -152,6 +181,11 @@ class TrainingData:
 
 
 def training_manifest(settings: TrainingSettings, protocol: WorkerProtocol, data: TrainingData):
+    if settings.population_batch_size > 1 and (
+        protocol.constraint_mode != "unrestricted"
+        or any(n > 1500 or protocol.settings.ants_for(n) % 4 for n in protocol.dimensions)
+    ):
+        raise ValueError("种群展开要求 n<=1500 的普通 FACO 和完整 warp 蚂蚁组")
     if protocol.graph_catalog is not None and settings.budget_kind != "search_tour_evaluations":
         raise ValueError("图约束训练必须按evaluation次数终止")
     n_values = tuple(n for n, _ in settings.budgets)
@@ -160,8 +194,8 @@ def training_manifest(settings: TrainingSettings, protocol: WorkerProtocol, data
     if settings.instances_per_panel * settings.solver_seeds_per_instance != protocol.colonies:
         raise ValueError("每个程序必须使用worker的完整固定形状")
     if settings.budget_kind == "search_tour_evaluations" and any(
-        limit % protocol.settings.ants or limit // protocol.settings.ants > 0xFFFFFFFF
-        for _, limit in settings.budgets
+        limit % protocol.settings.ants_for(n) or limit // protocol.settings.ants_for(n) > 0xFFFFFFFF
+        for n, limit in (*settings.budgets, *settings.validation_budgets)
     ):
         raise ValueError("训练FE必须为完整ants批次，且批次数不超出uint32")
     for n in n_values:
@@ -174,28 +208,24 @@ def training_manifest(settings: TrainingSettings, protocol: WorkerProtocol, data
         )
         if needed > protocol.maximum_registered_per_dimension:
             raise ValueError("worker缓存不足覆盖整个阶段，禁止中途更换准备费用")
-    source_names = (
-        "training.py",
-        "evolution.py",
-        "checkpoint.py",
-        "dataset_index.py",
-        "evaluation_run.py",
-    )
+    worker_manifest = protocol.manifest()
+    if settings.portable_a5000:
+        # 物理设备是执行记录；同一构建与算法参数在其他 A5000 上仍是同一实验。
+        for name in ("gpu_uuid", "execution_host", "driver_version"):
+            worker_manifest.pop(name)
     return json_value(
         {
-            "training_version": 1,
+            "training_version": 2,
             "settings": asdict(settings),
-            "worker_protocol": protocol.manifest(),
+            "worker_protocol": worker_manifest,
             "data": data.manifest(),
+            "baseline_protocol": data.baseline_cache.manifest if data.baseline_cache else None,
             "software": {
                 "python": platform.python_version(),
                 **{name: importlib.metadata.version(name) for name in ("deap", "numpy")},
             },
-            "sources": {
-                name: file_hash(PROJECT / "python/gp_faco" / name) for name in source_names
-            },
             "fitness_policy": "all_individuals_full_common_panel_each_generation_v1",
-            "selection_policy": "exact_fitness_then_nodes_then_ir_sha256_v1",
+            "selection_policy": "fitness_then_nodes_then_opcode_tuple_v2",
             "retry_policy": "same_identity_only_after_confirmed_broken_pool_or_dead_worker",
         }
     )
@@ -237,18 +267,18 @@ class TrainingRun(EvaluationRun):
         self.path = self.directory / "checkpoint.json"
         try:
             manifest = self._training_manifest()
-            self.run_id = content_hash(manifest)
+            self.run_id = self.directory.name
             if resume:
                 self.state = load_checkpoint(self.path)
                 if (
-                    self.state.get("version") != 1
+                    self.state.get("version") != 2
                     or type(self.state["version"]) is not int
                     or self.state.get("phase")
                     not in ("training", "validation", "complete", "failed")
                 ):
                     raise ValueError("未知训练checkpoint版本或阶段")
                 if self.state["manifest"] != manifest or self.state["run_id"] != self.run_id:
-                    raise ValueError("恢复时源码、软件、数据、配置或硬件身份发生变化")
+                    raise ValueError("恢复时软件、数据、配置或硬件参数发生变化")
                 selection = load_checkpoint(self.directory / "data_selection.json")
                 if selection != json_value(
                     {
@@ -266,7 +296,7 @@ class TrainingRun(EvaluationRun):
                 active = self.state["active_worker"]
                 if active is not None:
                     # 同一host和目录租约均已核查；旧PID仍存在时不猜测其任务是否完成。
-                    if active["host"] != platform.node() or Path(f"/proc/{active['pid']}").exists():
+                    if self._previous_worker_active(active):
                         raise RuntimeError("旧worker仍可能活动，保留checkpoint，不能重新提交")
                     self.state["active_worker"] = None
                 if self.state["pending"] and self.state["pending"]["attempts"]:
@@ -284,7 +314,7 @@ class TrainingRun(EvaluationRun):
                 self.evolution.initialize()
                 self.panel_rng = random.Random(settings.panel_seed)
                 self.state = {
-                    "version": 1,
+                    "version": 2,
                     "run_id": self.run_id,
                     "manifest": manifest,
                     "phase": "training",
@@ -298,6 +328,8 @@ class TrainingRun(EvaluationRun):
                     "validation_panels": self._validation_panels(),
                     "shortlist": [],
                     "validation_results": {},
+                    "generation_metrics": {},
+                    "monitoring_results": {},
                     "selected": None,
                     "costs": {
                         "solve_jobs": 0,
@@ -324,7 +356,15 @@ class TrainingRun(EvaluationRun):
                         "identity": self.data.identity,
                     },
                 )
-                self._save()
+            self._open_journal()
+            if data.shared_panels is not None:
+                if len(data.shared_panels) != settings.evolution.generations:
+                    raise ValueError("预先登记的面板代数与训练不一致")
+                self._immutable_record(
+                    self.directory / "shared_panels.json",
+                    {"training": data.shared_panels, "monitor": data.monitoring_panels},
+                )
+            self._save(force=True)
         except BaseException:
             self._lease.close()
             raise
@@ -332,7 +372,11 @@ class TrainingRun(EvaluationRun):
     def _training_manifest(self):
         return training_manifest(self.settings, self.protocol, self.data)
 
-    def _save(self):
+    def _save(self, force=False):
+        if not force and self.path.exists():
+            return
+        if hasattr(self, "_journal"):
+            self.state["journal_position"] = self._journal.position
         self.state["evolution"] = self.evolution.state_dict()
         self.state["panel_rng"] = self.panel_rng.getstate()
         save_checkpoint(self.path, self.state)
@@ -347,14 +391,19 @@ class TrainingRun(EvaluationRun):
                 "dimension": n,
                 "ids": list(self.data.validation[n][start : start + width]),
                 "seeds": list(self.settings.validation_seeds),
+                "evaluation_limit": dict(self.settings.validation_budgets or self.settings.budgets)[
+                    n
+                ],
             }
             for n, _ in self.settings.budgets
             for start in range(0, len(self.data.validation[n]), width)
         ]
 
     def _begin_generation(self):
+        self.state["generation_started_unix"] = time.time()
+        self.state["generation_start_costs"] = dict(self.state["costs"])
         panels = []
-        for n, _ in self.settings.budgets:
+        for n, _ in () if self.data.shared_panels is not None else self.settings.budgets:
             ids = sorted(
                 self.panel_rng.sample(self.data.training[n], self.settings.instances_per_panel)
             )
@@ -364,15 +413,15 @@ class TrainingRun(EvaluationRun):
                 if value not in seeds:
                     seeds.append(value)
             panels.append({"dimension": n, "ids": ids, "seeds": seeds})
-        identity = content_hash(
-            {"run_id": self.run_id, "generation": self.evolution.generation, "panels": panels}
-        )
+        if self.data.shared_panels is not None:
+            panels = self.data.shared_panels[self.evolution.generation]["panels"]
+        identity = f"panel-{self.evolution.generation + 1:03d}"
         self.evolution.begin_panel(identity)
         self.state["panels"] = panels
         self.state["training_panels"].append(
             {"generation": self.evolution.generation, "panel_id": identity, "panels": panels}
         )
-        self._save()  # 面板和solve seed先落盘，之后才允许任何准备/求解。
+        self._save(force=True)  # 面板和solve seed先落盘，之后才允许任何准备/求解。
 
     def _prepare_fees(self, panels):
         if self.settings.preparation_mode == "end_to_end":
@@ -383,9 +432,10 @@ class TrainingRun(EvaluationRun):
                 continue
             problems = self.data.problems(missing)
             description = {
-                "protocol_sha256": self.protocol.sha256,
+                "protocol_id": self.protocol.identifier,
                 "dimension": panel["dimension"],
-                "problems": [(p.instance_id, coordinate_hash(p)) for p in problems],
+                "problems": [p.instance_id for p in problems],
+                "preparation_id": preparation_id(problems),
                 **self.protocol.graph_identity(problems),
             }
 
@@ -393,7 +443,7 @@ class TrainingRun(EvaluationRun):
                 started = time.perf_counter()
                 if (
                     outcome.get("status") != "completed"
-                    or outcome.get("preparation_id") != content_hash(description)
+                    or outcome.get("preparation_id") != description["preparation_id"]
                     or any(
                         json_value(outcome.get(k)) != json_value(v) for k, v in description.items()
                     )
@@ -422,9 +472,8 @@ class TrainingRun(EvaluationRun):
             for problem in problems:
                 self.state["fees"][problem.instance_id] = {
                     **record["checked"][problem.instance_id],
-                    "coordinate_sha256": coordinate_hash(problem),
                     "preparation_record": record["key"],
-                    "protocol_sha256": self.protocol.sha256,
+                    "protocol_id": self.protocol.identifier,
                 }
             self._save()  # 全部面板完成冻结之后才进入第一个个体。
 
@@ -435,10 +484,6 @@ class TrainingRun(EvaluationRun):
         charges = None
         if self.settings.preparation_mode == "cached_charged":
             fees = self.state["fees"]
-            if any(
-                fees[p.instance_id]["coordinate_sha256"] != coordinate_hash(p) for p in problems
-            ):
-                raise ValueError("费用来源的坐标身份改变")
             charges = tuple(
                 (
                     p.instance_id,
@@ -458,17 +503,17 @@ class TrainingRun(EvaluationRun):
             self.settings.preparation_mode,
             self.settings.experiment_mask,
             charges,
-            dict(self.settings.budgets)[panel["dimension"]]
+            panel.get("evaluation_limit", dict(self.settings.budgets)[panel["dimension"]])
             if self.settings.budget_kind == "search_tour_evaluations"
             else None,
         )
 
     def _evaluate(self, program, occurrence, panels):
         self._immutable_record(
-            self.directory / "programs" / f"{program.sha256}.json",
+            self.directory / "programs" / f"{program.identifier}.json",
             {
                 "program": program.to_dict(),
-                "program_sha256": program.sha256,
+                "program_id": program.identifier,
                 "expression": str(individual_from_program(program, self.evolution.pset)),
             },
         )
@@ -482,13 +527,18 @@ class TrainingRun(EvaluationRun):
                 score = score_panel(task, self.protocol, outcome, labels)
                 return json_value(asdict(score)), time.perf_counter() - started
 
-            record, newly_completed = self._operation(
-                "solve",
-                task.manifest(self.protocol),
-                lambda worker, t=task: worker.submit(t),
-                validate,
-            )
-            checked = record["checked"]
+            key = task.task_id(self.protocol)
+            if key in self.state["completed"]:
+                checked = self._completed_score(key)
+                newly_completed = False
+            else:
+                record, newly_completed = self._operation(
+                    "solve",
+                    task.manifest(self.protocol),
+                    lambda worker, t=task: worker.submit(t),
+                    validate,
+                )
+                checked = record["checked"]
             score = PanelFitness(
                 **{**checked, "members": tuple(tuple(v) for v in checked["members"])}
             )
@@ -509,9 +559,163 @@ class TrainingRun(EvaluationRun):
         value = aggregate_panels(
             tuple(tasks), self.protocol, tuple(scores), self.protocol.dimensions
         )
+        self._last_scores = scores
         return value, [task.task_id(self.protocol) for task in tasks]
 
-    def run(self, *, stop_after_tasks: int | None = None):
+    def _evaluate_population(self, members, panels):
+        """每个规模一次展开个体×实例×seed×蚂蚁；整批事务保存，沿用逐个体评分记录。"""
+        for program, _ in members:
+            self._immutable_record(
+                self.directory / "programs" / f"{program.identifier}.json",
+                {
+                    "program": program.to_dict(),
+                    "program_id": program.identifier,
+                    "expression": str(individual_from_program(program, self.evolution.pset)),
+                },
+            )
+        for index, panel in enumerate(panels):
+            tasks = [
+                self._task(program, occurrence, panel, index) for program, occurrence in members
+            ]
+            missing = [
+                task for task in tasks if task.task_id(self.protocol) not in self.state["completed"]
+            ]
+            size = self.settings.population_batch_size
+            for start in range(0, len(missing), size):
+                chunk = tuple(missing[start : start + size])
+                labels = self.data.labels(chunk[0].problems)
+                description = {
+                    "occurrence_id": "population:" + "|".join(task.occurrence_id for task in chunk),
+                    "members": [task.manifest(self.protocol) for task in chunk],
+                }
+
+                def validate(outcome, chunk=chunk, labels=labels):
+                    if len(outcome["members"]) != len(chunk):
+                        raise ValueError("种群返回成员数不完整")
+                    checked = []
+                    for task, member in zip(chunk, outcome["members"], strict=True):
+                        before = time.perf_counter()
+                        score = score_panel(task, self.protocol, member, labels)
+                        checked.append(
+                            {
+                                "checked": json_value(asdict(score)),
+                                "evaluation_seconds": time.perf_counter() - before,
+                            }
+                        )
+                    return checked, sum(item["evaluation_seconds"] for item in checked)
+
+                _, completed = self._operation(
+                    "population",
+                    description,
+                    lambda worker, chunk=chunk: worker.submit_population(chunk),
+                    validate,
+                )
+                if completed:
+                    self._new_solves += len(chunk)
+                    self._event(
+                        "population_completed",
+                        individuals=len(chunk),
+                        panel=index,
+                        total=self.state["costs"]["solve_jobs"],
+                    )
+                    if self._stop_after is not None and self._new_solves >= self._stop_after:
+                        raise TrainingPaused("完整 GPU 种群批次已保存，按任务边界暂停")
+
+    def _paired_metrics(self, scores, panels):
+        if self.data.baseline_cache is None:
+            return None
+        from gp_faco.experiment_v2 import paired_progress
+
+        iterations = {
+            panel.get("evaluation_limit", dict(self.settings.budgets)[panel["dimension"]])
+            // self.protocol.settings.ants_for(panel["dimension"])
+            for panel in panels
+        }
+        if len(iterations) != 1:
+            raise ValueError("配对学习曲线要求两个规模使用相同迭代数")
+        return paired_progress(scores, panels, self.data.baseline_cache, iterations.pop())
+
+    def _generation_report(self):
+        """只读取已经评分的冠军记录，不重新运行或重复评分该代 fitness。"""
+        winner = self.evolution.winners[self.evolution.generation]
+        program = Program.from_dict(winner["program"])
+        index = next(
+            i
+            for i, individual in enumerate(self.evolution.population)
+            if individual.program_id == program.identifier
+        )
+        _, task_ids = self._evaluate(
+            program,
+            f"generation{self.evolution.generation}:individual{index}",
+            self.state["panels"],
+        )
+        metrics = self._paired_metrics(self._last_scores, self.state["panels"])
+        previous = self.state["generation_metrics"].get(str(self.evolution.generation), {})
+        start = self.state.get("generation_started_unix")
+        wall_seconds = previous.get("wall_seconds")
+        if wall_seconds is None and start is not None:
+            wall_seconds = max(0.0, time.time() - start)
+        start_costs = self.state.get("generation_start_costs", {})
+        fitnesses = [v.fitness.values[0] for v in self.evolution.population]
+        row = {
+            "generation": self.evolution.generation + 1,
+            "program_id": program.identifier,
+            "fitness": winner["fitness"],
+            "population_mean_gap": finite_or_none(statistics.mean(fitnesses)),
+            "population_median_gap": finite_or_none(statistics.median(fitnesses)),
+            "population_failed": sum(not math.isfinite(v) for v in fitnesses),
+            "champion_nodes": len(program.opcode),
+            "paired_baselines": metrics,
+            "costs_cumulative": dict(self.state["costs"]),
+            "task_ids": task_ids,
+            "wall_seconds": wall_seconds,
+            "time_scope": "panel_selection_through_champion_including_pauses_excluding_monitor",
+            "generation_costs": previous.get(
+                "generation_costs",
+                {
+                    name: value - start_costs.get(name, 0)
+                    for name, value in self.state["costs"].items()
+                },
+            ),
+        }
+        self.state["generation_metrics"][str(self.evolution.generation)] = row
+        save_checkpoint(
+            self.directory / "learning_curve.json",
+            {
+                "generations": list(self.state["generation_metrics"].values()),
+                "monitoring": list(self.state["monitoring_results"].values()),
+            },
+        )
+        self._event("generation_metrics", **row)
+        every = self.settings.monitoring_every
+        key = str(self.evolution.generation)
+        if (
+            every
+            and (self.evolution.generation + 1) % every == 0
+            and key not in self.state["monitoring_results"]
+        ):
+            panels = self.data.monitoring_panels
+            if not panels:
+                raise ValueError("启用代际监控需要固定开发面板")
+            self._prepare_fees(panels)
+            fitness, _ = self._evaluate(program, f"monitor:g{self.evolution.generation}", panels)
+            self.state["monitoring_results"][key] = {
+                "generation": self.evolution.generation + 1,
+                "program_id": program.identifier,
+                "fitness": finite_or_none(fitness),
+                "paired_baselines": self._paired_metrics(self._last_scores, panels),
+                "costs_cumulative": dict(self.state["costs"]),
+            }
+            save_checkpoint(
+                self.directory / "learning_curve.json",
+                {
+                    "generations": list(self.state["generation_metrics"].values()),
+                    "monitoring": list(self.state["monitoring_results"].values()),
+                },
+            )
+        self._save(force=True)
+
+    def run(self, *, stop_after_tasks: int | None = None, through: str = "validation"):
         if self._closed:
             raise RuntimeError("训练句柄已经关闭")
         if stop_after_tasks is not None and (
@@ -519,11 +723,25 @@ class TrainingRun(EvaluationRun):
         ):
             raise ValueError("暂停界限必须为正整数任务数")
         self._stop_after = stop_after_tasks
+        if through not in ("training", "validation"):
+            raise ValueError("训练终点必须为 training 或 validation")
         try:
             while self.state["phase"] == "training":
                 if self.evolution.panel_id is None:
                     self._begin_generation()
                 self._prepare_fees(self.state["panels"])
+                if self.settings.population_batch_size > 1:
+                    self._evaluate_population(
+                        [
+                            (
+                                export_tree(individual),
+                                f"generation{self.evolution.generation}:individual{index}",
+                            )
+                            for index, individual in enumerate(self.evolution.population)
+                            if not individual.fitness.valid
+                        ],
+                        self.state["panels"],
+                    )
                 for index, individual in enumerate(self.evolution.population):
                     if individual.fitness.valid:
                         continue
@@ -533,17 +751,18 @@ class TrainingRun(EvaluationRun):
                         f"generation{self.evolution.generation}:individual{index}",
                         self.state["panels"],
                     )
-                    self.evolution.assign(index, value, self.evolution.panel_id, program.sha256)
+                    self.evolution.assign(index, value, self.evolution.panel_id, program.identifier)
                     self._save()
                 if len(self.evolution.winners) == self.evolution.generation:
                     winner = self.evolution.finish_generation()
-                    self._save()
+                    self._save(force=True)
                     self._event(
                         "generation_completed",
                         generation=self.evolution.generation,
                         winner=winner["program"],
                         fitness=winner["fitness"],
                     )
+                self._generation_report()
                 self._immutable_record(
                     self.directory / "generations" / f"{self.evolution.generation:04d}.json",
                     {
@@ -561,41 +780,52 @@ class TrainingRun(EvaluationRun):
                     self.state["phase"] = "validation"
                     self._save()
             if self.state["phase"] == "validation":
+                if through == "training":
+                    self._close_worker()
+                    self._save(force=True)
+                    report = self.summary()
+                    save_checkpoint(self.directory / "training_summary.json", report)
+                    return report
                 self._prepare_fees(self.state["validation_panels"])
+                if self.settings.population_batch_size > 1:
+                    self._evaluate_population(
+                        [
+                            (
+                                Program.from_dict(value),
+                                f"validation:{Program.from_dict(value).identifier}",
+                            )
+                            for value in self.state["shortlist"]
+                            if Program.from_dict(value).identifier
+                            not in self.state["validation_results"]
+                        ],
+                        self.state["validation_panels"],
+                    )
                 for value in self.state["shortlist"]:
                     program = Program.from_dict(value)
-                    if program.sha256 in self.state["validation_results"]:
+                    if program.identifier in self.state["validation_results"]:
                         continue
                     fitness, identities = self._evaluate(
-                        program, f"validation:{program.sha256}", self.state["validation_panels"]
+                        program, f"validation:{program.identifier}", self.state["validation_panels"]
                     )
-                    self.state["validation_results"][program.sha256] = {
+                    self.state["validation_results"][program.identifier] = {
                         "fitness": finite_or_none(fitness),
                         "task_ids": identities,
                         "nodes": len(program.opcode),
                         "expression": str(individual_from_program(program, self.evolution.pset)),
+                        "paired_baselines": self._paired_metrics(
+                            self._last_scores, self.state["validation_panels"]
+                        ),
                     }
                     self._save()
                 self._select()
             self._close_worker()
-            self._save()
-            report = {
-                "status": self.state["phase"],
-                "run_id": self.run_id,
-                "scope": self.settings.scope,
-                "selected": self.state["selected"],
-                "validation_results": self.state["validation_results"],
-                "training_panels": self.state["training_panels"],
-                "costs": self.state["costs"],
-                "worker_history": self.state["worker_history"],
-                "variation_counts": self.evolution.variation_counts,
-                "completed_records": len(self.state["completed"]),
-            }
+            self._save(force=True)
+            report = self.summary()
             save_checkpoint(self.directory / "summary.json", report)
             return report
         except TrainingPaused as error:
             self._close_worker()
-            self._save()
+            self._save(force=True)
             return {
                 "status": "paused",
                 "run_id": self.run_id,
@@ -607,21 +837,38 @@ class TrainingRun(EvaluationRun):
             try:
                 self._close_worker()
             finally:
+                self._journal.close()
                 self._lease.close()
                 self._closed = True
 
+    def summary(self):
+        return {
+            "status": self.state["phase"],
+            "run_id": self.run_id,
+            "scope": self.settings.scope,
+            "selected": self.state["selected"],
+            "validation_results": self.state["validation_results"],
+            "training_panels": self.state["training_panels"],
+            "costs": self.state["costs"],
+            "worker_history": self.state["worker_history"],
+            "variation_counts": self.evolution.variation_counts,
+            "generation_metrics": self.state["generation_metrics"],
+            "monitoring_results": self.state["monitoring_results"],
+            "completed_records": len(self.state["completed"]),
+        }
+
     def _select(self):
         results = self.state["validation_results"]
-        finite = [sha for sha, result in results.items() if result["fitness"] is not None]
+        finite = [name for name, result in results.items() if result["fitness"] is not None]
         if not finite:
             self.state["phase"] = "failed"
             self._save()
             return
         selected = min(
-            finite, key=lambda sha: (results[sha]["fitness"], results[sha]["nodes"], sha)
+            finite, key=lambda name: (results[name]["fitness"], results[name]["nodes"], name)
         )
-        program = next(p for p in self.evolution.shortlist() if p.sha256 == selected)
-        self.state["selected"] = {"program_sha256": selected, **results[selected]}
+        program = next(p for p in self.evolution.shortlist() if p.identifier == selected)
+        self.state["selected"] = {"program_id": selected, **results[selected]}
         save_checkpoint(
             self.directory / "selected_program.json",
             {
@@ -631,10 +878,8 @@ class TrainingRun(EvaluationRun):
                 "program": program.to_dict(),
                 "selection": self.state["selected"],
                 "manifest": self.state["manifest"],
-                "validation_panels_sha256": content_hash(self.state["validation_panels"]),
-                "validation_results_sha256": content_hash(results),
                 "costs": self.state["costs"],
             },
         )
         self.state["phase"] = "complete"
-        self._save()
+        self._save(force=True)

@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
-import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -15,15 +13,9 @@ from gp_faco.data import Instance, validate_tour
 class GraphEntry:
     instance_id: str
     dimension: int
-    coordinate_sha256: str
     path: str
-    file_sha256: str
     # 固定顺序ALPHA、POPMUSIC，内部使用不可变元组，避免修改调用方字典。
     graphs: tuple[tuple[str, str, int], ...]
-
-
-def _digest(value):
-    return type(value) is str and re.fullmatch(r"[0-9a-f]{64}", value) is not None
 
 
 def project_file(root: Path, relative: str) -> Path:
@@ -36,90 +28,29 @@ def project_file(root: Path, relative: str) -> Path:
 
 
 class GraphCatalog:
-    """协议持有完整文件身份；摘要进入run/task，原始图不经每次任务重复传输。"""
+    """图只在实例首次注册时读取，历史附加元数据直接忽略。"""
 
-    def __init__(self, root: Path, relative: str, expected_sha256: str):
-        # 避免worker/graph_matching在模块导入阶段互相初始化。
+    def __init__(self, root: Path, relative: str):
         from gp_faco.graph_matching import GraphSettings
-        from gp_faco.worker import file_hash
 
         self.root = root.resolve()
-        path = project_file(self.root, relative)
-        payload = path.read_bytes()
-        if not _digest(expected_sha256) or hashlib.sha256(payload).hexdigest() != expected_sha256:
-            raise ValueError("图目录文件与冻结SHA256不符")
-        value = json.loads(payload)
-        fields = {
-            "graph_catalog_version",
-            "graph_spec_id",
-            "matching_spec_id",
-            "settings",
-            "entries",
-            "source_manifest",
-            "source_manifest_sha256",
-        }
-        if (
-            type(value) is not dict
-            or set(value) != fields
-            or any(
-                type(value[name]) is not int or value[name] != expected
-                for name, expected in (
-                    ("graph_catalog_version", 1),
-                    ("graph_spec_id", 1),
-                    ("matching_spec_id", 2),
-                )
-            )
-        ):
-            raise ValueError("图目录字段或格式/匹配版本不符")
-        source = project_file(self.root, value["source_manifest"])
-        if not _digest(value["source_manifest_sha256"]) or (
-            file_hash(source) != value["source_manifest_sha256"]
-        ):
-            raise ValueError("图目录来源manifest身份不符")
+        value = json.loads(project_file(self.root, relative).read_text())
+        if value["graph_spec_id"] != 1 or value["matching_spec_id"] != 2:
+            raise ValueError("未知候选图格式")
         self.settings = GraphSettings(**value["settings"])
-        self.relative, self.sha256 = relative, expected_sha256
-        if type(value["entries"]) is not list or not value["entries"]:
-            raise ValueError("图目录必须含非空实例表")
-        entries = {}
-        coordinates = set()
+        self.relative = relative
+        self._entries = {}
         for row in value["entries"]:
-            if type(row) is not dict or set(row) != set(GraphEntry.__dataclass_fields__):
-                raise ValueError("图目录实例字段不符")
-            n = row["dimension"]
-            if (
-                type(row["instance_id"]) is not str
-                or not row["instance_id"]
-                or row["instance_id"] in entries
-                or type(n) is not int
-                or not 3 <= n <= 10000
-                or not _digest(row["coordinate_sha256"])
-                or row["coordinate_sha256"] in coordinates
-                or not _digest(row["file_sha256"])
-                or type(row["graphs"]) is not dict
-                or set(row["graphs"]) != {"ALPHA", "POPMUSIC"}
-            ):
-                raise ValueError("图目录实例身份重复、遗漏或无效")
-            project_file(self.root, row["path"])
-            graphs = []
-            for kind in ("ALPHA", "POPMUSIC"):
-                graph = row["graphs"][kind]
-                if (
-                    type(graph) is not dict
-                    or set(graph) != {"sha256", "edges"}
-                    or (
-                        not _digest(graph["sha256"])
-                        or type(graph["edges"]) is not int
-                        or not n <= graph["edges"] <= n * (n - 1) // 2
-                    )
-                ):
-                    raise ValueError("先验图摘要或边数无效")
-                graphs.append((kind, graph["sha256"], graph["edges"]))
+            name, n = row["instance_id"], row["dimension"]
+            if name in self._entries or type(n) is not int or n < 3:
+                raise ValueError("重复实例编号或无效规模")
+            graphs = tuple(
+                (kind, f"{name}-{kind}", row["graphs"][kind]["edges"])
+                for kind in ("ALPHA", "POPMUSIC")
+            )
             if graphs[0][2] != graphs[1][2]:
-                raise ValueError("两个先验的实际E0边数未匹配")
-            entry = GraphEntry(**{**row, "graphs": tuple(graphs)})
-            entries[entry.instance_id] = entry
-            coordinates.add(entry.coordinate_sha256)
-        self._entries = entries
+                raise ValueError("两个先验的实际边数未匹配")
+            self._entries[name] = GraphEntry(name, n, row["path"], graphs)
         self._feasibility = {}
 
     def require_settings(self, settings) -> None:
@@ -130,14 +61,8 @@ class GraphCatalog:
             raise ValueError("worker候选形状与冻结图目录不符")
 
     def entry(self, problem: Instance) -> GraphEntry:
-        from gp_faco.worker import coordinate_hash
-
         entry = self._entries.get(problem.instance_id)
-        if (
-            entry is None
-            or entry.dimension != problem.dimension
-            or (entry.coordinate_sha256 != coordinate_hash(problem))
-        ):
+        if entry is None or entry.dimension != problem.dimension:
             raise ValueError("任务实例不在冻结图目录中或坐标改变")
         return entry
 
@@ -147,13 +72,12 @@ class GraphCatalog:
         descriptions = []
         for problem in problems:
             entry = self.entry(problem)
-            _, digest, edges = entry.graphs[0 if kind == "ALPHA" else 1]
+            _, graph_id, edges = entry.graphs[0 if kind == "ALPHA" else 1]
             descriptions.append(
                 {
                     "instance_id": entry.instance_id,
-                    "coordinate_sha256": entry.coordinate_sha256,
                     "prior_kind": kind,
-                    "graph_sha256": digest,
+                    "graph_id": graph_id,
                     "edges": edges,
                 }
             )
@@ -166,13 +90,9 @@ class GraphCatalog:
         entry = self.entry(problem)
         path = project_file(self.root, entry.path)
         data = path.read_bytes()
-        if hashlib.sha256(data).hexdigest() != entry.file_sha256:
-            raise ValueError("匹配图缓存文件被修改")
         graph = json.loads(data)["graphs"][kind]
         if (
-            graph["sha256"] != description["graph_sha256"]
-            or graph["coordinate_sha256"] != entry.coordinate_sha256
-            or type(graph["dimension"]) is not int
+            type(graph["dimension"]) is not int
             or graph["dimension"] != entry.dimension
             or graph["prior_kind"] != kind
             or type(graph["matching_spec_id"]) is not int

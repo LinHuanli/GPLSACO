@@ -1,0 +1,10 @@
+{
+  "implementation": "v2-warp-shared-parallel-archive-distance-table",
+  "compared_final_solutions": 128,
+  "same_undirected_tours": true,
+  "comparison": "same A5000, original exact implementation vs optimized exact",
+  "original": "artifacts/v2/gpu-checks/unoptimized.json",
+  "optimized": "artifacts/v2/gpu-checks/final-v2-exact.json",
+  "gap_difference_tolerance_pp": 1e-10,
+  "scope": "performance changes before the identity-move correction"
+}

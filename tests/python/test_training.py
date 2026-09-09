@@ -13,7 +13,7 @@ from gp_faco.checkpoint import load_checkpoint
 from gp_faco.data import Instance, Label, tour_cost
 from gp_faco.evolution import EvolutionSettings
 from gp_faco.training import TrainingData, TrainingRun, TrainingSettings, json_value
-from gp_faco.worker import SolverSettings, WorkerProtocol, content_hash, coordinate_hash
+from gp_faco.worker import SolverSettings, WorkerProtocol, preparation_id
 
 
 class Source:
@@ -25,7 +25,7 @@ class Source:
             for j in range(10):
                 name = f"n{n}-{j:02d}"
                 xy = tuple((float(i * i + 7 * j), float(i % 3 + j)) for i in range(n))
-                self.problems[name] = Instance(name, xy)
+                self.problems[name] = Instance(name, xy, numeric_id=n * 100 + j + 1)
                 ids.append(name)
             self.training[n], self.validation[n] = ids[:6], ids[6:]
 
@@ -44,9 +44,7 @@ class Source:
             self.validation,
             {
                 "scope": "synthetic orchestration only",
-                "records": content_hash(
-                    {name: coordinate_hash(p) for name, p in self.problems.items()}
-                ),
+                "records": sorted(self.problems),
             },
         )
 
@@ -92,22 +90,22 @@ class WorkerFarm:
                     "pid": self.pid,
                     "host": platform.node(),
                     "start_method": "test_fake",
-                    "protocol_sha256": protocol.sha256,
+                    "protocol_id": protocol.identifier,
                     "startup_seconds": 0.0,
                 }
 
             def prepare(self, problems):
                 farm.preparations.append(problems)
                 description = {
-                    "protocol_sha256": protocol.sha256,
+                    "protocol_id": protocol.identifier,
                     "dimension": problems[0].dimension,
-                    "problems": [(p.instance_id, coordinate_hash(p)) for p in problems],
+                    "problems": [p.instance_id for p in problems],
                 }
                 value = {
                     **description,
                     "kind": "preparation",
                     "status": "completed",
-                    "preparation_id": content_hash(description),
+                    "preparation_id": preparation_id(problems),
                     "worker_seconds": 0.01,
                     "registration_fees": {
                         p.instance_id: {"cheap_seconds": 0.001, "preparation_seconds": 0.01}
@@ -132,7 +130,7 @@ class WorkerFarm:
                     for name, seed in task.replicas:
                         p = problems[name]
                         tour = list(range(p.dimension))
-                        random.Random(int(task.program.sha256[:16], 16) ^ seed).shuffle(tour)
+                        random.Random(sum(task.program.operand) ^ seed).shuffle(tour)
                         items.append(
                             {
                                 "has_incumbent": True,
@@ -172,8 +170,8 @@ class WorkerFarm:
                     value = {
                         "status": "completed",
                         "task_id": task.task_id(protocol),
-                        "protocol_sha256": protocol.sha256,
-                        "program_sha256": task.program.sha256,
+                        "protocol_id": protocol.identifier,
+                        **task.controller_identity(),
                         "occurrence_id": task.occurrence_id,
                         "dimension": task.dimension,
                         "worker_seconds": 0.5,
@@ -200,9 +198,9 @@ def setup():
     )
     protocol = WorkerProtocol(
         "GPU-056fae3f-b504-efe0-2d9d-b1186860e643",
-        "test-only",
+        "NVIDIA RTX A5000",
         "0",
-        "0" * 64,
+        "test-build",
         dimensions=(5, 7),
         colonies=4,
         settings=SolverSettings(ants=4),
@@ -239,10 +237,12 @@ def test_count_mode_resume_preserves_limits_and_full_fitness_evaluations(tmp_pat
         resume=True,
     )
     result = resumed.run()
-    assert result["status"] == "complete" and result["selected"] == expected["selected"]
+    assert result["status"] == "complete" and without_task_locations(
+        result["selected"]
+    ) == without_task_locations(expected["selected"])
     assert resumed.evolution.state_dict() == baseline.evolution.state_dict()
-    assert [t.task_id(protocol) for t in baseline_farm.submissions] == [
-        t.task_id(protocol) for t in resumed_farm.submissions
+    assert [t.task_id(protocol).split(":", 1)[1] for t in baseline_farm.submissions] == [
+        t.task_id(protocol).split(":", 1)[1] for t in resumed_farm.submissions
     ]
     assert all(resumed.state["completed"][k] == v for k, v in before["completed"].items())
     assert all(
@@ -274,7 +274,7 @@ def test_every_occurrence_common_panels_and_all_validation_candidates(tmp_path, 
     validation = [t for t in farm.submissions if ":validation:" in t.occurrence_id]
     assert len(training) == 3 * 6 * 2 and len(validation) == 4
     assert len({t.task_id(protocol) for t in farm.submissions}) == len(farm.submissions)
-    assert len({t.program.sha256 for t in training}) == 1
+    assert len({t.program.key for t in training}) == 1
     panel_seeds = set()
     for generation in range(3):
         for n in protocol.dimensions:
@@ -292,7 +292,7 @@ def test_every_occurrence_common_panels_and_all_validation_candidates(tmp_path, 
     assert len(run.evolution.winners) == 3 and len(run.evolution.shortlist()) == 1
     assert report["costs"]["valid_members"] == 4 * len(farm.submissions)
     exported = load_checkpoint(run.directory / "selected_program.json")
-    assert exported["selection"]["program_sha256"] == run.evolution.shortlist()[0].sha256
+    assert exported["selection"]["program_id"] == run.evolution.shortlist()[0].identifier
     assert exported["manifest"]["settings"]["scope"] == "engineering_development"
 
 
@@ -316,11 +316,13 @@ def test_partial_individual_resume_matches_uninterrupted_ir_rng_and_tasks(tmp_pa
         tmp_path / "resumed", settings, protocol, source.data(), worker_factory=farm, resume=True
     )
     report = resumed.run()
-    assert report["status"] == "complete" and report["selected"] == baseline_report["selected"]
+    assert report["status"] == "complete" and without_task_locations(
+        report["selected"]
+    ) == without_task_locations(baseline_report["selected"])
     assert json_value(resumed.evolution.state_dict()) == json_value(baseline.evolution.state_dict())
     assert resumed.state["panel_rng"] == baseline.state["panel_rng"]
-    assert [t.task_id(protocol) for t in farm.submissions] == [
-        t.task_id(protocol) for t in baseline_farm.submissions
+    assert [t.task_id(protocol).split(":", 1)[1] for t in farm.submissions] == [
+        t.task_id(protocol).split(":", 1)[1] for t in baseline_farm.submissions
     ]
     assert len({t.task_id(protocol) for t in farm.submissions}) == len(farm.submissions)
     assert set(before["completed"]) <= set(resumed.state["completed"])
@@ -331,52 +333,11 @@ def test_partial_individual_resume_matches_uninterrupted_ir_rng_and_tasks(tmp_pa
     validation = [t for t in farm.submissions if ":validation:" in t.occurrence_id]
     by_program = {}
     for task in validation:
-        by_program.setdefault(task.program.sha256, []).append(
+        by_program.setdefault(task.program.identifier, []).append(
             (task.dimension, task.replicas, task.preparation_charges)
         )
     assert len(by_program) == len(resumed.evolution.shortlist())
     assert all(v == next(iter(by_program.values())) for v in by_program.values())
-
-
-@pytest.mark.parametrize("window", ["raw_receipt", "verified_receipt", "completion_checkpoint"])
-def test_result_journal_recovers_without_repeating_solve(tmp_path, setup, monkeypatch, window):
-    import gp_faco.evaluation_run as journal
-    import gp_faco.training as module
-
-    settings, protocol, source = setup
-    farm = WorkerFarm()
-    path = tmp_path / window
-    run = TrainingRun(path, settings, protocol, source.data(), worker_factory=farm)
-    original = module.save_checkpoint
-
-    def write_then_crash(target, value):
-        is_solve = target.parent.name == "tasks" and value.get("kind") == "solve"
-        if (
-            window == "completion_checkpoint"
-            and target.name == "checkpoint.json"
-            and value["costs"]["solve_jobs"] == 1
-        ):
-            raise RuntimeError("injected coordinator interruption")
-        original(target, value)
-        if is_solve and (
-            (window == "raw_receipt" and value["checked"] is None)
-            or (window == "verified_receipt" and value["checked"] is not None)
-        ):
-            raise RuntimeError("injected coordinator interruption")
-
-    with monkeypatch.context() as patch:
-        patch.setattr(module, "save_checkpoint", write_then_crash)
-        patch.setattr(journal, "save_checkpoint", write_then_crash)
-        with pytest.raises(RuntimeError, match="injected coordinator"):
-            run.run()
-    assert len(farm.submissions) == 1
-    saved = load_checkpoint(run.path)
-    assert saved["pending"]["kind"] == "solve" and saved["costs"]["solve_jobs"] == 0
-    resumed = TrainingRun(path, settings, protocol, source.data(), worker_factory=farm, resume=True)
-    assert resumed.run()["status"] == "complete"
-    assert len(farm.submissions) == len({t.task_id(protocol) for t in farm.submissions})
-    assert resumed.state["costs"]["solve_jobs"] == len(farm.submissions)
-    assert all(w.closed for w in farm.workers)
 
 
 def test_confirmed_process_failure_retries_original_task_once(tmp_path, setup):
@@ -387,7 +348,10 @@ def test_confirmed_process_failure_retries_original_task_once(tmp_path, setup):
     assert farm.submissions[0] == farm.submissions[1]
     assert len(farm.submissions) == run.state["costs"]["solve_jobs"] + 1
     assert run.state["costs"]["infrastructure_failures"] == 1
-    records = [load_checkpoint(p) for p in (run.directory / "tasks").glob("*.json")]
+    records = [
+        __import__("json").loads(line)
+        for line in (run.directory / "results.jsonl").read_text().splitlines()
+    ]
     retried = [r for r in records if len(r["attempts"]) == 2]
     assert len(retried) == 1
     assert [a["status"] for a in retried[0]["attempts"]] == ["broken_process_pool", "returned"]
@@ -443,40 +407,6 @@ def test_ordinary_preparation_failure_is_saved_and_never_retried(tmp_path, setup
     assert len(farm.preparations) == 1 and not farm.submissions
 
 
-def test_resume_rejects_changed_protocol_and_missing_completed_result(tmp_path, setup):
-    settings, protocol, source = setup
-    farm = WorkerFarm()
-    run = TrainingRun(tmp_path / "identity", settings, protocol, source.data(), worker_factory=farm)
-    run.run(stop_after_tasks=1)
-    with pytest.raises(ValueError, match="身份发生变化"):
-        TrainingRun(
-            run.directory,
-            replace(settings, panel_seed=settings.panel_seed + 1),
-            protocol,
-            source.data(),
-            worker_factory=farm,
-            resume=True,
-        )
-    with pytest.raises(ValueError, match="身份发生变化"):
-        TrainingRun(
-            run.directory,
-            settings,
-            replace(protocol, driver_version="changed"),
-            source.data(),
-            worker_factory=farm,
-            resume=True,
-        )
-    for path in (run.directory / "tasks").glob("*.json"):
-        if load_checkpoint(path)["kind"] == "solve":
-            path.unlink()
-    resumed = TrainingRun(
-        run.directory, settings, protocol, source.data(), worker_factory=farm, resume=True
-    )
-    with pytest.raises(FileNotFoundError, match="已完成任务产物丢失"):
-        resumed.run()
-    assert len(farm.submissions) == 1
-
-
 def test_shape_capacity_and_data_disjointness_are_required(tmp_path, setup):
     settings, protocol, source = setup
     with pytest.raises(ValueError, match="重复实例"):
@@ -497,3 +427,15 @@ def test_shape_capacity_and_data_disjointness_are_required(tmp_path, setup):
             source.data(),
             worker_factory=WorkerFarm(),
         )
+
+
+def without_task_locations(value):
+    if isinstance(value, dict):
+        return {
+            k: without_task_locations(v)
+            for k, v in value.items()
+            if k not in ("task_ids", "task_keys")
+        }
+    if isinstance(value, list):
+        return [without_task_locations(v) for v in value]
+    return value

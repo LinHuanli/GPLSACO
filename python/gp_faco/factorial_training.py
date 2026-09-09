@@ -4,14 +4,14 @@ from dataclasses import fields
 
 from gp_faco.factorial_policy import FactorialPolicy
 from gp_faco.training import TrainingRun
-from gp_faco.worker import PROJECT, FactorialTask, SolveTask, file_hash
+from gp_faco.worker import FactorialTask, SolveTask
 
 
 class FactorialTrainingRun(TrainingRun):
     def __init__(self, *args, factorial_policy, **kwargs):
-        if (
-            type(factorial_policy) is not FactorialPolicy
-            or factorial_policy.variant not in ("M10", "M01")
+        if type(factorial_policy) is not FactorialPolicy or factorial_policy.variant not in (
+            "M10",
+            "M01",
         ):
             raise ValueError("单因素独立重训仅接受M10/M01")
         self.factorial_policy = factorial_policy
@@ -25,10 +25,7 @@ class FactorialTrainingRun(TrainingRun):
         self.factorial_policy.validate_mask(self.settings.experiment_mask)
         manifest = super()._training_manifest()
         manifest["factorial_policy"] = self.factorial_policy.to_dict()
-        manifest["factorial_policy_sha256"] = self.factorial_policy.sha256
-        manifest["sources"]["factorial_training.py"] = file_hash(
-            PROJECT / "python/gp_faco/factorial_training.py"
-        )
+        manifest["factorial_policy_id"] = self.factorial_policy.identifier
         return manifest
 
     def _task(self, program, occurrence, panel, index):

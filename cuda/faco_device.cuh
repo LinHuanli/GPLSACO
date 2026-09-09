@@ -46,7 +46,7 @@ struct State {
     Node first, last, a, a_next, a_previous, best_slot, best_kind;
     Node move[4], allowed[2], pending_size, pending_head;
     bool nonidentity, stopped;
-    double cost, accumulated_gain, best_gain;
+    double cost, accumulated_gain, best_gain, current_edge[2];
     ConstructionStats construction;
     LocalSearchStats ls;
 };
@@ -56,20 +56,37 @@ __device__ double distance(const Distance& matrix, Node, Node a, Node b) {
     return matrix(a, b);
 }
 
-__device__ inline Node successor(const Node* tour, const Node* position, Node n, Node node) {
+template<class TourNode>
+__device__ inline Node successor(const TourNode* tour, const TourNode* position, Node n, Node node) {
     return tour[(position[node] + 1) % n];
 }
 
-__device__ inline Node predecessor(const Node* tour, const Node* position, Node n, Node node) {
+template<class TourNode>
+__device__ inline Node predecessor(const TourNode* tour, const TourNode* position, Node n, Node node) {
     return tour[(position[node] + n - 1) % n];
 }
 
-__device__ inline void append_if_absent(Node* pending, Node from, Node node, Node& length) {
-    for (Node i = from; i < length; ++i) if (pending[i] == node) return;
-    pending[length++] = node;
+__device__ inline void append_if_absent(Node* pending, Node from, Node node, Node& length,
+                                        std::uint8_t* queued = nullptr, Node capacity = 0) {
+    if (queued) {
+        if (queued[node]) return;
+        queued[node] = 1;
+    } else {
+        for (Node i = from; i < length; ++i) if (pending[capacity ? i % capacity : i] == node) return;
+    }
+    // queued 保证同时待处理的节点最多 n 个；环形存储保留原 FIFO 和重新入队顺序。
+    pending[capacity ? length % capacity : length] = node;
+    ++length;
 }
 
-template<class Distance, class Choices, class Allowed = UnrestrictedEdges, bool Profile = false>
+template<bool WarpTours>
+__device__ inline void ant_group_sync() {
+    if constexpr (WarpTours) __syncwarp();
+    else __syncthreads();
+}
+
+template<class Distance, class Choices, class Allowed = UnrestrictedEdges, bool Profile = false, bool WarpTours = false,
+         bool CompactWorkspace = false>
 __global__ void construct_and_search(
     Distance distances, const Node* all_candidates, Node n, Node width,
     const Node* parent_tours, Choices choice_views, const Node* targets,
@@ -77,10 +94,14 @@ __global__ void construct_and_search(
     Node* all_parent_positions, Node* all_scratch, Node* all_pending,
     double* all_gains, Node* construction_tours, FacoDiagnosticInfo* output,
     std::uint8_t* all_visited, Allowed all_allowed = {}, AntPhaseCycles* profile_cycles = nullptr,
-    Node* construction_new_edges = nullptr) {
+    Node* construction_new_edges = nullptr, std::uint8_t* all_queued = nullptr,
+    const double* all_candidate_distances = nullptr, const double* cached_parent_costs = nullptr) {
+    const Node lane = WarpTours ? threadIdx.x % 32 : threadIdx.x;
+    const Node group_width = WarpTours ? 32 : blockDim.x;
+    const Node group = WarpTours ? threadIdx.x / 32 : 0;
     std::uint64_t tick0 = 0, tick1 = 0, tick2 = 0, tick3 = 0;
-    if constexpr (Profile) { if (threadIdx.x == 0) tick0 = clock64(); }
-    const auto ant = blockIdx.x;
+    if constexpr (Profile) { if (lane == 0) tick0 = clock64(); }
+    const auto ant = WarpTours ? blockIdx.x * 4 + group : blockIdx.x;
     const auto base = static_cast<std::size_t>(ant) * n;
     const auto matrix = distances.for_ant(ant);
     const auto choices = choice_views.for_ant(ant, n);
@@ -90,45 +111,64 @@ __global__ void construct_and_search(
     const Node* candidates = all_candidates + choice_views.candidate_offset(ant, n, width);
     const Node* parent = parent_tours + choice_views.parent_offset(ant, n);
     std::uint8_t* visited = all_visited + base;
-    Node* tour = all_tours + base;
-    Node* position = all_positions + base;
-    Node* parent_position = all_parent_positions + base;
-    Node* scratch = all_scratch + base;
-    Node* pending = all_pending + base * 5;
+    auto* queued = all_queued ? all_queued + base : nullptr;
+    const double* candidate_distances = all_candidate_distances ?
+        all_candidate_distances + choice_views.candidate_offset(ant, n, width) : nullptr;
+    // 主实验 n<=1500 时用 16 位共享路线/位置/交换缓冲，避免每次翻转往返全局显存。
+    using TourNode = std::conditional_t<WarpTours, std::uint16_t, Node>;
+    extern __shared__ std::uint16_t shared_tours[];
+    TourNode* tour;
+    TourNode* position;
+    TourNode* scratch;
+    if constexpr (WarpTours) {
+        tour = shared_tours + static_cast<std::size_t>(group) * n * 3;
+        position = tour + n;
+        scratch = position + n;
+    } else {
+        tour = all_tours + base;
+        position = all_positions + base;
+        scratch = all_scratch + base;
+    }
+    static_assert(!CompactWorkspace || WarpTours, "紧凑工作区依赖 warp 共享路线");
+    Node* parent_position = all_parent_positions + (CompactWorkspace ? choice_views.parent_offset(ant, n) : base);
+    Node* pending = all_pending + base * (CompactWorkspace ? 1 : 5);
+    const Node pending_capacity = CompactWorkspace ? n : 0;
     double* gains = all_gains + static_cast<std::size_t>(ant) * width * 2;
-    __shared__ State state;
+    __shared__ State states[WarpTours ? 4 : 1];
+    auto& state = states[group];
     const auto ls_allowed = [&](Node node, Node slot) {
         if constexpr (escape) return choices.ls_allowed(node, slot, width, allowed);
         else return allowed;
     };
-    for (Node i = threadIdx.x; i < n; i += blockDim.x) {
+    for (Node i = lane; i < n; i += group_width) {
         tour[i] = parent[i];
         position[parent[i]] = i;
-        parent_position[parent[i]] = i;
+        if constexpr (!CompactWorkspace) parent_position[parent[i]] = i;
         visited[i] = 0;
+        if (queued) queued[i] = 0;
         if constexpr (escape) choices.anchors[i] = choices.footprint[i] = 0;
     }
-    if (threadIdx.x == 0) {
+    if (lane == 0) {
         state = {};
         output[ant].escape = {};
         if constexpr (escape) allowed.cache->reset();
         state.current = choices.start(local_ant, n);
         output[ant].start_node = state.current;
-        for (Node i = 0; i < n; ++i) {
+        if (cached_parent_costs) state.cost = cached_parent_costs[choice_views.parent_offset(ant, n) / n];
+        else for (Node i = 0; i < n; ++i)
             state.cost += distance(matrix, n, parent[(i + n - 1) % n], parent[i]);
-        }
     }
-    __syncthreads();
+    ant_group_sync<WarpTours>();
 
-    if (threadIdx.x == 0) visited[state.current] = 1;
-    __syncthreads();
-    if constexpr (Profile) { if (threadIdx.x == 0) tick1 = clock64(); }
+    if (lane == 0) visited[state.current] = 1;
+    ant_group_sync<WarpTours>();
+    if constexpr (Profile) { if (lane == 0) tick1 = clock64(); }
 
     // 一蚂蚁一block，移动前捕获端点；scratch隔离并行读取和覆盖。
     while (state.construction.mne < targets[ant] && state.construction.steps + 1 < n) {
         // 所有warp先读完循环条件，线程0才能增加该条件所读取的steps。
-        __syncthreads();
-        if (threadIdx.x == 0) {
+        ant_group_sync<WarpTours>();
+        if (lane == 0) {
             state.selected = choices.next(local_ant, state.current, visited, state.construction.steps + 1,
                                           n, matrix, tour, position, allowed);
             state.stopped = state.selected >= n;
@@ -168,93 +208,98 @@ __global__ void construct_and_search(
                 }
             }
         }
-        __syncthreads();
+        ant_group_sync<WarpTours>();
         // 全声明枚举均无合法移动时共同退出；没有visited[n]或隐式图外回退。
         if (state.stopped) break;
         if (state.nonidentity) {
-            for (Node i = threadIdx.x; i < n; i += blockDim.x) {
+            const Node a = state.target_position, b = state.node_position;
+            const Node first = a < b ? a + 1 : b, last = a < b ? b : a;
+            // 重定位只改变闭区间[first,last]，区间外路线和位置都无需读写。
+            for (Node i = first + lane; i <= last; i += group_width) {
                 Node source = i;
-                const Node a = state.target_position, b = state.node_position;
                 if (a < b && i > a && i <= b) source = i == a + 1 ? b : i - 1;
                 if (a > b && i >= b && i <= a) source = i == a ? b : i + 1;
                 scratch[i] = tour[source];
             }
-            __syncthreads();
-            for (Node i = threadIdx.x; i < n; i += blockDim.x) {
+            ant_group_sync<WarpTours>();
+            for (Node i = first + lane; i <= last; i += group_width) {
                 tour[i] = scratch[i];
                 position[scratch[i]] = i;
             }
-            __syncthreads();
+            ant_group_sync<WarpTours>();
         }
-        if (threadIdx.x == 0) {
+        if (lane == 0) {
             if (successor(parent, parent_position, n, state.current) != state.selected &&
                 predecessor(parent, parent_position, n, state.current) != state.selected) {
                 ++state.construction.mne;
-                append_if_absent(pending, 0, state.current, state.pending_size);
-                append_if_absent(pending, 0, state.selected, state.pending_size);
-                append_if_absent(pending, 0, state.old_previous, state.pending_size);
+                append_if_absent(pending, 0, state.current, state.pending_size, queued, pending_capacity);
+                append_if_absent(pending, 0, state.selected, state.pending_size, queued, pending_capacity);
+                append_if_absent(pending, 0, state.old_previous, state.pending_size, queued, pending_capacity);
             }
             state.current = state.selected;
         }
-        __syncthreads();
+        ant_group_sync<WarpTours>();
     }
     if (construction_tours) {
-        for (Node i = threadIdx.x; i < n; i += blockDim.x) construction_tours[base + i] = tour[i];
+        for (Node i = lane; i < n; i += group_width) construction_tours[base + i] = tour[i];
     }
-    if (construction_new_edges) {
+    if constexpr (!WarpTours) if (construction_new_edges) {
         const Node count = observed_new_edges(tour, parent_position, n);
-        if (threadIdx.x == 0) construction_new_edges[ant] = count;
+        if (lane == 0) construction_new_edges[ant] = count;
     }
-    if (threadIdx.x == 0) output[ant].construction_cost = state.cost;
-    __syncthreads();
+    if (lane == 0) output[ant].construction_cost = state.cost;
+    ant_group_sync<WarpTours>();
     if constexpr (escape) {
-        for (Node node = threadIdx.x; node < n; node += blockDim.x)
+        for (Node node = lane; node < n; node += group_width)
             choices.build_ls_row(local_ant, node, width, n, candidates, matrix);
-        __syncthreads();
+        ant_group_sync<WarpTours>();
         candidates = choices.ls_rows;
-        if (threadIdx.x == 0) for (Node node = 0; node < n; ++node) {
+        if (lane == 0) for (Node node = 0; node < n; ++node) {
             // 足迹按node ID继承；即使父tour未留下图外边，也检查失效后恢复的普通行。
             if (choices.parent_footprint[node]) {
                 const Node before = state.pending_size;
-                append_if_absent(pending, 0, node, state.pending_size);
+                append_if_absent(pending, 0, node, state.pending_size, queued, pending_capacity);
                 choices.stats->old_view_reactivations += state.pending_size != before;
             }
             if (choices.anchors[node]) {
                 ++choices.stats->ls_anchor_nodes;
                 const Node before = state.pending_size;
-                append_if_absent(pending, 0, node, state.pending_size);
+                append_if_absent(pending, 0, node, state.pending_size, queued, pending_capacity);
                 choices.stats->anchor_reactivations += state.pending_size != before;
                 for (Node j = 0; j < width; ++j)
                     choices.stats->ls_replaced_slots += choices.ls_replaced[static_cast<std::size_t>(node) * width + j];
             }
         }
-        __syncthreads();
+        ant_group_sync<WarpTours>();
     }
-    if constexpr (Profile) { if (threadIdx.x == 0) tick2 = clock64(); }
+    if constexpr (Profile) { if (lane == 0) tick2 = clock64(); }
 
     for (;;) {
-        if (threadIdx.x == 0) {
+        if (lane == 0) {
             state.stopped = state.pending_head == state.pending_size || state.ls.accepted_moves >= n;
             if (!state.stopped && state.ls.move_evaluations >= evaluation_limit) {
                 state.ls.evaluation_limit_reached = true;
                 state.stopped = true;
             }
             if (!state.stopped) {
-                state.a = pending[state.pending_head++];
+                state.a = pending[CompactWorkspace ? state.pending_head % n : state.pending_head];
+                ++state.pending_head;
+                if (queued) queued[state.a] = 0;
                 state.a_next = successor(tour, position, n, state.a);
                 state.a_previous = predecessor(tour, position, n, state.a);
                 ++state.ls.processed_nodes;
+                state.current_edge[0] = distance(matrix, n, state.a, state.a_next);
+                state.current_edge[1] = distance(matrix, n, state.a_previous, state.a);
                 state.allowed[0] = state.allowed[1] = 0;
                 // 先按原生顺序确定可检查前缀与精确计数，再并行计算gain。
                 for (int kind = 0; kind < 2 && !state.stopped; ++kind) {
-                    const double current_distance = kind == 0
-                        ? distance(matrix, n, state.a, state.a_next)
-                        : distance(matrix, n, state.a_previous, state.a);
+                    const double current_distance = state.current_edge[kind];
                     for (Node j = 0; j < width; ++j) {
                         const Node b = candidates[state.a * width + j];
                         ++state.ls.candidate_checks;
                         if (b >= n) break;  // 距离有序行的右侧padding，不访问哨兵坐标。
-                        if (!(current_distance > distance(matrix, n, state.a, b))) break;
+                        if (!(current_distance > (candidate_distances ? candidate_distances[state.a * width + j] :
+                                                  distance(matrix, n, state.a, b)))) break;
                         if (state.ls.move_evaluations == evaluation_limit) {
                             state.ls.evaluation_limit_reached = true;
                             state.stopped = true;
@@ -276,43 +321,65 @@ __global__ void construct_and_search(
                 }
             }
         }
-        __syncthreads();
+        ant_group_sync<WarpTours>();
         if (state.stopped) break;
-        for (Node index = threadIdx.x; index < width * 2; index += blockDim.x) {
+        double local_gain = -1;
+        Node local_index = UINT32_MAX;
+        for (Node index = lane; index < width * 2; index += group_width) {
             const Node kind = index / width, j = index % width;
             if (j >= state.allowed[kind]) continue;
             const Node b = candidates[state.a * width + j];
             const Node neighbor = kind == 0 ? successor(tour, position, n, b)
                                             : predecessor(tour, position, n, b);
-            const double current_distance = kind == 0
-                ? distance(matrix, n, state.a, state.a_next)
-                : distance(matrix, n, state.a_previous, state.a);
+            const double current_distance = state.current_edge[kind];
             const double other = kind == 0 ? distance(matrix, n, b, neighbor)
                                            : distance(matrix, n, neighbor, b);
             const Node closing = kind == 0 ? state.a_next : state.a_previous;
-            gains[index] = two_opt_allowed(state.a, closing, b, neighbor, ls_allowed(state.a, j))
-                ? current_distance + other - distance(matrix, n, state.a, b)
+            // 恒等 2-opt 的真增益为零；不引入 epsilon，也不改变其他移动的顺序。
+            const double gain = (neighbor == state.a || b == closing) ? 0.0 :
+                two_opt_allowed(state.a, closing, b, neighbor, ls_allowed(state.a, j))
+                ? current_distance + other - (candidate_distances ? candidate_distances[state.a * width + j] :
+                                              distance(matrix, n, state.a, b))
                   -distance(matrix, n, closing, neighbor)
                 : -CUDART_INF;
+            if constexpr (WarpTours) {
+                if (gain > local_gain) { local_gain = gain; local_index = index; }
+            } else gains[index] = gain;
         }
-        __syncthreads();
-        if (threadIdx.x == 0) {
+        if constexpr (WarpTours) {
+            // 只比较已经按原表达式得到的gain；同分保留原kind/j顺序，不重新结合浮点运算。
+            for (Node offset = 16; offset; offset /= 2) {
+                const double other_gain = __shfl_down_sync(0xffffffffu, local_gain, offset);
+                const Node other_index = __shfl_down_sync(0xffffffffu, local_index, offset);
+                if (lane + offset < 32 && (other_gain > local_gain ||
+                    (other_gain == local_gain && other_index < local_index))) {
+                    local_gain = other_gain; local_index = other_index;
+                }
+            }
+        }
+        ant_group_sync<WarpTours>();
+        if (lane == 0) {
             state.best_gain = -1;
-            for (Node kind = 0; kind < 2; ++kind) for (Node j = 0; j < state.allowed[kind]; ++j) {
+            if constexpr (WarpTours) {
+                state.best_gain = local_gain;
+                if (local_index != UINT32_MAX) {
+                    state.best_slot = local_index % width; state.best_kind = local_index / width;
+                }
+            } else for (Node kind = 0; kind < 2; ++kind) for (Node j = 0; j < state.allowed[kind]; ++j) {
                 const double gain = gains[kind * width + j];
                 if (gain > state.best_gain) {
                     state.best_gain = gain;
                     state.best_slot = j; state.best_kind = kind;
-                    const Node b = candidates[state.a * width + j];
-                    const Node neighbor = kind == 0 ? successor(tour, position, n, b)
-                                                    : predecessor(tour, position, n, b);
-                    state.move[0] = kind == 0 ? state.a_next : state.a;
-                    state.move[1] = kind == 0 ? neighbor : b;
-                    state.move[2] = kind == 0 ? state.a : state.a_previous;
-                    state.move[3] = kind == 0 ? b : neighbor;
                 }
             }
             if (state.best_gain > 0) {
+                const Node kind = state.best_kind, b_node = candidates[state.a * width + state.best_slot];
+                const Node neighbor_node = kind == 0 ? successor(tour, position, n, b_node)
+                                                     : predecessor(tour, position, n, b_node);
+                state.move[0] = kind == 0 ? state.a_next : state.a;
+                state.move[1] = kind == 0 ? neighbor_node : b_node;
+                state.move[2] = kind == 0 ? state.a : state.a_previous;
+                state.move[3] = kind == 0 ? b_node : neighbor_node;
                 if constexpr (escape) {
                     const Node b = candidates[state.a * width + state.best_slot];
                     const Node neighbor = state.best_kind == 0 ? successor(tour, position, n, b)
@@ -333,37 +400,38 @@ __global__ void construct_and_search(
                 state.accumulated_gain -= state.best_gain;
             }
         }
-        __syncthreads();
+        ant_group_sync<WarpTours>();
         if (state.best_gain > 0) {
-            for (Node i = threadIdx.x; i < n; i += blockDim.x) {
-                const Node first = state.first, last = state.last, length = last - first;
-                Node source = i;
-                // 原生first==0的补片段交换最终等于反转指定片段；保持其数组结果。
-                if (length <= n - length || first == 0) {
-                    if (i >= first && i < last) source = first + last - 1 - i;
-                } else {
-                    const Node offset = (i + n - last) % n, count = n - length;
-                    if (offset < count) source = (last + count - 1 - offset) % n;
-                }
-                scratch[i] = tour[source];
+            const Node first = state.first, last = state.last, length = last - first;
+            const bool straight = length <= n - length || first == 0;
+            const Node count = straight ? length : n - length, start = straight ? first : last;
+            // 反转由互不相交的交换对组成，原地交换无需全路线scratch往返。
+            // first==0仍遵循原生数组布局；补片段允许跨越数组尾部。
+            for (Node offset = lane; offset < count / 2; offset += group_width) {
+                const Node left = (start + offset) % n, right = (start + count - 1 - offset) % n;
+                const TourNode a = tour[left], b = tour[right];
+                tour[left] = b; tour[right] = a;
+                position[b] = left; position[a] = right;
             }
-            __syncthreads();
-            for (Node i = threadIdx.x; i < n; i += blockDim.x) {
-                tour[i] = scratch[i];
-                position[scratch[i]] = i;
-            }
-            __syncthreads();
-            if (threadIdx.x == 0) {
+            ant_group_sync<WarpTours>();
+            if (lane == 0) {
                 for (Node node : state.move) {
                     const Node before = state.pending_size;
-                    append_if_absent(pending, state.pending_head, node, state.pending_size);
+                    append_if_absent(pending, state.pending_head, node, state.pending_size, queued, pending_capacity);
                     state.ls.reactivations += state.pending_size != before;
                 }
             }
         }
-        __syncthreads();
+        ant_group_sync<WarpTours>();
     }
-    if (threadIdx.x == 0) {
+    if constexpr (WarpTours) {
+        for (Node i = lane; i < n; i += group_width) {
+            all_tours[base + i] = tour[i];
+            all_positions[base + i] = position[i];
+        }
+        ant_group_sync<WarpTours>();
+    }
+    if (lane == 0) {
         if constexpr (Profile) tick3 = clock64();
         output[ant].final_cost = state.cost + state.accumulated_gain;
         output[ant].construction = state.construction;

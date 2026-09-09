@@ -20,6 +20,12 @@ enum class ConstraintMode { Unrestricted, Hard, Escape };
 struct RegistrationInfo { double cheap_seconds, preparation_seconds; };
 
 struct BatchEvaluation {
+    std::vector<std::array<std::uint64_t, 3>> colony_work;
+    double population_actual_seconds = 0;
+    Node population_size = 1;
+    std::array<double, gpu_profile_stage_count> production_kernel_milliseconds{};
+    std::vector<std::uint64_t> checkpoint_iterations;
+    std::vector<Node> checkpoint_tours;
     std::vector<TimedIncumbent> incumbents;
     double budget_seconds = 0, elapsed_seconds = 0, actual_seconds = 0, charged_seconds = 0;
     double last_batch_completed_seconds = 0, overrun_seconds = 0;
@@ -40,6 +46,7 @@ struct BatchEvaluation {
     std::vector<double> discarded_costs;
     std::vector<ControllerState> completed_control_states;
     std::vector<ControlBatchTrace> control_trace;
+    std::vector<DecisionTrace> decisions;
     bool behavior_recorded = false;
     std::size_t behavior_device_bytes = 0;
     std::vector<BatchBehaviorRow> behavior_rows;
@@ -47,6 +54,9 @@ struct BatchEvaluation {
 };
 
 struct BatchDiagnosticControls {
+    std::vector<std::uint64_t> decision_iterations;
+    bool profile_events_only = false;  // 生产并行布局；所有 CUDA event 只在最后读取。
+    std::vector<std::uint64_t> checkpoint_iterations;
     Node fixed_batches = 0;
     Node delay_batch = 0;
     unsigned completion_delay_ms = 0;
@@ -62,8 +72,9 @@ struct BatchDiagnosticControls {
 class FacoBatchEngine {
 public:
     // 固定形状缓冲预分配属于通用worker准备，不处理实例或标签。
+    // population_size 为最大个体容量；尾块可提交更少程序，只为活动成员构造路线。
     FacoBatchEngine(Node dimension, Node colonies, FixedFacoSettings settings = {},
-                   ConstraintMode constraint_mode = ConstraintMode::Unrestricted);
+                   ConstraintMode constraint_mode = ConstraintMode::Unrestricted, Node population_size = 1);
     ~FacoBatchEngine();
     FacoBatchEngine(const FacoBatchEngine&) = delete;
     FacoBatchEngine& operator=(const FacoBatchEngine&) = delete;
@@ -83,8 +94,19 @@ public:
         const Program& program, PreparationMode mode, std::uint32_t experiment_mask,
         BatchDiagnosticControls controls);
     // 主次数入口：每个colony的蚂蚁完整tour计数，不设置wall-clock截止。
+    BatchEvaluation evaluate_faco_evaluations(const std::vector<BatchTask>& tasks,
+        std::uint64_t evaluation_limit_per_colony, Node mne_target = 8,
+        PreparationMode mode = PreparationMode::CachedCharged, BatchDiagnosticControls controls = {});
     BatchEvaluation evaluate_program_evaluations(const std::vector<BatchTask>& tasks,
         std::uint64_t evaluation_limit_per_colony, const Program& program, PreparationMode mode,
+        std::uint32_t experiment_mask = UINT32_MAX, BatchDiagnosticControls controls = {});
+    // 同一 instance/seed 面板展开整个种群；输出顺序与 programs 一一对应，重复个体也独立评价。
+    std::vector<BatchEvaluation> evaluate_population_evaluations(const std::vector<BatchTask>& panel,
+        std::uint64_t evaluation_limit_per_colony, const std::vector<Program>& programs,
+        std::uint32_t experiment_mask = UINT32_MAX, const FactorialPolicy* factorial = nullptr,
+        BatchDiagnosticControls controls = {}, const std::vector<ControllerProgram>* controllers = nullptr);
+    BatchEvaluation evaluate_controller_evaluations(const std::vector<BatchTask>& tasks,
+        std::uint64_t evaluations, const ControllerProgram& controller,
         std::uint32_t experiment_mask = UINT32_MAX, BatchDiagnosticControls controls = {});
     BatchEvaluation evaluate_baseline_evaluations(const std::vector<BatchTask>& tasks,
         std::uint64_t evaluation_limit_per_colony, const BaselinePolicy& policy, PreparationMode mode,
@@ -115,7 +137,9 @@ private:
         bool count_limited = false, std::uint64_t evaluation_limit_per_colony = 0,
         const BaselinePolicy* baseline = nullptr, CountedState* snapshot_output = nullptr,
         std::uint64_t capture_after_evaluations = 0, const CountedState* resumed_state = nullptr,
-        ForkIntervention intervention = {}, const FactorialPolicy* factorial = nullptr);
+        ForkIntervention intervention = {}, const FactorialPolicy* factorial = nullptr,
+        const std::vector<Program>* population = nullptr,
+        const std::vector<ControllerProgram>* controllers = nullptr);
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };

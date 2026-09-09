@@ -1,0 +1,261 @@
+{
+  "observed_at": "2026-09-10T00:39:59.924918+12:00",
+  "scope": "只读已有第10代及历史结果；不重跑GPU，不改变正式训练协议",
+  "our_generation": 10,
+  "ours": [
+    {
+      "seed": 1103,
+      "source": "artifacts/v2/round-tsp500-3seed/training/full-seed1103/generations/0009.json",
+      "timing_source": "artifacts/v2/round-tsp500-3seed/training/full-seed1103/learning_curve.json",
+      "generation": 10,
+      "recent_generations": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "recent5_mean_wall_seconds": 522.5745067119599,
+      "population_size": 128,
+      "unique_ir": 27,
+      "distinct_final_fitness": 12,
+      "largest_fitness_group_size": 101,
+      "largest_fitness_group_value": 0.21081288931324438,
+      "identical_ir_different_fitness_groups": 0,
+      "top_ir": [
+        {
+          "copies": 99,
+          "expression": "ABS(mne_level)",
+          "fitness": 0.21081288931324438
+        },
+        {
+          "copies": 3,
+          "expression": "ABS(region_excess)",
+          "fitness": 0.5623964590857524
+        },
+        {
+          "copies": 2,
+          "expression": "ABS(stagnation)",
+          "fitness": 0.2536593947669488
+        }
+      ]
+    },
+    {
+      "seed": 2207,
+      "source": "artifacts/v2/round-tsp500-3seed/training/full-seed2207/generations/0009.json",
+      "timing_source": "artifacts/v2/round-tsp500-3seed/training/full-seed2207/learning_curve.json",
+      "generation": 10,
+      "recent_generations": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "recent5_mean_wall_seconds": 569.0521687507629,
+      "population_size": 128,
+      "unique_ir": 32,
+      "distinct_final_fitness": 18,
+      "largest_fitness_group_size": 100,
+      "largest_fitness_group_value": 0.21081288931324438,
+      "identical_ir_different_fitness_groups": 0,
+      "top_ir": [
+        {
+          "copies": 91,
+          "expression": "ABS(mne_level)",
+          "fitness": 0.21081288931324438
+        },
+        {
+          "copies": 7,
+          "expression": "mne_level",
+          "fitness": 0.21081288931324438
+        },
+        {
+          "copies": 1,
+          "expression": "stagnation",
+          "fitness": 0.2536593947669488
+        }
+      ]
+    },
+    {
+      "seed": 3313,
+      "source": "artifacts/v2/round-tsp500-3seed/training/full-seed3313/generations/0009.json",
+      "timing_source": "artifacts/v2/round-tsp500-3seed/training/full-seed3313/learning_curve.json",
+      "generation": 10,
+      "recent_generations": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "recent5_mean_wall_seconds": 564.0874200344085,
+      "population_size": 128,
+      "unique_ir": 29,
+      "distinct_final_fitness": 13,
+      "largest_fitness_group_size": 103,
+      "largest_fitness_group_value": 0.21081288931324438,
+      "identical_ir_different_fitness_groups": 0,
+      "top_ir": [
+        {
+          "copies": 79,
+          "expression": "mne_level",
+          "fitness": 0.21081288931324438
+        },
+        {
+          "copies": 13,
+          "expression": "ABS(mne_level)",
+          "fitness": 0.21081288931324438
+        },
+        {
+          "copies": 7,
+          "expression": "ADD(mne_level,mne_level)",
+          "fitness": 0.21081288931324438
+        }
+      ]
+    }
+  ],
+  "rmtgp_tsp500_ls_v2": [
+    {
+      "variant": "as",
+      "runs": [
+        {
+          "seed": 81001,
+          "source": "/vol/grid-solar/sgeusers/linbocheng/MTGP_ACO/runs/tsp500-2opt-ls-v2/formal/train/as/seed-81001/training_metrics.json",
+          "device": "NVIDIA RTX PRO 5000 Blackwell",
+          "precision": "fp32_fast",
+          "stage_mean_wall_seconds": [
+            159.85741835686883,
+            670.7553809684483,
+            2710.1416229493275
+          ],
+          "total_cumulative_hours": 15.684748121933865
+        },
+        {
+          "seed": 81002,
+          "source": "/vol/grid-solar/sgeusers/linbocheng/MTGP_ACO/runs/tsp500-2opt-ls-v2/formal/train/as/seed-81002/training_metrics.json",
+          "device": "NVIDIA RTX PRO 5000 Blackwell",
+          "precision": "fp32_fast",
+          "stage_mean_wall_seconds": [
+            150.61238848166735,
+            558.5323373587001,
+            1226.8569334322626
+          ],
+          "total_cumulative_hours": 8.842412937745264
+        },
+        {
+          "seed": 81003,
+          "source": "/vol/grid-solar/sgeusers/linbocheng/MTGP_ACO/runs/tsp500-2opt-ls-v2/formal/train/as/seed-81003/training_metrics.json",
+          "device": "NVIDIA RTX PRO 5000 Blackwell",
+          "precision": "fp32_fast",
+          "stage_mean_wall_seconds": [
+            40.72783203593378,
+            133.10653424534684,
+            4574.8699456506665
+          ],
+          "total_cumulative_hours": 19.971138152834982
+        }
+      ],
+      "stage_mean_wall_seconds": [
+        117.06587962482332,
+        454.1314175241651,
+        2837.289500677419
+      ],
+      "mean_total_cumulative_hours": 14.83276640417137
+    },
+    {
+      "variant": "acs",
+      "runs": [
+        {
+          "seed": 81001,
+          "source": "/vol/grid-solar/sgeusers/linbocheng/MTGP_ACO/runs/tsp500-2opt-ls-v2/formal/train/acs/seed-81001/training_metrics.json",
+          "device": "NVIDIA RTX PRO 5000 Blackwell",
+          "precision": "fp32_fast",
+          "stage_mean_wall_seconds": [
+            25.147043257932335,
+            81.08814184164949,
+            418.6814868256023
+          ],
+          "total_cumulative_hours": 2.2997752189127803
+        },
+        {
+          "seed": 81002,
+          "source": "/vol/grid-solar/sgeusers/linbocheng/MTGP_ACO/runs/tsp500-2opt-ls-v2/formal/train/acs/seed-81002/training_metrics.json",
+          "device": "NVIDIA RTX PRO 5000 Blackwell",
+          "precision": "fp32_fast",
+          "stage_mean_wall_seconds": [
+            24.465748939729142,
+            84.84292669810092,
+            578.7688955941296
+          ],
+          "total_cumulative_hours": 2.984827278324972
+        },
+        {
+          "seed": 81003,
+          "source": "/vol/grid-solar/sgeusers/linbocheng/MTGP_ACO/runs/tsp500-2opt-ls-v2/formal/train/acs/seed-81003/training_metrics.json",
+          "device": "NVIDIA RTX PRO 5000 Blackwell",
+          "precision": "fp32_fast",
+          "stage_mean_wall_seconds": [
+            24.99249722713527,
+            76.0083567797963,
+            710.988744458529
+          ],
+          "total_cumulative_hours": 3.4888571558002472
+        }
+      ],
+      "stage_mean_wall_seconds": [
+        24.86842980826558,
+        80.64647510651557,
+        569.4797089594203
+      ],
+      "mean_total_cumulative_hours": 2.9244865510126665
+    },
+    {
+      "variant": "mmas",
+      "runs": [
+        {
+          "seed": 81001,
+          "source": "/vol/grid-solar/sgeusers/linbocheng/MTGP_ACO/runs/tsp500-2opt-ls-v2/formal/train/mmas/seed-81001/training_metrics.json",
+          "device": "NVIDIA RTX PRO 5000 Blackwell",
+          "precision": "fp32_fast",
+          "stage_mean_wall_seconds": [
+            33.83542947780418,
+            94.11938048784796,
+            510.0819810531956
+          ],
+          "total_cumulative_hours": 2.7892079910338765
+        },
+        {
+          "seed": 81002,
+          "source": "/vol/grid-solar/sgeusers/linbocheng/MTGP_ACO/runs/tsp500-2opt-ls-v2/formal/train/mmas/seed-81002/training_metrics.json",
+          "device": "NVIDIA RTX PRO 5000 Blackwell",
+          "precision": "fp32_fast",
+          "stage_mean_wall_seconds": [
+            36.2493059214709,
+            102.83012482310005,
+            469.7703070769397
+          ],
+          "total_cumulative_hours": 2.6796935253994887
+        },
+        {
+          "seed": 81003,
+          "source": "/vol/grid-solar/sgeusers/linbocheng/MTGP_ACO/runs/tsp500-2opt-ls-v2/formal/train/mmas/seed-81003/training_metrics.json",
+          "device": "NVIDIA RTX PRO 5000 Blackwell",
+          "precision": "fp32_fast",
+          "stage_mean_wall_seconds": [
+            36.872309839872955,
+            103.61871934710071,
+            402.7988714930601
+          ],
+          "total_cumulative_hours": 2.407622807482225
+        }
+      ],
+      "stage_mean_wall_seconds": [
+        35.652348413049346,
+        100.18940821934957,
+        460.8837198743985
+      ],
+      "mean_total_cumulative_hours": 2.6255081079718634
+    }
+  ]
+}

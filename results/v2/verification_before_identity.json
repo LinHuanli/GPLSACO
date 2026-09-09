@@ -1,0 +1,18 @@
+{
+  "implementation": "v2-warp-shared-parallel-archive-distance-table",
+  "date": "2026-09-09",
+  "host": "cuda10",
+  "device": "NVIDIA RTX A5000",
+  "gpu_uuid": "GPU-00ccd67e-cb18-e37e-938e-a6339356c950",
+  "ctest_passed": 20,
+  "ctest_total": 20,
+  "ctest_seconds": 74.51,
+  "python_passed": 250,
+  "python_skipped": 0,
+  "python_seconds": 32.56,
+  "coverage": "full CTest and Python suite with GPU and native LKH candidates enabled",
+  "raw_logs": [
+    "artifacts/v2/gpu-checks/ctest-final-distance.log",
+    "artifacts/v2/gpu-checks/pytest-final-distance.log"
+  ]
+}

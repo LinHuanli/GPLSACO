@@ -184,7 +184,9 @@ LocalSearchStats CpuTour::checklist_two_opt(const DistanceOrderedCandidates& can
                 }
                 const double other = kind == 0 ? distance_(b, neighbor) : distance_(neighbor, b);
                 const double closing = distance_(kind == 0 ? a_next : a_previous, neighbor);
-                const double gain = current_distance + other - ab - closing;
+                // 相邻边只会原样补回；明确赋数学上的零增益，避免浮点假改善循环。
+                const double gain = (neighbor == a || b == (kind == 0 ? a_next : a_previous))
+                    ? 0.0 : current_distance + other - ab - closing;
                 if (gain > best_gain) {
                     best_gain = gain;
                     move = kind == 0 ? std::array<Node, 4>{a_next, neighbor, a, b}

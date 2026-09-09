@@ -1,7 +1,7 @@
 import math
 
 import pytest
-from gp_faco.data import Instance, parse_record, point_set_hash, tour_cost, write_explicit_tsplib
+from gp_faco.data import Instance, parse_record, tour_cost, write_explicit_tsplib
 
 
 def test_closed_tour_and_label_separation():
@@ -34,7 +34,7 @@ def test_original_continuous_metric_and_point_permutation(tmp_path):
     instance = Instance("triangle", ((0.0, 0.0), (0.6, 0.0), (0.0, 0.8)))
     assert math.isclose(tour_cost(instance, (0, 1, 2)), 2.4)
     permuted = Instance("permuted", tuple(reversed(instance.coordinates)))
-    assert point_set_hash(instance) == point_set_hash(permuted)
+    assert math.isclose(tour_cost(instance, (0, 1, 2)), tour_cost(permuted, (0, 1, 2)))
     output = tmp_path / "triangle.tsp"
     write_explicit_tsplib(instance, output)
     assert "EXPLICIT" in output.read_text()

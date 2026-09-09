@@ -1,0 +1,363 @@
+{
+  "experiment_version": 2,
+  "origin": "preserved predeclared v1 controller families; solver settings supplied by faco_v2 and frozen protocol",
+  "calibration_policies": [
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 0,
+      "max_mne_level": 0,
+      "region": 0,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 0,
+      "max_mne_level": 0,
+      "region": 1,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 0,
+      "max_mne_level": 0,
+      "region": 2,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 0,
+      "max_mne_level": 0,
+      "region": 3,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 1,
+      "max_mne_level": 1,
+      "region": 0,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 1,
+      "max_mne_level": 1,
+      "region": 1,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 1,
+      "max_mne_level": 1,
+      "region": 2,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 1,
+      "max_mne_level": 1,
+      "region": 3,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 2,
+      "max_mne_level": 2,
+      "region": 0,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 2,
+      "max_mne_level": 2,
+      "region": 1,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 2,
+      "max_mne_level": 2,
+      "region": 2,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 2,
+      "max_mne_level": 2,
+      "region": 3,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 3,
+      "max_mne_level": 3,
+      "region": 0,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 3,
+      "max_mne_level": 3,
+      "region": 1,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 3,
+      "max_mne_level": 3,
+      "region": 2,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 3,
+      "max_mne_level": 3,
+      "region": 3,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 0,
+      "max_mne_level": 0,
+      "region": 0,
+      "restart_mode": "bernoulli",
+      "restart_period": 0,
+      "restart_probability": 0.1,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 1,
+      "max_mne_level": 1,
+      "region": 1,
+      "restart_mode": "bernoulli",
+      "restart_period": 0,
+      "restart_probability": 0.1,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 2,
+      "max_mne_level": 2,
+      "region": 2,
+      "restart_mode": "bernoulli",
+      "restart_period": 0,
+      "restart_probability": 0.1,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "static",
+      "mne_level": 3,
+      "max_mne_level": 3,
+      "region": 3,
+      "restart_mode": "bernoulli",
+      "restart_period": 0,
+      "restart_probability": 0.1,
+      "stagnation_step": 0,
+      "restart_stagnation": 0,
+      "restart_cooldown": 0
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "rule",
+      "mne_level": 0,
+      "max_mne_level": 3,
+      "region": 0,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 8,
+      "restart_stagnation": 32,
+      "restart_cooldown": 16
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "rule",
+      "mne_level": 1,
+      "max_mne_level": 3,
+      "region": 1,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 8,
+      "restart_stagnation": 32,
+      "restart_cooldown": 16
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "rule",
+      "mne_level": 2,
+      "max_mne_level": 3,
+      "region": 2,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 8,
+      "restart_stagnation": 32,
+      "restart_cooldown": 16
+    },
+    {
+      "policy_spec_id": 1,
+      "kind": "rule",
+      "mne_level": 3,
+      "max_mne_level": 3,
+      "region": 3,
+      "restart_mode": "none",
+      "restart_period": 0,
+      "restart_probability": 0.0,
+      "stagnation_step": 0,
+      "restart_stagnation": 32,
+      "restart_cooldown": 16
+    }
+  ],
+  "tuning_policy_grid": {
+    "mne_levels": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "regions": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "static": {
+      "periods": [
+        4,
+        8,
+        16,
+        32,
+        64
+      ],
+      "probabilities": [
+        0.01,
+        0.05,
+        0.1,
+        0.25
+      ]
+    },
+    "rule": {
+      "stagnation_steps": [
+        4,
+        16,
+        64
+      ],
+      "restart_thresholds": [
+        8,
+        32,
+        64
+      ],
+      "cooldowns": [
+        4,
+        16
+      ]
+    }
+  }
+}

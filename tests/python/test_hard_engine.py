@@ -8,7 +8,6 @@ import pytest
 from gp_faco.data import Instance
 from gp_faco.graph_matching import GraphSettings, engine_graph_spec, match_graphs
 from gp_faco.program_ir import Program
-from gp_faco.worker import coordinate_hash
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("GP_FACO_REQUIRE_CUDA") != "1", reason="需要已分配GPU"
@@ -27,7 +26,7 @@ def fixture():
         kind: {
             "prior_spec_id": 1,
             "dimension": 7,
-            "coordinate_sha256": coordinate_hash(problem),
+            "instance_id": problem.instance_id,
             "settings": {"kind": kind},
             "rows": [[{"to": (i + 1) % 7}] for i in range(7)],
         }
@@ -88,12 +87,13 @@ def test_graph_public_binding_rejects_ambiguous_nodes_and_failed_registration_is
         engine.evaluate_program(keys, seeds, 1.0, Program((0,), (4,)).to_dict())
 
 
-def test_graph_cache_integrity_and_unsupported_modes():
+def test_invalid_graph_nodes_and_unsupported_modes():
     native, xy, settings, _, graph = fixture()
     changed = copy.deepcopy(graph)
-    changed["backup"][0][0] = 7
+    changed["backup"][0][0] = 8
+    hard = native.FacoBatchEngine(7, 1, settings, "hard")
     with pytest.raises(ValueError):
-        engine_graph_spec(changed)
+        hard.register_graph_problem(11, xy, engine_graph_spec(changed))
     with pytest.raises(ValueError):
         native.FacoBatchEngine(7, 1, settings, "escape_v0")
     engine = native.FacoBatchEngine(7, 1, settings)

@@ -14,7 +14,7 @@ from gp_faco.fitness import score_panel
 from gp_faco.primitives import make_primitive_set
 from gp_faco.program_ir import Program, export_tree
 from gp_faco.training import TrainingSettings
-from gp_faco.worker import SolveTask, WorkerProtocol
+from gp_faco.worker import SolverSettings, SolveTask, WorkerProtocol
 
 
 def test_progress_is_versioned_and_survives_variation_and_restore():
@@ -25,7 +25,7 @@ def test_progress_is_versioned_and_survives_variation_and_restore():
         export_tree(tree)
     program = export_tree(tree, feature_spec_id=2)
     assert program.feature_spec_id == 2
-    assert program.sha256 != replace(program, feature_spec_id=1).sha256
+    assert program.key != replace(program, feature_spec_id=1).key
     assert export_tree(individual_from_program(program, grammar)) == program
     with pytest.raises(ValueError, match="特征版本"):
         individual_from_program(program, make_primitive_set())
@@ -41,7 +41,7 @@ def test_progress_is_versioned_and_survives_variation_and_restore():
                 ir = export_tree(individual)
                 assert ir.feature_spec_id == 2
                 evolution.assign(
-                    index, float(int(ir.sha256[:4], 16)), f"panel-{generation}", ir.sha256
+                    index, float(sum(ir.operand)), f"panel-{generation}", ir.identifier
                 )
             evolution.finish_generation()
         assert run.state_dict() == restored.state_dict()
@@ -56,11 +56,12 @@ def counted_fixture():
     problem = Instance("square", ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)))
     protocol = WorkerProtocol(
         "GPU-056fae3f-b504-efe0-2d9d-b1186860e643",
-        "unit-test",
+        "NVIDIA RTX A5000",
         "0",
-        "0" * 64,
+        "test-build",
         dimensions=(4,),
         colonies=1,
+        settings=SolverSettings(ants=32),
     )
     task = SolveTask(
         "counted",
@@ -73,8 +74,8 @@ def counted_fixture():
     label = Label((0, 1, 2, 3), 4.0)
     outcome = {
         "task_id": task.task_id(protocol),
-        "protocol_sha256": protocol.sha256,
-        "program_sha256": task.program.sha256,
+        "protocol_id": protocol.identifier,
+        "program_id": task.program.identifier,
         "dimension": 4,
         "occurrence_id": "counted",
         "status": "completed",
@@ -109,11 +110,13 @@ def counted_fixture():
 def test_counts_identity_and_fitness_have_no_hidden_time_cutoff():
     task, protocol, outcome, labels = counted_fixture()
     assert not score_panel(task, protocol, outcome, labels).failed
-    assert replace(task, evaluation_limit_per_colony=96).task_id(protocol) != task.task_id(protocol)
+    assert replace(task, evaluation_limit_per_colony=96).manifest(protocol) != task.manifest(
+        protocol
+    )
     with pytest.raises(ValueError, match="时间上限"):
         replace(task, budget_seconds=100.0)
     with pytest.raises(ValueError, match="整批"):
-        replace(task, evaluation_limit_per_colony=65).task_id(protocol)
+        replace(task, evaluation_limit_per_colony=65).manifest(protocol)
     for field, bad in (
         ("completed_tour_evaluations_per_colony", 63),
         ("total_tour_evaluations", 65),

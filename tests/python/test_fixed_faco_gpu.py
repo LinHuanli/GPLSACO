@@ -56,7 +56,7 @@ def test_invalid_configuration_and_boolean_task_ids_are_rejected():
     ext = backend()
     coordinates = np.random.default_rng(9).random((9, 2))
     settings = ext.FixedFacoSettings()
-    settings.ants = 0
+    settings.ants = 4097
     with pytest.raises(ValueError):
         ext.FixedFacoGpu(coordinates, 11, settings)
     settings.ants = 4
