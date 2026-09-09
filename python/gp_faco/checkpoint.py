@@ -1,4 +1,4 @@
-"""项目内JSON事务：版本、内容摘要与同目录原子替换，不反序列化pickle。"""
+"""项目内JSON检查点：记录状态并原子替换，不做内容摘要计算或校验。"""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 
-from gp_faco.worker import PROJECT, content_hash
+PROJECT = Path(__file__).resolve().parents[2]
 
 
 def atomic_json(path: Path, value: dict) -> None:
@@ -39,11 +39,9 @@ def atomic_json(path: Path, value: dict) -> None:
 def save_checkpoint(path: Path, state: dict) -> None:
     if type(state) is not dict:
         raise ValueError("checkpoint根状态必须为对象")
-    # JSON把整数键转换为字符串；先往返到实际存储结构再计算摘要，否则排序顺序可能改变。
+    # 统一JSON键表示，仍拒绝整数键和字符串键相撞后悄悄丢失状态。
     normalized = json.loads(json.dumps(state, allow_nan=False), object_pairs_hook=_unique_pairs)
-    atomic_json(
-        path, {"checkpoint_version": 1, "sha256": content_hash(normalized), "state": normalized}
-    )
+    atomic_json(path, {"checkpoint_version": 2, "state": normalized})
 
 
 def _unique_pairs(pairs):
@@ -60,12 +58,15 @@ def load_checkpoint(path: Path) -> dict:
     if not target.is_relative_to(PROJECT):
         raise ValueError("仅从GPLSACO内恢复checkpoint")
     envelope = json.loads(target.read_text(), object_pairs_hook=_unique_pairs)
+    if type(envelope) is not dict:
+        raise ValueError("checkpoint根结构必须为对象")
+    version = envelope.get("checkpoint_version")
     if (
-        set(envelope) != {"checkpoint_version", "sha256", "state"}
-        or type(envelope["checkpoint_version"]) is not int
-        or envelope["checkpoint_version"] != 1
-        or type(envelope["state"]) is not dict
-        or content_hash(envelope["state"]) != envelope["sha256"]
+        type(version) is not int
+        or version not in (1, 2)
+        or type(envelope.get("state")) is not dict
+        or (version == 2 and set(envelope) != {"checkpoint_version", "state"})
     ):
-        raise ValueError("checkpoint版本、结构或内容摘要不符")
+        raise ValueError("checkpoint版本或结构不符")
+    # 既有v1记录直接读取state，历史附加元数据不再参与恢复计算。
     return envelope["state"]
