@@ -9,7 +9,7 @@ option(GP_FACO_NATIVE "Build the external native FACO and diagnostic wrapper" ON
 option(GP_FACO_CUDA "Build CUDA solver and diagnostic targets" OFF)
 option(GP_FACO_PYTHON "Build pybind11 solver and scoring bindings" ON)
 
-add_library(gp_faco_core STATIC cpp/src/program_cpu.cpp cpp/src/faco_cpu.cpp cpp/src/prepared_problem.cpp cpp/src/sparse_graph.cpp cpp/src/control_cpu.cpp)
+add_library(gp_faco_core STATIC cpp/src/program_cpu.cpp cpp/src/faco_cpu.cpp cpp/src/prepared_problem.cpp cpp/src/sparse_graph.cpp cpp/src/control_cpu.cpp cpp/src/counted_state.cpp)
 set_target_properties(gp_faco_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(gp_faco_core PUBLIC cpp/include)
 target_compile_options(gp_faco_core PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
@@ -111,6 +111,11 @@ if(GP_FACO_CUDA)
     target_link_libraries(escape_engine_semantics PRIVATE gp_faco_cuda)
     add_test(NAME escape_engine_semantics COMMAND escape_engine_semantics
         "${CMAKE_CURRENT_BINARY_DIR}/escape_engine_results.json")
+    add_executable(state_fork_semantics tests/cpp/test_state_fork.cpp)
+    target_compile_options(state_fork_semantics PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
+    target_link_libraries(state_fork_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME state_fork_semantics COMMAND state_fork_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/state_fork_results.json")
 endif()
 
 if(GP_FACO_PYTHON)

@@ -315,6 +315,60 @@ py::dict batch_output(const gp_faco::BatchEvaluation& result, const std::string&
     return output;
 }
 
+template<class T> std::vector<T> state_buffer(const gp_faco::CountedState& state, const char* name) {
+    const auto entry = std::find_if(state.buffers.begin(), state.buffers.end(),
+        [&](const auto& b) { return b.name == name; });
+    if (entry == state.buffers.end() || entry->element_bytes != sizeof(T) || entry->planes != 1 ||
+        entry->bytes.size() != state.colonies * sizeof(T))
+        throw std::invalid_argument("快照观察字段与原生ABI不符");
+    std::vector<T> values(state.colonies); std::memcpy(values.data(), entry->bytes.data(), entry->bytes.size());
+    return values;
+}
+
+py::dict counted_state_output(const gp_faco::CountedState& state) {
+    state.validate();
+    py::dict out, settings;
+    out["state_spec_id"] = 1; out["native_abi_bound"] = true; out["checksum"] = state.checksum;
+    out["dimension"] = state.dimension; out["colonies"] = state.colonies;
+    out["completed_batches"] = state.completed_batches;
+    out["completed_evaluations_per_colony"] = state.completed_batches * state.settings.ants;
+    out["progress_evaluation_limit"] = state.progress_evaluation_limit;
+    out["experiment_mask"] = state.experiment_mask;
+#define SETTING(name) settings[#name] = state.settings.name
+    SETTING(ants); SETTING(primary_width); SETTING(backup_width); SETTING(ls_width);
+    SETTING(beta); SETTING(retention); SETTING(p_best); SETTING(epoch_source_probability);
+    SETTING(ls_evaluation_limit); SETTING(initial_ls_evaluation_limit);
+#undef SETTING
+    out["settings"] = settings;
+    const auto controls = state_buffer<gp_faco::ControllerState>(state, "controllers");
+    const auto regions = state_buffer<gp_faco::StartRegions>(state, "regions");
+    out["random_keys"] = state_buffer<std::uint64_t>(state, "keys");
+    py::list tasks, members, buffers;
+    for (gp_faco::Node i = 0; i < state.colonies; ++i) {
+        py::dict task, member;
+        task["instance_key"] = state.tasks[i].instance_key; task["seed"] = state.tasks[i].seed;
+        tasks.append(task);
+        member["incumbent_cost"] = state.incumbents[i].cost;
+        member["return_rate"] = controls[i].feedback.return_rate;
+        member["ls_work"] = controls[i].feedback.ls_work;
+        member["stagnant_batches"] = controls[i].feedback.stagnant_batches;
+        member["epoch_batches"] = controls[i].feedback.epoch_batches;
+        member["restarts"] = controls[i].feedback.restarts;
+        member["archive_size"] = controls[i].archive_size;
+        if (regions[i].count > gp_faco::region_capacity) throw std::invalid_argument("快照区域长度越界");
+        py::list keep_regions;
+        for (gp_faco::Node region = 0; region < 4; ++region)
+            keep_regions.append(std::vector<gp_faco::Node>(regions[i].nodes[0][region],
+                regions[i].nodes[0][region] + regions[i].count));
+        member["keep_regions"] = keep_regions; members.append(member);
+    }
+    for (const auto& buffer : state.buffers) {
+        py::dict value; value["name"] = buffer.name; value["bytes"] = buffer.bytes.size();
+        value["element_bytes"] = buffer.element_bytes; value["planes"] = buffer.planes; buffers.append(value);
+    }
+    out["tasks"] = tasks; out["members"] = members; out["buffers"] = buffers; return out;
+}
+
 py::dict profiling_output(const gp_faco::EvaluationProfile& profile) {
     py::dict result;
     result["profile_version"] = 1;
@@ -388,6 +442,22 @@ PYBIND11_MODULE(gp_faco_ext, module) {
         result["preparation_seconds"] = problem.preparation_seconds;
         return result;
     }, py::arg("coordinates").noconvert(), py::arg("settings"));
+    py::class_<gp_faco::CountedState>(module, "CountedState")
+        .def_static("from_bytes", [](const py::bytes& input) {
+            const auto text = py::cast<std::string>(input);
+            const std::vector<std::uint8_t> bytes(text.begin(), text.end());
+            py::gil_scoped_release release; return gp_faco::CountedState::deserialize(bytes);
+        }, py::arg("data"))
+        .def("to_bytes", [](const gp_faco::CountedState& state) {
+            std::vector<std::uint8_t> bytes;
+            { py::gil_scoped_release release; bytes = state.serialize(); }
+            return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+        })
+        .def("describe", &counted_state_output)
+        .def("select_colony", [](const gp_faco::CountedState& state, const py::object& colony) {
+            const auto index = read_node(colony);
+            py::gil_scoped_release release; return state.select_colony(index);
+        }, py::arg("colony"));
     py::class_<gp_faco::FacoBatchEngine>(module, "FacoBatchEngine")
         .def(py::init([](const py::object& n, const py::object& count,
                          const gp_faco::FixedFacoSettings& settings, const std::string& constraint_mode) {
@@ -614,6 +684,63 @@ PYBIND11_MODULE(gp_faco_ext, module) {
            py::arg("evaluation_limit_per_colony"), py::arg("program"), py::arg("policy"),
            py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX,
            py::kw_only(), py::arg("record_behavior") = false)
+        .def("capture_program_state", [](gp_faco::FacoBatchEngine& engine,
+                const Keys& keys, const Keys& seeds, const py::object& source_evaluations,
+                const py::object& capture_after, const py::dict& dictionary, const py::object& mask) {
+            if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size())
+                throw std::invalid_argument("捕获需要完整任务数组");
+            const auto program = read_program(dictionary);
+            const auto total = read_unsigned(source_evaluations), after = read_unsigned(capture_after);
+            const auto experiment_mask = read_node(mask);
+            std::vector<gp_faco::BatchTask> tasks;
+            for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            gp_faco::CountedState state; gp_faco::BatchEvaluation result;
+            { py::gil_scoped_release release;
+              result = engine.capture_program_state(tasks, total, after, program, state, experiment_mask); }
+            py::dict out; out["evaluation"] = batch_output(result, "cached");
+            out["state"] = py::cast(std::move(state)); return out;
+        }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
+           py::arg("source_evaluation_limit_per_colony"), py::arg("capture_after_evaluations"),
+           py::arg("program"), py::arg("experiment_mask") = UINT32_MAX)
+        .def("capture_baseline_state", [](gp_faco::FacoBatchEngine& engine,
+                const Keys& keys, const Keys& seeds, const py::object& source_evaluations,
+                const py::object& capture_after, const py::dict& dictionary, const py::object& mask) {
+            if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size())
+                throw std::invalid_argument("捕获需要完整任务数组");
+            const auto policy = read_baseline(dictionary);
+            const auto total = read_unsigned(source_evaluations), after = read_unsigned(capture_after);
+            const auto experiment_mask = read_node(mask);
+            std::vector<gp_faco::BatchTask> tasks;
+            for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            gp_faco::CountedState state; gp_faco::BatchEvaluation result;
+            { py::gil_scoped_release release;
+              result = engine.capture_baseline_state(tasks, total, after, policy, state, experiment_mask); }
+            py::dict out; out["evaluation"] = batch_output(result, "cached");
+            out["state"] = py::cast(std::move(state)); return out;
+        }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
+           py::arg("source_evaluation_limit_per_colony"), py::arg("capture_after_evaluations"),
+           py::arg("policy"), py::arg("experiment_mask") = UINT32_MAX)
+        .def("continue_program_state", [](gp_faco::FacoBatchEngine& engine,
+                const gp_faco::CountedState& state, const py::object& additional, const py::dict& dictionary) {
+            const auto program = read_program(dictionary); const auto limit = read_unsigned(additional);
+            gp_faco::BatchEvaluation result;
+            { py::gil_scoped_release release; result = engine.continue_program_state(state, limit, program); }
+            return batch_output(result, "cached");
+        }, py::arg("state"), py::arg("additional_evaluations_per_colony"), py::arg("program"))
+        .def("continue_baseline_state", [](gp_faco::FacoBatchEngine& engine,
+                const gp_faco::CountedState& state, const py::object& additional, const py::dict& dictionary,
+                const py::object& fork_seed, const py::object& region, const py::object& mne) {
+            const auto policy = read_baseline(dictionary); const auto limit = read_unsigned(additional);
+            gp_faco::ForkIntervention intervention;
+            intervention.enabled = !fork_seed.is_none();
+            if (intervention.enabled) intervention.seed = read_unsigned(fork_seed);
+            intervention.region = read_node(region); intervention.mne = read_node(mne);
+            gp_faco::BatchEvaluation result;
+            { py::gil_scoped_release release;
+              result = engine.continue_baseline_state(state, limit, policy, intervention); }
+            return batch_output(result, "cached");
+        }, py::arg("state"), py::arg("additional_evaluations_per_colony"), py::arg("policy"),
+           py::arg("fork_seed") = py::none(), py::arg("region") = 0, py::arg("mne") = 2)
         .def("run_program_diagnostic", [](gp_faco::FacoBatchEngine& engine, const Keys& keys,
                 const Keys& seeds, const py::dict& dictionary, const py::object& batches,
                 const py::object& ratio, const py::object& enabled, const py::object& mask,
