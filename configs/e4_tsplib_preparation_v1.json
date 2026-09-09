@@ -4,351 +4,299 @@
   "targets": [
     {
       "path": "test_dataset/tsp/tsplib/a280.txt",
-      "sha256": "2079dec59a481cc72a30036c89bd6e8e3bd8caaeace81582936b25b465d6cf25",
       "bytes": 6610,
       "instances": 1,
       "dimension": 280
     },
     {
       "path": "test_dataset/tsp/tsplib/berlin52.txt",
-      "sha256": "d54fc778c81a2bf218b660189d8b689a774ded3ec443e9f121cc200fd2bb5a90",
       "bytes": 1253,
       "instances": 1,
       "dimension": 52
     },
     {
       "path": "test_dataset/tsp/tsplib/bier127.txt",
-      "sha256": "fb97b48cae82baa5efbf0867ab0e2240b745a1f81bc07909b7df01271f03042e",
       "bytes": 3054,
       "instances": 1,
       "dimension": 127
     },
     {
       "path": "test_dataset/tsp/tsplib/ch130.txt",
-      "sha256": "891dd82863ae09dcf5d7623ba0234441cd54a5f41a2568d4de43609abdb7f081",
       "bytes": 3180,
       "instances": 1,
       "dimension": 130
     },
     {
       "path": "test_dataset/tsp/tsplib/ch150.txt",
-      "sha256": "cf243cb45bb5753bf3531bef8c600ac1f37a16d9febd2b6b5bd45a4106b9e265",
       "bytes": 3679,
       "instances": 1,
       "dimension": 150
     },
     {
       "path": "test_dataset/tsp/tsplib/d198.txt",
-      "sha256": "029644385e33e82ce1f0f6b499dfecf4a4b89c2afdf0df417460d0a0bdadbf50",
       "bytes": 4859,
       "instances": 1,
       "dimension": 198
     },
     {
       "path": "test_dataset/tsp/tsplib/d493.txt",
-      "sha256": "74882b2dcaa3b3c0af90644e85edb08aae4d0cf22a2bcfdf4c0ddad77264cf05",
       "bytes": 12209,
       "instances": 1,
       "dimension": 493
     },
     {
       "path": "test_dataset/tsp/tsplib/d657.txt",
-      "sha256": "b46e4599d7f040302cb16194e43acd0b7a8b41151849107678cfe012c3f427b1",
       "bytes": 16332,
       "instances": 1,
       "dimension": 657
     },
     {
       "path": "test_dataset/tsp/tsplib/eil101.txt",
-      "sha256": "02c627edd5efecf92971182140437cf2f1629c804d8c93c1e32bdaa84b261d15",
       "bytes": 2054,
       "instances": 1,
       "dimension": 101
     },
     {
       "path": "test_dataset/tsp/tsplib/eil51.txt",
-      "sha256": "4e72a6d1d4af706d708363d98120c0aa612ef2b58000c88a7de07a3db4aa6b03",
       "bytes": 954,
       "instances": 1,
       "dimension": 51
     },
     {
       "path": "test_dataset/tsp/tsplib/eil76.txt",
-      "sha256": "55aa8696ea8425e2e1a263885276a371a006710fc31e0388ad5660cd0a1d550b",
       "bytes": 1713,
       "instances": 1,
       "dimension": 76
     },
     {
       "path": "test_dataset/tsp/tsplib/fl417.txt",
-      "sha256": "95cf2c69c6d9c0448f37a0c9509ac5063c100fb69f80cffb60285d0fd8ecb4fc",
       "bytes": 10240,
       "instances": 1,
       "dimension": 417
     },
     {
       "path": "test_dataset/tsp/tsplib/gil262.txt",
-      "sha256": "c190a965eb270ca26cd758845a3196aba578dc652ee4da27c406875c2adb0f5a",
       "bytes": 6402,
       "instances": 1,
       "dimension": 262
     },
     {
       "path": "test_dataset/tsp/tsplib/kroA100.txt",
-      "sha256": "7324e2f5d236a701c6e1d63bbfd5633e5085cfa200882d35c2fa24d4731db7a1",
       "bytes": 2445,
       "instances": 1,
       "dimension": 100
     },
     {
       "path": "test_dataset/tsp/tsplib/kroA150.txt",
-      "sha256": "afe3fcf0568be1acbaeca1871e890aa36afddf49168d9b132a83718ca30a6f67",
       "bytes": 3732,
       "instances": 1,
       "dimension": 150
     },
     {
       "path": "test_dataset/tsp/tsplib/kroA200.txt",
-      "sha256": "3cf3a5af22600b31ab2c05aee42da48440fa05ec45a53295550afa53478001db",
       "bytes": 4996,
       "instances": 1,
       "dimension": 200
     },
     {
       "path": "test_dataset/tsp/tsplib/kroB100.txt",
-      "sha256": "3f136612b95d2dfd5e675cec2ee337007925b57c2b1b074e8a8a2481d840dcae",
       "bytes": 2430,
       "instances": 1,
       "dimension": 100
     },
     {
       "path": "test_dataset/tsp/tsplib/kroB150.txt",
-      "sha256": "555a2dd68dd3387e6da65c3e9cf70681e4f874108acfddf794692a9352c82a99",
       "bytes": 3713,
       "instances": 1,
       "dimension": 150
     },
     {
       "path": "test_dataset/tsp/tsplib/kroB200.txt",
-      "sha256": "1d2231cd822ba0069d4aaf3e4009d10b29578809479b44f5c4b52b212bf35ff3",
       "bytes": 4990,
       "instances": 1,
       "dimension": 200
     },
     {
       "path": "test_dataset/tsp/tsplib/kroC100.txt",
-      "sha256": "9fbf23eb150104ac7fe26a5fb94e273a8bf2cf63bef2e7220428c1f6757ca961",
       "bytes": 2453,
       "instances": 1,
       "dimension": 100
     },
     {
       "path": "test_dataset/tsp/tsplib/kroD100.txt",
-      "sha256": "ef8c17d66803ddd3922c560775c385785f32e3315bd78bb421402d409b525a7e",
       "bytes": 2459,
       "instances": 1,
       "dimension": 100
     },
     {
       "path": "test_dataset/tsp/tsplib/kroE100.txt",
-      "sha256": "446ae2679049a2abc03e3456a3fe79be0e8a9744de94044108f5533b96a371f0",
       "bytes": 2437,
       "instances": 1,
       "dimension": 100
     },
     {
       "path": "test_dataset/tsp/tsplib/lin105.txt",
-      "sha256": "c24c96f9665a62c0114bf06123028521012dba8aa384d55409ed06ea40bb055f",
       "bytes": 2570,
       "instances": 1,
       "dimension": 105
     },
     {
       "path": "test_dataset/tsp/tsplib/lin318.txt",
-      "sha256": "ef4d1c489ed5fb1e4da3d89911fb2c67bc4a78f624098cf746dddaad007f21d3",
       "bytes": 7889,
       "instances": 1,
       "dimension": 318
     },
     {
       "path": "test_dataset/tsp/tsplib/p654.txt",
-      "sha256": "c2a1a0479ea48acd740c229f3cbf4b4333c3895bb957f741f307e90d475c8b31",
       "bytes": 15821,
       "instances": 1,
       "dimension": 654
     },
     {
       "path": "test_dataset/tsp/tsplib/pcb442.txt",
-      "sha256": "0975f1983891a6a836fde9326da6c3741f035c406fcdb0195559b50bf14d3912",
       "bytes": 10960,
       "instances": 1,
       "dimension": 442
     },
     {
       "path": "test_dataset/tsp/tsplib/pr1002.txt",
-      "sha256": "8c3164814f1b5714fe4eebcf479b1c3e4e4c6741122f5e3427c70bbf12fcafa7",
       "bytes": 24758,
       "instances": 1,
       "dimension": 1002
     },
     {
       "path": "test_dataset/tsp/tsplib/pr107.txt",
-      "sha256": "9711d6ba98311da180f5ecc6057891524485134797df59ec1f1c6e834fa32d04",
       "bytes": 2506,
       "instances": 1,
       "dimension": 107
     },
     {
       "path": "test_dataset/tsp/tsplib/pr124.txt",
-      "sha256": "b196821afe904c2aa427fc1183b0da8f9f313f9015a4a53855d834dc8c0084ec",
       "bytes": 2906,
       "instances": 1,
       "dimension": 124
     },
     {
       "path": "test_dataset/tsp/tsplib/pr136.txt",
-      "sha256": "f2515f1809dd083bf5457781e725f297962c21213802349daf18d3f139528e65",
       "bytes": 3187,
       "instances": 1,
       "dimension": 136
     },
     {
       "path": "test_dataset/tsp/tsplib/pr144.txt",
-      "sha256": "d25376ca726eeb1188651e67e0b9c34b23b33edff71faa634764e029a323f3b2",
       "bytes": 3409,
       "instances": 1,
       "dimension": 144
     },
     {
       "path": "test_dataset/tsp/tsplib/pr152.txt",
-      "sha256": "b45d0305812048d48fe0015a657c694bf76a420723b7e411598dde8b2030d84f",
       "bytes": 3737,
       "instances": 1,
       "dimension": 152
     },
     {
       "path": "test_dataset/tsp/tsplib/pr226.txt",
-      "sha256": "3005d7ede3c743a08dc9e375aa7d082907d6027d43317090240575fc4043d4d2",
       "bytes": 5631,
       "instances": 1,
       "dimension": 226
     },
     {
       "path": "test_dataset/tsp/tsplib/pr264.txt",
-      "sha256": "43ad804d4546500e36d1ef54c4a1a9e5ec6b2e2405c6acd57cb29e5256b58298",
       "bytes": 6567,
       "instances": 1,
       "dimension": 264
     },
     {
       "path": "test_dataset/tsp/tsplib/pr299.txt",
-      "sha256": "1cf4d1357ec67093ff57d8f0b7f55004c3ec567b4ed3476b68bd0f9d6aadb003",
       "bytes": 7511,
       "instances": 1,
       "dimension": 299
     },
     {
       "path": "test_dataset/tsp/tsplib/pr439.txt",
-      "sha256": "ba9c592dd1297fe645b95dde8d430ac9b9a1a24cd712f4f54f184728e2055cf5",
       "bytes": 10560,
       "instances": 1,
       "dimension": 439
     },
     {
       "path": "test_dataset/tsp/tsplib/pr76.txt",
-      "sha256": "ce16eec37003cda1c2262867860126bb3a6625b69c5362c67f44a458e999c329",
       "bytes": 1784,
       "instances": 1,
       "dimension": 76
     },
     {
       "path": "test_dataset/tsp/tsplib/rat195.txt",
-      "sha256": "15a1e015cdd579aa3bae402593fc3ab0dc7f666373267979dfec00328fb160e5",
       "bytes": 4847,
       "instances": 1,
       "dimension": 195
     },
     {
       "path": "test_dataset/tsp/tsplib/rat575.txt",
-      "sha256": "22dbf727eb5f9137382def1a4bb5ef35fce96eaf37a65b53ee652af3a5e76211",
       "bytes": 14555,
       "instances": 1,
       "dimension": 575
     },
     {
       "path": "test_dataset/tsp/tsplib/rat783.txt",
-      "sha256": "87d71e6db59722e8ba2fce6416f7b90da131484998b038bae01cbd5647e2c3e4",
       "bytes": 19634,
       "instances": 1,
       "dimension": 783
     },
     {
       "path": "test_dataset/tsp/tsplib/rat99.txt",
-      "sha256": "dc1991f431ceca8ab54353a6d280b25db77ccd7a53773b6fe12d370b47207889",
       "bytes": 2394,
       "instances": 1,
       "dimension": 99
     },
     {
       "path": "test_dataset/tsp/tsplib/rd100.txt",
-      "sha256": "ee64e0cb694d5ab1bf716a43a9d260089aed60a546972ca3eb427b5190333a35",
       "bytes": 2424,
       "instances": 1,
       "dimension": 100
     },
     {
       "path": "test_dataset/tsp/tsplib/rd400.txt",
-      "sha256": "179aec47e5c7456348705d1a32711f4180d71b386b5050f8f0c3b7a0b068db7e",
       "bytes": 10009,
       "instances": 1,
       "dimension": 400
     },
     {
       "path": "test_dataset/tsp/tsplib/st70.txt",
-      "sha256": "bfc87d237171c8f9986c0dd0cbf68135580471f9927d9ed113b126a1467ea0bd",
       "bytes": 1688,
       "instances": 1,
       "dimension": 70
     },
     {
       "path": "test_dataset/tsp/tsplib/ts225.txt",
-      "sha256": "5ebeb6fe9dbe37ba0218667f506f98680652d761a805bc0b3123a2826a4a42d1",
       "bytes": 3841,
       "instances": 1,
       "dimension": 225
     },
     {
       "path": "test_dataset/tsp/tsplib/tsp225.txt",
-      "sha256": "b69d4a181b15625118331e7f8098db730c7f7ae2c2fb2eec9b4578970f359769",
       "bytes": 5432,
       "instances": 1,
       "dimension": 225
     },
     {
       "path": "test_dataset/tsp/tsplib/u159.txt",
-      "sha256": "69c7cfb1167801ad95763f82f50a9f4388c9b695cec4f0ed49a507462387de7c",
       "bytes": 2882,
       "instances": 1,
       "dimension": 159
     },
     {
       "path": "test_dataset/tsp/tsplib/u574.txt",
-      "sha256": "2af7450e9f8f9c81df901db155e6b8d4ca35233376dec7707b1491820251d9df",
       "bytes": 14329,
       "instances": 1,
       "dimension": 574
     },
     {
       "path": "test_dataset/tsp/tsplib/u724.txt",
-      "sha256": "1e2a6891f0823028c7906c01b49912c02a0b8a1965104a2383689851e953341b",
       "bytes": 18108,
       "instances": 1,
       "dimension": 724
     }
   ],
-  "source_archive_sha256": "0b0b9a2958ea0ac7c854bf2589b37b76b38b27bca04815d86489e4d76fa3ac61",
-  "source_index_sha256": "f8962d0a0d9268b011b66dee0d4cc038a3690746b2923e9eab617fcf12458587",
-  "optimal_lengths_source_sha256": "024f3968adbbe0275e9ee7f7b86ad5b12e553052e7ec3c0d3d8ef762d1732e8e",
   "coordinate_only_mapping": {
     "transforms": [
       "global_minmax",
@@ -364,5 +312,9 @@
     "exact_float32_match_preferred": true,
     "label_cost_used_to_select_transform": false
   },
-  "formal_test_released": false
+  "formal_test_released": false,
+  "source_archive": ".deps/tsplib/official-v1/ALL_tsp.tar.gz",
+  "source_index": ".deps/tsplib/official-v1/tspindex.html",
+  "optimal_lengths_source": ".deps/tsplib/official-v1/TSP-BEST.html",
+  "integrity_hash_checks": false
 }

@@ -4,7 +4,7 @@
 
 ## 完整目标与来源
 
-本地既有清单的49个TSPLIB文本全部纳入恢复，不按标签质量或方便程度选子集。原文是归一化坐标；官方ALL_tsp.tar.gz已包含全部49个同名原实例，头部距离类型均为EUC_2D。来源为[官方实例索引](https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/tspindex.html)、[官方长度表](https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/TSP-BEST.html)与[格式文档](https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/tsp95.pdf)。下载响应、UTC时间、原压缩包和逐文件SHA保存在本工作树内；不向外部Datasets写入。
+本地既有清单的49个TSPLIB文本全部纳入恢复，不按标签质量或方便程度选子集。原文是归一化坐标；官方ALL_tsp.tar.gz已包含全部49个同名原实例，头部距离类型均为EUC_2D。来源为[官方实例索引](https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/tspindex.html)、[官方长度表](https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/TSP-BEST.html)与[格式文档](https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/tsp95.pdf)。下载响应、UTC时间和原压缩包保存在本工作树内；不向外部Datasets写入。
 
 严格解析原NAME、TYPE、DIMENSION、EDGE_WEIGHT_TYPE、坐标/权重及节点编号，保留原始坐标和顺序，不逆推近似整数坐标。DISPLAY_DATA不能用于距离，非对称、固定边或未支持约束必须明确拒绝。文件名不足以确定距离类型。求解器对象只含无标签实例和距离身份；COMMENT、最优长度和tour存于数据审计/外部evaluator，不进入worker。
 
@@ -12,7 +12,7 @@
 
 原EUC_2D使用sqrt(dx²+dy²)后floor(d+0.5)，不用Python的ties-to-even round，也不先归一化。CPU解析/核验层同时按官方定义覆盖CEIL_2D、ATT、GEO及对称EXPLICIT的九种矩阵布局；GEO的度数截断采用[官方FAQ的纠正](https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/TSPFAQ.html)，不是旧PDF中的nint。非自环距离严格按定义计算；对角为接口约定0，合法tour不使用自环，GEO独立oracle比较分开标明该约定。
 
-本地49个目标的正式原生适配必须完整覆盖EUC_2D。其他CPU已支持的距离不自动宣称原生Engine已支持；后续若扩大正式实例集合，必须另行通过对应CPU/CUDA一致性核验。用未修改的外部LKH-3.0.13 Distance.c编译项目内只读距离oracle，逐边对照全部49个目标，并重算所有可取得的官方tour与本地可映射tour。外部源码和编译命令保留完整指纹。
+本地49个目标的正式原生适配必须完整覆盖EUC_2D。其他CPU已支持的距离不自动宣称原生Engine已支持；后续若扩大正式实例集合，必须另行通过对应CPU/CUDA一致性核验。用未修改的外部LKH-3.0.13 Distance.c编译项目内只读距离oracle，逐边对照全部49个目标，并重算所有可取得的官方tour与本地可映射tour。记录外部源码路径、编译器与编译命令，不计算完整性摘要。
 
 ## 归一化文件与标签映射
 
