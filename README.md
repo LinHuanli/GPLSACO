@@ -1,52 +1,28 @@
 # GPLSACO / GP-FACO
 
-研究局部搜索之上的结构控制：用一棵遗传编程树选择 FACO 的重启、扰动起始区域和原生 MNE 阈值。研究依据为 [v4 方案](docs/design/GP_ACO_TSP_Research_Proposal_v4.md)，不预设 GP、重启或图外探索一定有收益。
+用遗传编程学习FACO的重启、扰动起始区域和MNE阈值，研究反馈、两类控制的协同、候选图出口和跨规模迁移。
 
-**状态：主底座GP、worker和完整DEAP训练/验证/恢复已通过当前开发验收。尚无正式训练结果或 E1–E4 结论。**
+**先读：[实验进展总览：做了什么、参数怎么设、现在有什么结果](docs/reports/实验进展总览_2026-09-09.md)。**
 
-按用户最新要求，进化与ACO主实验按评价次数终止，默认训练入口不设求解秒数上限。原生次数入口、`progress`特征版本、完整训练及恢复已通过[开发验收](docs/reports/2026-09-08_evaluation_counts.md)；计数口径和正式冻结顺序见[最新协议](docs/planning/12_evaluation_count_protocol.md)。
+当前E1和E3已进入正式训练，四组E3 Static调参完成；尚无完整GP正式测试结论。训练进度已保存，正在取消运行管理中的重复完整性校验。恢复后只使用空闲RTX A5000，进化和ACO按evaluation次数，不设算法墙钟上限。
 
-- [详细研究计划与阅读顺序](docs/README.md)
-- [准备情况、实际证据和下一步](docs/reports/progress.md)
-- [环境、GPU 与复现实务](docs/planning/08_execution_and_resources.md)
-- [数据与标签协议](docs/planning/02_data_and_labels.md)
-- [可复核的启动结果](docs/reports/2026-09-08_bootstrap.md)
-- [主池划分与CPU FACO语义核验](docs/reports/2026-09-08_data_and_cpu_semantics.md)
-- [CUDA构造与局部搜索操作核验](docs/reports/2026-09-08_cuda_operations.md)
-- [固定迭代GPU FACO与开发池结果](docs/reports/2026-09-08_fixed_faco.md)
-- [固定并发Engine、预算扣费与截止核验](docs/reports/2026-09-08_batch_engine.md)
-- [Hard全新增边与受限CPU/CUDA操作核验](docs/reports/2026-09-08_hard_operations.md)
-- [独立E3分支：完整Hard/Escape与匹配图工程验收](https://github.com/LinHuanli/GPLSACO/blob/7c442af1247241bb4b8bcd9c1f7430041398f53b/docs/reports/2026-09-09_escape_engine.md)
-- [独立E3分支：图worker与四条件开发训练/恢复验收](https://github.com/LinHuanli/GPLSACO/blob/ca7b7c9ef3df91b3126f6ebddf68e6f7197fe302/docs/reports/2026-09-09_graph_worker.md)
-- [独立E3分支：正式协议与2,296实例完整成对图准备](https://github.com/LinHuanli/GPLSACO/blob/c12120199aca2595f57a5eca8b433e49949cd95c/docs/reports/2026-09-09_e3_formal_preparation.md)
-- [主底座GP控制、档案、完整重启与开发计时](docs/reports/2026-09-08_control_engine.md)
-- [常驻GPU worker、任务身份与外部fitness](docs/reports/2026-09-08_worker.md)
-- [真实DEAP训练、固定验证与checkpoint恢复](docs/reports/2026-09-08_training.md)
-- [完整动作成本剖析与旧时间入口校准](docs/reports/2026-09-08_profiling.md)
-- [评价次数入口、progress版本与实际训练恢复](docs/reports/2026-09-08_evaluation_counts.md)
-- [Static/Rule原生共同底座验收](docs/reports/2026-09-08_baselines.md)
-- [基线多候选搜索、统一验证与实际恢复](docs/reports/2026-09-08_configuration_search.md)
-- [构建、CPU/GPU 检查与原生试跑命令](docs/reports/reproduce.md)
+- [当前进度与下一步](docs/reports/progress.md)
+- [研究计划与文档导航](docs/README.md)
+- [原始v4研究方案](docs/design/GP_ACO_TSP_Research_Proposal_v4.md)
+- [当前资源和运行规则](docs/planning/29_runtime_simplification.md)
 
-已完整核验500/1K主池128,416条记录并发布划分。主底座GP Engine已接通区域/十二特征、实际动作、档案和完整重启。RTX A5000次数模式开发训练8×3的50任务完成409,600次tour evaluation，1,600条路线及恢复通过独立核验。Static/Rule原生接口已接入同一底座，32组等动作GP轨迹一致；原生回归12项CTest；基线多候选搜索/恢复新增后122项Python通过。成本矩阵及旧计时结果另保留原身份。正式次数档、Static/Rule调参、G4冻结及E1–E4仍待完成。
+## 项目目录
 
-## 目录
+| 目录 | 内容 |
+|---|---|
+| docs/design | 原始研究方案 |
+| docs/planning、docs/experiments | 参数、方法和E1–E4设计 |
+| docs/reports | 实测结果与当前总览；历史报告保留当时状态 |
+| python/gp_faco | 数据、GP进化、外部评价和任务管理 |
+| cpp、cuda | CPU参考、CUDA求解和绑定 |
+| configs | 实验参数和当前运行规则 |
+| scripts、tests | 实验入口与必要的实现检查 |
+| provenance | 历史来源记录、第三方声明及已选参数 |
+| artifacts、build、.venv、.tmp | 本地结果、构建、环境和临时工作树，不提交原始数据与二进制 |
 
-```text
-docs/design/          原始研究方案（保留原文）
-docs/planning/        决策、接口、验收和资源计划
-docs/experiments/     E1–E4 独立实验协议
-docs/reports/         实测报告和进度
-python/gp_faco/       数据、DEAP、程序 IR、外部评价
-cpp/include/gp_faco/  C++ 公共契约
-cpp/src/             CPU 参考与绑定
-cuda/                CUDA 实现
-scripts/             构建、审计、实验入口
-configs/             显式配置；pilot 与正式冻结配置分离
-provenance/          来源指纹、环境锁和第三方声明
-tests/               科学正确性与跨后端校验
-artifacts/           本地产物，不进入 Git
-build/ .venv/ .tmp/   本地构建、环境、临时文件，不进入 Git
-```
-
-外部数据和参考实现按路径读取，不在其目录运行产生文件的构建或实验命令。仓库为 <https://github.com/LinHuanli/GPLSACO>。
+所有工作都在本项目目录内。外部Datasets和references只读。历史方案中的文件摘要要求与旧GPU授权已由最新运行规则替代。

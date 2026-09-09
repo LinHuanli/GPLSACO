@@ -1,0 +1,350 @@
+{
+  "observed_at_utc": "2026-09-09T00:35:10.148573+00:00",
+  "current_gpu_jobs": 0,
+  "active_waiters": 0,
+  "allowed_gpu_models": [
+    "NVIDIA RTX A5000"
+  ],
+  "pause_reason": "remove repeated integrity checks before resuming",
+  "E1": [
+    {
+      "name": "GP-Full-1103",
+      "completed_generations": 12,
+      "current_generation_index": 12,
+      "calls": 3279,
+      "FE": 429785088,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": true,
+      "run_directory": "artifacts/e1/training-v1/GP-Full-1103"
+    },
+    {
+      "name": "GP-Full-2207",
+      "completed_generations": 12,
+      "current_generation_index": 12,
+      "calls": 3079,
+      "FE": 403570688,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": true,
+      "run_directory": "artifacts/e1/training-v1/GP-Full-2207"
+    },
+    {
+      "name": "GP-Full-3313",
+      "completed_generations": 14,
+      "current_generation_index": 14,
+      "calls": 3796,
+      "FE": 497549312,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": "artifacts/e1/training-v1/GP-Full-3313"
+    },
+    {
+      "name": "GP-Full-4409",
+      "completed_generations": 14,
+      "current_generation_index": 14,
+      "calls": 3730,
+      "FE": 488898560,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": "artifacts/e1/training-v1/GP-Full-4409"
+    },
+    {
+      "name": "GP-Full-5519",
+      "completed_generations": 14,
+      "current_generation_index": 14,
+      "calls": 3619,
+      "FE": 474349568,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": "artifacts/e1/training-v1/GP-Full-5519"
+    },
+    {
+      "name": "GP-NoFeedback-1103",
+      "completed_generations": 15,
+      "current_generation_index": 15,
+      "calls": 3966,
+      "FE": 519831552,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": "artifacts/e1/training-v1/GP-NoFeedback-1103"
+    },
+    {
+      "name": "GP-NoFeedback-2207",
+      "completed_generations": 13,
+      "current_generation_index": 13,
+      "calls": 3574,
+      "FE": 468451328,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": "artifacts/e1/training-v1/GP-NoFeedback-2207"
+    },
+    {
+      "name": "GP-NoFeedback-3313",
+      "completed_generations": 15,
+      "current_generation_index": 15,
+      "calls": 3976,
+      "FE": 521142272,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": "artifacts/e1/training-v1/GP-NoFeedback-3313"
+    },
+    {
+      "name": "GP-NoFeedback-4409",
+      "completed_generations": 15,
+      "current_generation_index": 15,
+      "calls": 4018,
+      "FE": 526647296,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": "artifacts/e1/training-v1/GP-NoFeedback-4409"
+    },
+    {
+      "name": "GP-NoFeedback-5519",
+      "completed_generations": 25,
+      "current_generation_index": 25,
+      "calls": 6598,
+      "FE": 864813056,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": "artifacts/e1/training-v1/GP-NoFeedback-5519"
+    }
+  ],
+  "E3": [
+    {
+      "name": "GP-POPMUSIC-Escape-1103",
+      "completed_generations": 8,
+      "current_generation_index": 8,
+      "calls": 2092,
+      "FE": 274202624,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-POPMUSIC-Escape-1103"
+    },
+    {
+      "name": "GP-POPMUSIC-Escape-2207",
+      "completed_generations": 7,
+      "current_generation_index": 7,
+      "calls": 1916,
+      "FE": 251133952,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-POPMUSIC-Escape-2207"
+    },
+    {
+      "name": "GP-POPMUSIC-Escape-3313",
+      "completed_generations": 4,
+      "current_generation_index": 4,
+      "calls": 1139,
+      "FE": 149291008,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": true,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-POPMUSIC-Escape-3313"
+    },
+    {
+      "name": "GP-POPMUSIC-Escape-4409",
+      "completed_generations": 5,
+      "current_generation_index": 5,
+      "calls": 1426,
+      "FE": 186908672,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-POPMUSIC-Escape-4409"
+    },
+    {
+      "name": "GP-POPMUSIC-Escape-5519",
+      "completed_generations": 6,
+      "current_generation_index": 6,
+      "calls": 1569,
+      "FE": 205651968,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-POPMUSIC-Escape-5519"
+    },
+    {
+      "name": "GP-POPMUSIC-Hard-1103",
+      "completed_generations": 14,
+      "current_generation_index": 14,
+      "calls": 3719,
+      "FE": 487456768,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-POPMUSIC-Hard-1103"
+    },
+    {
+      "name": "GP-POPMUSIC-Hard-2207",
+      "completed_generations": 8,
+      "current_generation_index": 8,
+      "calls": 2157,
+      "FE": 282722304,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-POPMUSIC-Hard-2207"
+    },
+    {
+      "name": "GP-POPMUSIC-Hard-3313",
+      "completed_generations": 2,
+      "current_generation_index": 2,
+      "calls": 591,
+      "FE": 77463552,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-POPMUSIC-Hard-3313"
+    },
+    {
+      "name": "GP-POPMUSIC-Hard-4409",
+      "completed_generations": 7,
+      "current_generation_index": 7,
+      "calls": 2026,
+      "FE": 265551872,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-POPMUSIC-Hard-4409"
+    },
+    {
+      "name": "GP-POPMUSIC-Hard-5519",
+      "completed_generations": 6,
+      "current_generation_index": 6,
+      "calls": 1632,
+      "FE": 213909504,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-POPMUSIC-Hard-5519"
+    },
+    {
+      "name": "GP-alpha-Escape-1103",
+      "completed_generations": 13,
+      "current_generation_index": 13,
+      "calls": 3353,
+      "FE": 439484416,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-alpha-Escape-1103"
+    },
+    {
+      "name": "GP-alpha-Escape-2207",
+      "completed_generations": 7,
+      "current_generation_index": 7,
+      "calls": 1888,
+      "FE": 247463936,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-alpha-Escape-2207"
+    },
+    {
+      "name": "GP-alpha-Escape-3313",
+      "completed_generations": 3,
+      "current_generation_index": 3,
+      "calls": 774,
+      "FE": 101449728,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-alpha-Escape-3313"
+    },
+    {
+      "name": "GP-alpha-Escape-4409",
+      "completed_generations": 8,
+      "current_generation_index": 8,
+      "calls": 2049,
+      "FE": 268566528,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-alpha-Escape-4409"
+    },
+    {
+      "name": "GP-alpha-Escape-5519",
+      "completed_generations": 9,
+      "current_generation_index": 9,
+      "calls": 2528,
+      "FE": 331350016,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-alpha-Escape-5519"
+    },
+    {
+      "name": "GP-alpha-Hard-1103",
+      "completed_generations": 11,
+      "current_generation_index": 11,
+      "calls": 3033,
+      "FE": 397541376,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-alpha-Hard-1103"
+    },
+    {
+      "name": "GP-alpha-Hard-2207",
+      "completed_generations": 4,
+      "current_generation_index": 4,
+      "calls": 1178,
+      "FE": 154402816,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-alpha-Hard-2207"
+    },
+    {
+      "name": "GP-alpha-Hard-3313",
+      "completed_generations": 7,
+      "current_generation_index": 7,
+      "calls": 1804,
+      "FE": 236453888,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-alpha-Hard-3313"
+    },
+    {
+      "name": "GP-alpha-Hard-4409",
+      "completed_generations": 8,
+      "current_generation_index": 8,
+      "calls": 2221,
+      "FE": 291110912,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-alpha-Hard-4409"
+    },
+    {
+      "name": "GP-alpha-Hard-5519",
+      "completed_generations": 9,
+      "current_generation_index": 9,
+      "calls": 2384,
+      "FE": 312475648,
+      "failed_solves": 0,
+      "phase": "training",
+      "pending": false,
+      "run_directory": ".tmp/worktrees/e3-candidate-export/artifacts/e3/runs-v1/GP-alpha-Hard-5519"
+    }
+  ],
+  "baseline": {
+    "calls": 3467,
+    "FE": 454426624,
+    "phase": "search",
+    "failed_solves": 0
+  },
+  "formal_test_released": false
+}
