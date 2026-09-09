@@ -2,11 +2,11 @@
 
 用遗传编程学习 FACO 的局部扰动与重启控制，研究反馈价值、两类控制的协同、候选图出口和跨规模迁移。
 
-**本轮入口：[单树与三树预实验——设置、实时进度、曲线和个体解释](docs/reports/单树与三树预实验.md)。** 历史依据和已有FACO复现见[实验说明与结果](docs/reports/实验说明与结果.md)。
+**本轮入口：[单树与三树50代实验——参数、曲线、比较和个体解释](docs/reports/单树与三树50代实验.md)。** 已完成的10代预实验见[分析结论](docs/reports/预实验结论与后续加速.md)。
 
 当前执行 v2：蚂蚁数采用 2022 FACO 论文公式，只使用空闲 RTX A5000，ACO 和 GP 按评价次数运行。旧的 32 蚂蚁训练只读保存；新训练必须先确定数值后端、开发集训练预算并准备两类配对 FACO baseline。已有六个 TSPLIB 实例各 30 次的原始 FACO 复现结果；GP 正式测试尚未执行。
 
-当前轮次为 **TSP500，修复后的单树/条件三树各3 seed×128个体×10代**，每实例1个ACO seed、1000迭代训练。使用全部空闲A5000的共享任务池；g5/g10轻量开发监控，结束后仅比较g10冠军。旧50代轮次已暂停，本预实验不会自动进入正式val/test。运行 `.venv/bin/python scripts/run_representation_pilot.py --launch` 启动，恢复用 `--resume --launch`；参数与论文依据见[本轮协议](docs/experiments/representation_pilot_v3.md)。
+当前轮次为 **TSP500，修复后的单树/条件三树各3 seed×128个体×50代，从头初始化**，每实例1个ACO seed、1000迭代训练。使用全服务器空闲A5000；每5代轻量开发监控，结束后两级验证选模，六个Controller冻结后自动测试TSP500和TSP1000。运行 `.venv/bin/python scripts/run_representation_campaign.py --launch`，恢复用 `--resume --launch`；参数与依据见[本轮协议](docs/experiments/representation_50gen_v3.md)。
 
 - [当前进度](docs/reports/progress.md)
 - [文档导航](docs/README.md)

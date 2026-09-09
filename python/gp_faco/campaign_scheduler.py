@@ -328,7 +328,8 @@ class CampaignScheduler:
         for key, assigned in list(self.active.items()):
             path = self.directory / "jobs" / key
             runtime = read(path / "runtime.json")
-            result = read(path / "result.json") if (path / "result.json").exists() else None
+            # 结果原子发布后只看存在性；具体消费方读取一次，不在调度轮询解析大tour。
+            result = (path / "result.json").exists()
             if result:
                 self.states[key] = "completed"
                 self.active.pop(key)
@@ -338,12 +339,16 @@ class CampaignScheduler:
                 continue
             if (
                 runtime
-                and runtime["status"] == "running"
+                and runtime["status"] in ("assigned", "running")
                 and (time.monotonic() < self._next_liveness.get(key, 0))
             ):
                 continue
             alive = process_alive(runtime) if runtime else None
             self._next_liveness[key] = time.monotonic() + 60
+            if not alive:
+                # 远程查询期间进程可能刚完成。刷新边界记录，避免把正常退出误记为重试。
+                result = (path / "result.json").exists()
+                runtime = read(path / "runtime.json")
             if result and runtime and not alive:
                 self.states[key] = "completed"
                 self.active.pop(key)
@@ -358,7 +363,11 @@ class CampaignScheduler:
                 if time.time() - assigned["launched_unix"] < 60:
                     continue
                 try:
-                    if job_lock_active(assigned["host"], path):
+                    lock_directory = (
+                        self.directory / "workers" / assigned["gpu_uuid"]
+                        if assigned.get("persistent_worker") else path
+                    )
+                    if job_lock_active(assigned["host"], lock_directory):
                         continue
                 except (subprocess.SubprocessError, OSError, ValueError):
                     continue

@@ -10,6 +10,13 @@ option(GP_FACO_CUDA "Build CUDA solver and diagnostic targets" OFF)
 option(GP_FACO_PYTHON "Build pybind11 solver and scoring bindings" ON)
 set(GP_FACO_SEARCH_NUMERIC "exact" CACHE STRING "Search arithmetic: exact, fp32, fp32_fast")
 set_property(CACHE GP_FACO_SEARCH_NUMERIC PROPERTY STRINGS exact fp32 fp32_fast)
+set(GP_FACO_WARPS_PER_BLOCK "2" CACHE STRING "Ant warps per production block: 2, 4, 8")
+set_property(CACHE GP_FACO_WARPS_PER_BLOCK PROPERTY STRINGS 2 4 8)
+option(GP_FACO_PARALLEL_LS_PREFIX "Parallel unrestricted warp LS candidate prefix" ON)
+option(GP_FACO_SHARED_ANT_FLAGS "Keep warp ant visited/queued flags in shared memory" ON)
+if(NOT GP_FACO_WARPS_PER_BLOCK MATCHES "^(2|4|8)$")
+    message(FATAL_ERROR "Ant warps per block must be 2, 4 or 8")
+endif()
 if(NOT GP_FACO_SEARCH_NUMERIC MATCHES "^(exact|fp32|fp32_fast)$")
     message(FATAL_ERROR "Unknown search arithmetic profile")
 endif()
@@ -52,6 +59,10 @@ if(GP_FACO_CUDA)
     set_target_properties(gp_faco_cuda PROPERTIES
         CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON POSITION_INDEPENDENT_CODE ON)
     target_include_directories(gp_faco_cuda PUBLIC cpp/include)
+    target_compile_definitions(gp_faco_cuda PRIVATE
+        GPFACO_WARPS_PER_BLOCK=${GP_FACO_WARPS_PER_BLOCK}
+        GPFACO_PARALLEL_LS_PREFIX=$<BOOL:${GP_FACO_PARALLEL_LS_PREFIX}>
+        GPFACO_SHARED_ANT_FLAGS=$<BOOL:${GP_FACO_SHARED_ANT_FLAGS}>)
     target_compile_options(gp_faco_cuda PRIVATE
         $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false;--generate-line-info>)
     if(NOT GP_FACO_SEARCH_NUMERIC STREQUAL "exact")

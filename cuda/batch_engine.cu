@@ -86,7 +86,10 @@ struct FacoBatchEngine::Impl {
             "Escape形状超过冻结16/64/20行宽或随机ant域容量");
         require(count >= 1 && count <= 128 && population >= 1 && population <= 128,
                 "面板和种群大小分别必须在1..128");
-        require(population == 1 || (mode == ConstraintMode::Unrestricted && n <= 1500 && config.ants % 4 == 0),
+        const bool warp_workspace_fits = static_cast<std::size_t>(n) * cuda_detail::ant_warps_per_block *
+            cuda_detail::ant_shared_bytes_per_node + sizeof(cuda_detail::State) * cuda_detail::ant_warps_per_block <= 48 * 1024;
+        require(population == 1 || (mode == ConstraintMode::Unrestricted && n <= 1500 &&
+                config.ants % cuda_detail::ant_warps_per_block == 0 && warp_workspace_fits),
                 "种群展开支持 n<=1500、完整 warp 蚂蚁组的普通 FACO");
         const bool compact = population > 1;
         const std::size_t nodes = static_cast<std::size_t>(n) * colonies;
@@ -962,18 +965,23 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
                     p.profiling->cycles.data(), construction_new_edges.data(), p.queued.data(),
                     p.constraint_mode == ConstraintMode::Escape ? nullptr : p.ls_distances.data(), cached_parent_costs);
             } else if constexpr (std::is_same_v<std::decay_t<decltype(allowed)>, UnrestrictedEdges>) {
-                if (final_only && p.n <= 1500 && ants % 4 == 0) {
-                // 一 warp 一条路线、每 block 四条路线；只改变并行协作布局。
+                if (final_only && p.n <= 1500 && ants % cuda_detail::ant_warps_per_block == 0 &&
+                    static_cast<std::size_t>(p.n) * cuda_detail::ant_warps_per_block *
+                        cuda_detail::ant_shared_bytes_per_node +
+                        sizeof(cuda_detail::State) * cuda_detail::ant_warps_per_block <= 48 * 1024) {
+                // 一 warp 一条路线；block中蚂蚁数由独立性能测量选定。
                 if (p.population_size > 1) {
                 cuda_detail::construct_and_search<decltype(distance), decltype(view), decltype(allowed), false, true, true>
-                    <<<ants / 4, 128, static_cast<std::size_t>(p.n) * 4 * 3 * sizeof(std::uint16_t)>>>(distance, p.ls.data(), p.n, c.ls_width,
+                    <<<ants / cuda_detail::ant_warps_per_block, 32 * cuda_detail::ant_warps_per_block,
+                       static_cast<std::size_t>(p.n) * cuda_detail::ant_warps_per_block * cuda_detail::ant_shared_bytes_per_node>>>(distance, p.ls.data(), p.n, c.ls_width,
                     p.parent.data(), view, p.targets.data(), c.ls_evaluation_limit, p.tours.data(),
                     p.positions.data(), p.parent_position.data(), nullptr, p.pending.data(),
                     p.gains.data(), nullptr, p.info.data(), p.visited.data(), allowed,
                     nullptr, nullptr, p.queued.data(), p.ls_distances.data(), cached_parent_costs);
                 } else {
                 cuda_detail::construct_and_search<decltype(distance), decltype(view), decltype(allowed), false, true>
-                    <<<ants / 4, 128, static_cast<std::size_t>(p.n) * 4 * 3 * sizeof(std::uint16_t)>>>(distance, p.ls.data(), p.n, c.ls_width,
+                    <<<ants / cuda_detail::ant_warps_per_block, 32 * cuda_detail::ant_warps_per_block,
+                       static_cast<std::size_t>(p.n) * cuda_detail::ant_warps_per_block * cuda_detail::ant_shared_bytes_per_node>>>(distance, p.ls.data(), p.n, c.ls_width,
                     p.parent.data(), view, p.targets.data(), c.ls_evaluation_limit, p.tours.data(),
                     p.positions.data(), p.parent_positions.data(), p.scratch.data(), p.pending.data(),
                     p.gains.data(), nullptr, p.info.data(), p.visited.data(), allowed,

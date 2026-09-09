@@ -186,6 +186,10 @@ class PopulationScheduler(CampaignScheduler):
         self.active[key] = assigned
         self.states[key] = "running"
         worker = read(self.directory / "workers" / device["uuid"] / "runtime.json")
+        # 先由协调器发布已派单进程记录，避免远端首次创建文件时的可见性延迟被误判为未启动。
+        atomic_json(path / "runtime.json", {
+            **worker, "job": key, "attempt": assigned["attempt"], "status": "assigned",
+            "assigned_unix": assigned["launched_unix"]})
         atomic_json(self.directory / "workers" / device["uuid"] / "request.json", {
             "job": key, "attempt": assigned["attempt"], "worker_pid": worker["pid"], "worker_start_ticks": worker["start_ticks"]})
 

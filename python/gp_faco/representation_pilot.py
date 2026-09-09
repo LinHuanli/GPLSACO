@@ -1,4 +1,4 @@
-"""三seed×两种表示的10代预实验；独立命名、可恢复、永不进入正式val/test。"""
+"""两种表示共享的进化和GPU执行；10代预实验与50代完整流程由各自入口限定。"""
 
 import json
 import math
@@ -222,8 +222,11 @@ def solve_gpu_job(directory, job, session):
     with source() as data:
         problems = {name: data.load_instance(name) for name, _ in pairs}
         if job["kind"] == "population":
-            if job["role"] == "end_development" and len(job["controllers"]) == 1:
-                points = sorted({p for p in (1, 32, 256, 1000, iterations) if p <= iterations})
+            if job["role"] in ("end_development", "explain") and len(job["controllers"]) == 1:
+                points = sorted({
+                    p for p in job.get("decision_iterations", (1, 32, 256, 1000, iterations))
+                    if p <= iterations
+                })
                 result, timing = session.solve(
                     problems, pairs, iterations, job["controllers"][0], decision_iterations=points
                 )
@@ -257,7 +260,7 @@ def solve_gpu_job(directory, job, session):
                 rows.append(
                     {
                         "method": identifier,
-                        "dimension": 500,
+                        "dimension": problem.dimension,
                         "instance_id": name,
                         "seed": seed,
                         "iterations": iterations,
@@ -285,6 +288,7 @@ def solve_gpu_job(directory, job, session):
             else [],
             "total_fe": sum(m["total_fe"] for m in members),
             "solve_seconds": timing["solve_seconds"],
+            "registration_seconds": timing.get("registration_seconds", 0),
             "device": session.device,
         }
 
@@ -471,6 +475,15 @@ def run_training(directory, job):
         atomic_json(checkpoint, evolution.state_dict())
         if finished:
             break
+        # 繁殖补齐反馈干预后再发布，报告不再暂时显示空值。
+        atomic_json(output / "progress.json", {
+            "run_id": run_id, "status": "training",
+            "completed_generations": len(evolution.history), "history": evolution.history,
+        })
+    if config.get("representation_campaign"):
+        from gp_faco.representation_campaign import finish_training
+
+        return finish_training(output, evolution)
     controllers = [evolution.history[-1]["winner"]]
     keys = submit_evaluation(
         directory,
@@ -609,13 +622,19 @@ class PilotScheduler(PopulationScheduler):
                 if self.stage == "complete":
                     return status
                 if self.stage == "failed" and not self.active:
-                    raise RuntimeError("预实验失败，保留证据；不继续50代或进入测试")
+                    raise RuntimeError("训练或评价任务失败，已保留证据并停止派单")
                 if (self.directory / "pause.json").exists() and not self.active:
                     self.stage = "paused"
                     atomic_json(self.directory / "stop_workers.json", {"reason": "pilot_paused"})
                     atomic_json(self.directory / "status.json", self.status())
                     return self.status()
                 time.sleep(self.poll_seconds)
+        except Exception as error:
+            self.stage = "failed"
+            atomic_json(self.directory / "coordinator_error.json", {"error": str(error)})
+            atomic_json(self.directory / "campaign_abort.json", {"error": str(error)})
+            atomic_json(self.directory / "status.json", self.status())
+            raise
         finally:
             atomic_json(
                 self.directory / "coordinator.json",
@@ -625,6 +644,10 @@ class PilotScheduler(PopulationScheduler):
 
 
 def write_report(directory):
+    if read(directory / "campaign.json").get("representation_campaign"):
+        from gp_faco.representation_campaign_report import publish_report
+
+        return publish_report(directory)
     summaries = [
         read(directory / "runs" / f"{representation}-s{seed}" / "progress.json", {})
         for representation in REPRESENTATIONS

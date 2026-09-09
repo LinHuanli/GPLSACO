@@ -13,6 +13,18 @@
 
 namespace gp_faco::cuda_detail {
 
+#ifndef GPFACO_WARPS_PER_BLOCK
+#define GPFACO_WARPS_PER_BLOCK 2
+#endif
+#ifndef GPFACO_PARALLEL_LS_PREFIX
+#define GPFACO_PARALLEL_LS_PREFIX 1
+#endif
+#ifndef GPFACO_SHARED_ANT_FLAGS
+#define GPFACO_SHARED_ANT_FLAGS 1
+#endif
+constexpr unsigned ant_warps_per_block = GPFACO_WARPS_PER_BLOCK;
+constexpr unsigned ant_shared_bytes_per_node = 6 + 2 * GPFACO_SHARED_ANT_FLAGS;
+
 struct MatrixDistance {
     const double* values;
     Node n;
@@ -101,7 +113,7 @@ __global__ void construct_and_search(
     const Node group = WarpTours ? threadIdx.x / 32 : 0;
     std::uint64_t tick0 = 0, tick1 = 0, tick2 = 0, tick3 = 0;
     if constexpr (Profile) { if (lane == 0) tick0 = clock64(); }
-    const auto ant = WarpTours ? blockIdx.x * 4 + group : blockIdx.x;
+    const auto ant = WarpTours ? blockIdx.x * ant_warps_per_block + group : blockIdx.x;
     const auto base = static_cast<std::size_t>(ant) * n;
     const auto matrix = distances.for_ant(ant);
     const auto choices = choice_views.for_ant(ant, n);
@@ -124,6 +136,12 @@ __global__ void construct_and_search(
         tour = shared_tours + static_cast<std::size_t>(group) * n * 3;
         position = tour + n;
         scratch = position + n;
+        if constexpr (GPFACO_SHARED_ANT_FLAGS) {
+            // 每只蚂蚁独有的标记与路线一起驻留；末尾回写，保持诊断快照语义。
+            auto* flags = reinterpret_cast<std::uint8_t*>(shared_tours + ant_warps_per_block * n * 3);
+            visited = flags + static_cast<std::size_t>(group) * n * 2;
+            if (all_queued) queued = visited + n;
+        }
     } else {
         tour = all_tours + base;
         position = all_positions + base;
@@ -134,7 +152,7 @@ __global__ void construct_and_search(
     Node* pending = all_pending + base * (CompactWorkspace ? 1 : 5);
     const Node pending_capacity = CompactWorkspace ? n : 0;
     double* gains = all_gains + static_cast<std::size_t>(ant) * width * 2;
-    __shared__ State states[WarpTours ? 4 : 1];
+    __shared__ State states[WarpTours ? ant_warps_per_block : 1];
     auto& state = states[group];
     const auto ls_allowed = [&](Node node, Node slot) {
         if constexpr (escape) return choices.ls_allowed(node, slot, width, allowed);
@@ -291,7 +309,9 @@ __global__ void construct_and_search(
                 state.current_edge[0] = distance(matrix, n, state.a, state.a_next);
                 state.current_edge[1] = distance(matrix, n, state.a_previous, state.a);
                 state.allowed[0] = state.allowed[1] = 0;
-                // 先按原生顺序确定可检查前缀与精确计数，再并行计算gain。
+                // 图约束、宽候选行和诊断布局继续按原顺序确定前缀。
+                if (!(WarpTours && GPFACO_PARALLEL_LS_PREFIX &&
+                      std::is_same_v<Allowed, UnrestrictedEdges> && width <= 32)) {
                 for (int kind = 0; kind < 2 && !state.stopped; ++kind) {
                     const double current_distance = state.current_edge[kind];
                     for (Node j = 0; j < width; ++j) {
@@ -319,10 +339,42 @@ __global__ void construct_and_search(
                                              b, neighbor, view)) ++state.ls.constraint_rejections;
                     }
                 }
+                }
             }
         }
         ant_group_sync<WarpTours>();
         if (state.stopped) break;
+        if constexpr (WarpTours && GPFACO_PARALLEL_LS_PREFIX &&
+                      std::is_same_v<Allowed, UnrestrictedEdges>) {
+            if (width <= 32) {
+                // 只并行求首个不合格位置；按kind顺序记账，保留预算正好耗尽的行为。
+                for (Node kind = 0; kind < 2; ++kind) {
+                    bool bad = false;
+                    if (lane < width) {
+                        const Node b = candidates[state.a * width + lane];
+                        bad = b >= n;
+                        if (!bad) bad = !(state.current_edge[kind] > (candidate_distances ?
+                            candidate_distances[state.a * width + lane] : distance(matrix, n, state.a, b)));
+                    }
+                    const unsigned failures = __ballot_sync(0xffffffffu, bad);
+                    const Node prefix = failures ? __ffs(failures) - 1 : width;
+                    if (lane == 0) {
+                        const auto remaining = evaluation_limit - state.ls.move_evaluations;
+                        const Node used = remaining < prefix ? static_cast<Node>(remaining) : prefix;
+                        state.allowed[kind] = used;
+                        state.ls.move_evaluations += used;
+                        state.ls.candidate_checks += used + (used < width);
+                        if (used < prefix) {
+                            state.ls.evaluation_limit_reached = true;
+                            state.stopped = true;
+                        }
+                    }
+                    ant_group_sync<WarpTours>();
+                    if (state.stopped) break;
+                }
+                if (state.stopped) break;
+            }
+        }
         double local_gain = -1;
         Node local_index = UINT32_MAX;
         for (Node index = lane; index < width * 2; index += group_width) {
@@ -439,6 +491,12 @@ __global__ void construct_and_search(
         output[ant].checklist_size = state.pending_size;
         if constexpr (Profile) profile_cycles[ant] = {
             tick1 - tick0, tick2 - tick1, tick3 - tick2, clock64() - tick3};
+    }
+    if constexpr (WarpTours && GPFACO_SHARED_ANT_FLAGS) {
+        for (Node i = lane; i < n; i += group_width) {
+            all_visited[base + i] = visited[i];
+            if (all_queued) all_queued[base + i] = queued[i];
+        }
     }
 }
 

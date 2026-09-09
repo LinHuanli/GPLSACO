@@ -29,7 +29,12 @@ BUILD = "build/v2-campaign-exact"
 
 
 def read(path, default=None):
-    return json.loads(path.read_text()) if path.exists() else default
+    # 直接open触发NFS的打开时刷新；exists可能命中旧的负缓存，平白延迟远端任务消息。
+    try:
+        value = path.read_text()
+    except FileNotFoundError:
+        return default
+    return json.loads(value)
 
 
 def source():

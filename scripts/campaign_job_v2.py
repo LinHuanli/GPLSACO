@@ -97,8 +97,10 @@ def main():
             result = solve_calibration(directory, job, args.gpu)
         elif job["kind"] == "training":
             configuration = read(directory / "campaign.json")
-            if configuration.get("distributed_population") or configuration.get("representation_pilot"):
-                if configuration.get("representation_pilot"):
+            if any(configuration.get(k) for k in (
+                "distributed_population", "representation_pilot", "representation_campaign"
+            )):
+                if configuration.get("representation_pilot") or configuration.get("representation_campaign"):
                     from gp_faco.representation_pilot import run_training as run_training_pool
                 else:
                     from gp_faco.campaign_tsp500 import run_training_pool

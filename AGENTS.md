@@ -14,3 +14,5 @@
 - 用户2026-09-10批准的当前轮次为修复后的 `joint_single` 与 `conditional_three` 对照，各3个GP seed（1103、2207、3313），每次128个体×10个完整评价代。旧50代轮次已经暂停并保留检查点。新入口 `scripts/run_representation_pilot.py`，协议 `docs/experiments/representation_pilot_v3.md`。不得自动继续50代或进入正式val/test。
 - 用户进一步明确所有服务器的空闲 A5000、所有独立实验任务都可并行，三个进化 seed 分卡同时运行。开发标定、baseline、验证和测试也应分片调度。CPU 原生对照可跨主机，每机最多一个8线程任务且必须保持24条原生初始路线，不因迁移改变参数。
 - 当前只训练TSP500；每代16实例×1个ACO seed×128蚂蚁×1000迭代，六次进化共用冻结前10面板。g5/g10监控16开发实例×seed17×1000迭代；仅g10冠军在既有H校准的32开发实例×3seeds×5000迭代上比较。目录`artifacts/v3/gp-representation-pilot`，构建`build/v3-gp-representation-exact`。行为描述在64个冻结训练情境上直接调用同一CUDA评分器，避免CPU/GPU的AQ近并列舍入差异；繁殖在短GPU任务中执行，没有新增ACO FE。
+
+- 用户2026-09-10进一步批准完整轮次：单树和条件三树各3个GP seed，从头重新初始化128个体×50代；轻量两级validation后冻结全部六个Controller，自动TSP500主测试和TSP1000迁移测试。此授权取代上文当前预实验不得自动进入50代/val/test的范围限制。新入口`scripts/run_representation_campaign.py`，协议`docs/experiments/representation_50gen_v3.md`，目录`artifacts/v3/representation-50gen`。旧10代预实验完整保留。
