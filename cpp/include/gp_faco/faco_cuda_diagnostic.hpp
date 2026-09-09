@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gp_faco/faco_cpu.hpp"
+#include "gp_faco/escape_slots.hpp"
 
 namespace gp_faco {
 
@@ -20,6 +21,7 @@ struct FacoDiagnosticInfo {
     LocalSearchStats local_search;
     Node checklist_size;
     Node start_node;  // 实际抽到的起点，用于检查区域动作是否真正进入构造。
+    EscapeStats escape;
 };
 
 struct FacoDiagnosticResult {

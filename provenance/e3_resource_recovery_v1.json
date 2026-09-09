@@ -1,0 +1,26 @@
+{
+  "policy_spec_id": 1,
+  "scope": "E3 FE-only resource observation deviations; uniformly applicable before formal TEST release",
+  "base_execution_sha256": "f70f8691c8643f346ddb44ab07f6a87fe026d61ba89cf19dd06c3f1d4d2c6cbb",
+  "base_plan_sha256": "8a43009604769d94898f2d92b066072c29f0ea6685de6521519aa2d730150822",
+  "decision": "retain actual returned outcomes and use unchanged external evaluator; no repeated native evaluation",
+  "admission": "submit only after a strict integer zero foreign-process observation; wait on occupied or unknown GPU without an algorithm deadline",
+  "return": "foreign or unknown post-return observations are resource deviations; preserve exact original return and observation",
+  "timing": "affected task timings and whole-run aggregate timings remain labelled; exclude them from uncontaminated speed comparisons",
+  "unchanged": [
+    "evolution seeds and population/generations",
+    "programs and grammar",
+    "instances and solver seeds",
+    "FE limits and progress features",
+    "graph and native binary",
+    "fitness evaluator and failure treatment",
+    "fixed validation and selection",
+    "host and GPU UUID per resumed run"
+  ],
+  "no_quality_dependent_recovery": true,
+  "no_wall_clock_limit": true,
+  "formal_test_released": false,
+  "rationale": "count-limited kernels and progress use FE; occupancy observations do not enter solver inputs; native failures still receive the original evaluator's failure score",
+  "implementation": "standalone recovery entrypoint and independent deviation journal audit; original frozen modules and execution files remain unchanged",
+  "incident_evidence": "artifacts/e3/resource-recovery-v1/original-alpha-Hard-5519/evidence.json"
+}

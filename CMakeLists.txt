@@ -20,6 +20,13 @@ add_executable(hard_edge_semantics tests/cpp/test_hard_edges.cpp)
 target_link_libraries(hard_edge_semantics PRIVATE gp_faco_core)
 add_test(NAME hard_edge_semantics COMMAND hard_edge_semantics
     "${CMAKE_CURRENT_BINARY_DIR}/hard_edge_results.json")
+add_executable(escape_edge_semantics tests/cpp/test_escape_edges.cpp)
+target_link_libraries(escape_edge_semantics PRIVATE gp_faco_core)
+add_test(NAME escape_edge_semantics COMMAND escape_edge_semantics
+    "${CMAKE_CURRENT_BINARY_DIR}/escape_edge_results.json")
+add_executable(escape_slot_semantics tests/cpp/test_escape_slots.cpp)
+target_link_libraries(escape_slot_semantics PRIVATE gp_faco_core)
+add_test(NAME escape_slot_semantics COMMAND escape_slot_semantics)
 add_executable(control_cpu_semantics tests/cpp/test_control_cpu.cpp)
 target_link_libraries(control_cpu_semantics PRIVATE gp_faco_core)
 add_test(NAME control_cpu_semantics COMMAND control_cpu_semantics
@@ -28,6 +35,10 @@ add_executable(baseline_policy_semantics tests/cpp/test_baseline_policy.cpp)
 target_link_libraries(baseline_policy_semantics PRIVATE gp_faco_core)
 add_test(NAME baseline_policy_semantics COMMAND baseline_policy_semantics
     "${CMAKE_CURRENT_BINARY_DIR}/baseline_policy_results.json")
+add_executable(graph_preparation_semantics tests/cpp/test_graph_preparation.cpp)
+target_link_libraries(graph_preparation_semantics PRIVATE gp_faco_core)
+add_test(NAME graph_preparation_semantics COMMAND graph_preparation_semantics
+    "${CMAKE_CURRENT_BINARY_DIR}/graph_preparation_results.json")
 
 if(GP_FACO_CUDA)
     enable_language(CUDA)
@@ -89,6 +100,17 @@ if(GP_FACO_CUDA)
     target_link_libraries(behavior_engine_semantics PRIVATE gp_faco_cuda)
     add_test(NAME behavior_engine_semantics COMMAND behavior_engine_semantics
         "${CMAKE_CURRENT_BINARY_DIR}/behavior_engine_results.json")
+    add_executable(hard_engine_semantics tests/cpp/test_hard_engine.cpp)
+    target_link_libraries(hard_engine_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME hard_engine_semantics COMMAND hard_engine_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/hard_engine_results.json")
+    add_executable(escape_engine_semantics tests/cpp/test_escape_engine.cpp tests/cpp/escape_primitives.cu)
+    set_target_properties(escape_engine_semantics PROPERTIES CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON)
+    target_compile_options(escape_engine_semantics PRIVATE
+        $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false;--generate-line-info>)
+    target_link_libraries(escape_engine_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME escape_engine_semantics COMMAND escape_engine_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/escape_engine_results.json")
 endif()
 
 if(GP_FACO_PYTHON)

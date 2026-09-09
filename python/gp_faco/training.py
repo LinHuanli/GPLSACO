@@ -152,6 +152,8 @@ class TrainingData:
 
 
 def training_manifest(settings: TrainingSettings, protocol: WorkerProtocol, data: TrainingData):
+    if protocol.graph_catalog is not None and settings.budget_kind != "search_tour_evaluations":
+        raise ValueError("图约束训练必须按evaluation次数终止")
     n_values = tuple(n for n, _ in settings.budgets)
     if set(n_values) != set(protocol.dimensions) or set(n_values) != set(data.training):
         raise ValueError("数据、预算与worker规模不符")
@@ -384,6 +386,7 @@ class TrainingRun(EvaluationRun):
                 "protocol_sha256": self.protocol.sha256,
                 "dimension": panel["dimension"],
                 "problems": [(p.instance_id, coordinate_hash(p)) for p in problems],
+                **self.protocol.graph_identity(problems),
             }
 
             def validate(outcome, description=description, missing=missing):

@@ -27,6 +27,8 @@ void sampling_and_regions() {
         // 每行仅邻接自己所在的二元分量，专门触发候选邻域不足时的全局补齐。
         std::vector<Node> primary(n);
         for (Node a = 0; a < n; ++a) primary[a] = a % 2 ? a - 1 : a + 1 < n ? a + 1 : a - 1;
+        std::vector<Node> padded(static_cast<std::size_t>(n)*4,n);
+        for (Node a = 0; a < n; ++a) padded[a*4] = primary[a];
         for (Node repeat = 0; repeat < 40; ++repeat) {
             const auto key = random();
             Node samples[gp_faco::sample_capacity];
@@ -51,6 +53,9 @@ void sampling_and_regions() {
                 std::set<Node> unique(nodes, nodes + r);
                 check(unique.size() == r && *unique.rbegin() < n, "区域重复、未补齐或越界");
                 check(std::equal(nodes, nodes + r, again), "区域重复调用不确定");
+                // 相同实际候选加空槽后仍应得到同一区域及补齐随机序列。
+                gp_faco::build_region(reference.view(), padded.data(), 4, key, repeat, mode, region, again);
+                check(std::equal(nodes, nodes + r, again), "稀疏空槽改变区域或补齐随机数");
                 if (region < 2) for (Node i = 1; i < r; ++i)
                     check(nodes[i] == reference.view().successor(nodes[i - 1]), "连续区域不连续");
                 ++region_checks;

@@ -34,6 +34,18 @@ struct UnrestrictedEdges {
     GPFACO_EDGE_HD UnrestrictedEdges for_ant(Node, Node) const { return *this; }
 };
 
+// 每colony一个完整CSR，变度图占固定总邻接容量；padding不属于任何CSR行。
+struct BatchSparseGraphView {
+    const Node* offsets;
+    const Node* neighbors;
+    Node ants, neighbor_stride;
+    GPFACO_EDGE_HD SparseGraphView for_ant(Node ant, Node n) const {
+        const auto colony = ant / ants;
+        return {offsets + static_cast<std::size_t>(colony) * (n + 1),
+                neighbors + static_cast<std::size_t>(colony) * neighbor_stride, n};
+    }
+};
+
 struct MoveEdge { Node a, b; };
 GPFACO_EDGE_HD inline bool same_edge(MoveEdge x, MoveEdge y) {
     return (x.a == y.a && x.b == y.b) || (x.a == y.b && x.b == y.a);

@@ -43,8 +43,8 @@ class SearchSettings:
     def __post_init__(self):
         object.__setattr__(self, "evaluation_limits", tuple(self.evaluation_limits))
         object.__setattr__(self, "solver_seeds", tuple(self.solver_seeds))
-        if self.purpose not in ("calibration", "tuning") or (
-            self.purpose == "tuning" and len(self.evaluation_limits) != 1
+        if self.purpose not in ("calibration", "tuning", "static_tuning") or (
+            self.purpose != "calibration" and len(self.evaluation_limits) != 1
         ):
             raise ValueError("次数校准可有多个FE档，调参必须只有一个预定主档")
         if not self.evaluation_limits or len(set(self.evaluation_limits)) != len(
@@ -67,6 +67,13 @@ class SearchSettings:
             or not 0 < self.experiment_mask <= 0xFFFFFFFF
         ):
             raise ValueError("面板形状、准备、mask或重试配置无效")
+
+    @property
+    def selection_kinds(self):
+        # E1仍同时选择Static/Rule；E3按v4只在各图条件内单独选择Static。
+        return {"calibration": (), "tuning": ("static", "rule"), "static_tuning": ("static",)}[
+            self.purpose
+        ]
 
 
 class SearchData:
@@ -181,10 +188,11 @@ class ConfigurationRun(EvaluationRun):
                 for limit in settings.evaluation_limits
             ):
                 raise ValueError("FE档必须为完整蚂蚁批次且不超过uint32批次")
-            if settings.purpose == "tuning" and (
-                "validation" not in data.pools or {p.kind for p in policies} != {"static", "rule"}
+            if settings.selection_kinds and (
+                "validation" not in data.pools
+                or {p.kind for p in policies} != set(settings.selection_kinds)
             ):
-                raise ValueError("正式开发调参需要两类基线和独立统一验证池")
+                raise ValueError("开发调参须覆盖预登记基线种类，并使用独立统一验证池")
             self.panels = {}
             for role, scales in data.pools.items():
                 if set(scales) != set(protocol.dimensions):
@@ -413,7 +421,7 @@ class ConfigurationRun(EvaluationRun):
             return
         limit = self.settings.evaluation_limits[0]
         shortlist = []
-        for kind in ("static", "rule"):
+        for kind in self.settings.selection_kinds:
             ranked = sorted(
                 (score["fitness"], sha)
                 for sha, p in self.policies.items()
@@ -441,7 +449,7 @@ class ConfigurationRun(EvaluationRun):
         )
         limit = self.settings.evaluation_limits[0]
         selected = {}
-        for kind in ("static", "rule"):
+        for kind in self.settings.selection_kinds:
             ranked = sorted(
                 (score["fitness"], sha)
                 for sha in self.state["shortlist"]
@@ -483,7 +491,7 @@ class ConfigurationRun(EvaluationRun):
                 if self._aggregate("search", self.search_plan) != self.state["search_scores"]:
                     raise ValueError("已完成搜索的汇总改变")
                 if (
-                    self.settings.purpose == "tuning"
+                    self.settings.selection_kinds
                     and self._aggregate("validation", self.state["validation_plan"])
                     != self.state["validation_scores"]
                 ):

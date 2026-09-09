@@ -76,6 +76,11 @@ static __global__ void initialize_products(cuda_detail::CoordinateDistance dista
     const Node i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= cells) return;
     const Node colony = i / (n * width);
+    if (primary[i] >= n) {
+        heuristic[i] = products[i] = 0;
+        trails[i] = state[colony].maximum;
+        return;
+    }
     const double d = distance(i / width, primary[i] + colony * n);
     heuristic[i] = d > 0 ? 1.0 / pow(d, beta) : 1.0;
     trails[i] = state[colony].maximum;
@@ -85,7 +90,7 @@ static __global__ void initialize_products(cuda_detail::CoordinateDistance dista
 static __global__ void reduce_and_select(Node n, Node ants, const Node* all_tours,
     const FacoDiagnosticInfo* all_info, Node* all_parent, Node* all_parent_position, Node* all_epoch, Node* all_global,
     Colony* all_state, Node width, double retention, double p_best, double epoch_probability,
-    const std::uint64_t* seeds, Node batch) {
+    const std::uint64_t* seeds, Node batch, EscapeFootprints footprints = {}) {
     const auto colony = blockIdx.x;
     const auto base = static_cast<std::size_t>(colony) * n;
     const Node* tours = all_tours + base * ants;
@@ -118,6 +123,12 @@ static __global__ void reduce_and_select(Node n, Node ants, const Node* all_tour
         const Node node = state->source_is_epoch ? epoch[i] : best[i];
         parent[i] = node;
         parent_position[node] = i;
+        if (footprints.parent) {
+            const auto value = footprints.ants[base * ants + static_cast<std::size_t>(state->iteration_best) * n + i];
+            if (improve_epoch) footprints.epoch[base + i] = value;
+            if (improve_global) footprints.global[base + i] = value;
+            footprints.parent[base + i] = state->source_is_epoch ? footprints.epoch[base + i] : value;
+        }
     }
 }
 

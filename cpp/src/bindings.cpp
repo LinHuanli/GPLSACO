@@ -268,6 +268,31 @@ py::dict batch_output(const gp_faco::BatchEvaluation& result, const std::string&
     output["discarded_batches"] = result.discarded_batches;
     output["completed_construction_steps"] = result.completed_construction_steps;
     output["completed_ls_evaluations"] = result.completed_ls_evaluations;
+    if (result.constraint_mode != gp_faco::ConstraintMode::Unrestricted) {
+        output["constraint_mode"] = result.constraint_mode == gp_faco::ConstraintMode::Escape ? "escape" : "hard";
+        output["graph_spec_id"] = 1;
+        output["graph_edges_per_colony"] = result.graph_edges_per_colony;
+        output["completed_constraint_rejections"] = result.completed_constraint_rejections;
+        output["preparation_scope"] = "engine_only; external candidate graph cached";
+        output["reserved_escape_device_bytes"] = result.reserved_escape_device_bytes;
+        if (result.constraint_mode == gp_faco::ConstraintMode::Escape) {
+            output["escape_spec_id"] = 1;
+            output["escape_edge_capacity_per_ant"] = gp_faco::kEscapeEdgeCapacity;
+            py::dict counters;
+            counters["construction_opportunities"] = result.escape.construction_opportunities;
+            counters["construction_gates"] = result.escape.construction_gates;
+            counters["construction_replaced_slots"] = result.escape.construction_replaced_slots;
+            counters["escape_relocations"] = result.escape.escape_relocations;
+            counters["ls_anchor_nodes"] = result.escape.ls_anchor_nodes;
+            counters["ls_replaced_slots"] = result.escape.ls_replaced_slots;
+            counters["old_view_reactivations"] = result.escape.old_view_reactivations;
+            counters["anchor_reactivations"] = result.escape.anchor_reactivations;
+            counters["new_edges"] = result.escape.new_edges;
+            counters["construction_capacity_rejections"] = result.escape.construction_capacity_rejections;
+            counters["ls_capacity_rejections"] = result.escape.ls_capacity_rejections;
+            output["escape_counters"] = counters;
+        }
+    }
     output["allocated_device_bytes"] = result.allocated_device_bytes;
     output["preparation_completed"] = result.preparation_completed;
     output["preparation_mode"] = mode;
@@ -344,16 +369,89 @@ PYBIND11_MODULE(gp_faco_ext, module) {
         .def_readwrite("initial_ls_evaluation_limit", &gp_faco::FixedFacoSettings::initial_ls_evaluation_limit);
     using Coordinates = py::array_t<double, py::array::c_style>;
     using Keys = py::array_t<std::uint64_t, py::array::c_style>;
+    module.def("prepare_common_initial", [](const Coordinates& xy,
+                                           const gp_faco::FixedFacoSettings& settings) {
+        if (xy.ndim() != 2 || xy.shape(1) != 2)
+            throw std::invalid_argument("共同初始准备需要FP64[n,2]坐标");
+        std::vector<double> copied(xy.data(), xy.data() + xy.size());
+        gp_faco::PreparedProblem problem;
+        {
+            const auto config = settings;
+            py::gil_scoped_release release;
+            problem = gp_faco::make_cheap_problem(std::move(copied), config);
+            gp_faco::prepare_problem(problem);
+        }
+        py::dict result;
+        result["tour"] = problem.initial_tour;
+        result["cost"] = problem.initial_cost;
+        result["cheap_seconds"] = problem.cheap_seconds;
+        result["preparation_seconds"] = problem.preparation_seconds;
+        return result;
+    }, py::arg("coordinates").noconvert(), py::arg("settings"));
     py::class_<gp_faco::FacoBatchEngine>(module, "FacoBatchEngine")
         .def(py::init([](const py::object& n, const py::object& count,
-                         const gp_faco::FixedFacoSettings& settings) {
+                         const gp_faco::FixedFacoSettings& settings, const std::string& constraint_mode) {
             if (!PyLong_CheckExact(n.ptr()) || !PyLong_CheckExact(count.ptr()))
                 throw std::invalid_argument("dimension/colonies必须为整数");
             const auto dimension = py::cast<gp_faco::Node>(n), colonies = py::cast<gp_faco::Node>(count);
             const auto copied = settings;
+            if (constraint_mode != "unrestricted" && constraint_mode != "hard" && constraint_mode != "escape")
+                throw std::invalid_argument("未知或尚未验证的图约束模式");
+            const auto mode = constraint_mode == "hard" ? gp_faco::ConstraintMode::Hard
+                : constraint_mode == "escape" ? gp_faco::ConstraintMode::Escape : gp_faco::ConstraintMode::Unrestricted;
             py::gil_scoped_release release;
-            return std::make_unique<gp_faco::FacoBatchEngine>(dimension, colonies, copied);
-        }), py::arg("dimension"), py::arg("colonies"), py::arg("settings"))
+            return std::make_unique<gp_faco::FacoBatchEngine>(dimension, colonies, copied, mode);
+        }), py::arg("dimension"), py::arg("colonies"), py::arg("settings"),
+            py::arg("constraint_mode") = "unrestricted")
+        .def("register_graph_problem", [](gp_faco::FacoBatchEngine& engine, const py::object& key,
+                                          const Coordinates& xy, const py::dict& dictionary) {
+            if (xy.ndim() != 2 || xy.shape(1) != 2)
+                throw std::invalid_argument("图注册需要FP64[n,2]坐标");
+            const std::vector<std::string> fields{"graph_spec_id", "common_initial_tour", "edges",
+                                                  "primary", "backup", "ls"};
+            if (dictionary.size() != fields.size())
+                throw std::invalid_argument("图注册字段缺失或多余");
+            for (const auto& name : fields)
+                if (!dictionary.contains(name.c_str())) throw std::invalid_argument("图注册字段缺失");
+            if (read_node(dictionary["graph_spec_id"]) != 1)
+                throw std::invalid_argument("未知图规格版本");
+            const auto read_nodes = [](const py::handle& value) {
+                if (!PyList_CheckExact(value.ptr()) && !PyTuple_CheckExact(value.ptr()))
+                    throw std::invalid_argument("图节点列表需要list或tuple");
+                std::vector<gp_faco::Node> nodes;
+                for (const auto item : py::reinterpret_borrow<py::sequence>(value))
+                    nodes.push_back(read_node(item));
+                return nodes;
+            };
+            const auto read_rows = [&](const py::handle& value) {
+                if (!PyList_CheckExact(value.ptr()) && !PyTuple_CheckExact(value.ptr()))
+                    throw std::invalid_argument("图行列表需要list或tuple");
+                gp_faco::CandidateRows rows;
+                for (const auto row : py::reinterpret_borrow<py::sequence>(value))
+                    rows.push_back(read_nodes(row));
+                return rows;
+            };
+            gp_faco::CandidateGraphSpec spec;
+            spec.common_initial_tour = read_nodes(dictionary["common_initial_tour"]);
+            for (const auto& edge : read_rows(dictionary["edges"])) {
+                if (edge.size() != 2) throw std::invalid_argument("图边需要两个端点");
+                spec.edges.emplace_back(edge[0], edge[1]);
+            }
+            spec.primary = read_rows(dictionary["primary"]);
+            spec.backup = read_rows(dictionary["backup"]);
+            spec.ls = read_rows(dictionary["ls"]);
+            const auto identity = read_unsigned(key);
+            std::vector<double> copied(xy.data(), xy.data() + xy.size());
+            gp_faco::RegistrationInfo info;
+            {
+                py::gil_scoped_release release;
+                info = engine.register_graph_problem(identity, std::move(copied), std::move(spec));
+            }
+            py::dict result;
+            result["cheap_seconds"] = info.cheap_seconds;
+            result["preparation_seconds"] = info.preparation_seconds;
+            return result;
+        }, py::arg("instance_key"), py::arg("coordinates").noconvert(), py::arg("graph"))
         .def("register_problem", [](gp_faco::FacoBatchEngine& engine, const py::object& key,
                                     const Coordinates& coordinates) {
             if (!PyLong_CheckExact(key.ptr()) || coordinates.ndim() != 2 || coordinates.shape(1) != 2)

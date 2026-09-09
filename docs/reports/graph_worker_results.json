@@ -1,0 +1,1139 @@
+{
+  "catalog": {
+    "graphs": 64,
+    "instances": 32,
+    "path": "artifacts/graph-worker/catalog-v1.json",
+    "sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689"
+  },
+  "checks": {
+    "gpu_python_log_sha256": "8262b8832ab53f353a1a3e28ec340a0f7e4aa747352bfa05841c4065f47d1036",
+    "gpu_python_passed": 156,
+    "gpu_python_resources": {
+      "exit_code": 0,
+      "max_rss_kib": 296756,
+      "system_seconds": 1.25,
+      "user_seconds": 12.68,
+      "wall_seconds": 35.81
+    },
+    "gpu_python_skipped": 8,
+    "graph_targeted_log_sha256": "e037c3dde32dc164eb1b334c7ca87d3274b464362a5ac95a2ef68442e3b06321",
+    "graph_targeted_passed": 19,
+    "graph_targeted_test_source_sha256": "02ff551eb98e0dd8e33f3384b681ba3a5cc2ff6f9f2934325a340658718c0658",
+    "native_checks_report_sha256": "4a78b5a8d022c23d0c6f4977cbfa161b3b70a9529bc56e58752f86ecd3006933",
+    "native_checks_reused_from": "7c442af1247241bb4b8bcd9c1f7430041398f53b"
+  },
+  "escape_spec_id": 1,
+  "failure_history": [
+    {
+      "completed_preparations": 2,
+      "completed_solves": 10,
+      "log_sha256": "d817f1e1f763566a1be2cc00e3cea38078d8198e6339e83ea70987cb9d93b238",
+      "path": "artifacts/graph-worker/matrix-v1",
+      "source_snapshot_sha256": "0a70ca963ef5c96c75d10d1621b01e1a9c8cdd6af5309d483b89eb40ea920928",
+      "status": "next worker startup refused idle threshold; original results retained"
+    }
+  ],
+  "graph_spec_id": 1,
+  "limits": [
+    "Only engineering 8 population by 3 generations; four conditions independently instantiated",
+    "Training panels are 8 instances by 4 seeds; formal 16 by 2 protocol still requires freezing",
+    "Both scales use development data only; full formal training/validation graph catalog and Static selection remain pending",
+    "External LKH/matching cached; native end_to_end is not total preparation cost",
+    "No formal TEST release or E1-E4 efficacy claim"
+  ],
+  "main_frozen_native_sha256_unchanged": "b4138774e24bc5d01914fc99e503311ede2859fc8aa6096273b58efae2f5836f",
+  "matching_spec_id": 2,
+  "native_binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+  "protocol_version": 5,
+  "scope": "E3 persistent graph worker and four independent engineering training/resume runs; formal E3 pending",
+  "source_sha256": {
+    "python/gp_faco/__init__.py": "a3e2cd9de6f9b82068aff4dd44b1b4d465716f7f20217d84a1613c6c816542fa",
+    "python/gp_faco/baseline_policy.py": "836262324bbdf87e3a80379b80792a5dd792fce5a0581d39e63a0e1fd29db173",
+    "python/gp_faco/candidate_prior.py": "6657037280ec23616ca22ee6ab42fa973665880eea6b01c8bbdd35d67721e7ef",
+    "python/gp_faco/checkpoint.py": "1f1474cb4d51e5211844e90bf253c487ca93bd78ff5ef306dc26a25552f18627",
+    "python/gp_faco/configuration_search.py": "aa0557adcd72124ea68ef834fdc33f5c6ef772f9a75bd04c6d1fd3d9b6a83627",
+    "python/gp_faco/data.py": "d0984c396419e597168120cc3c2535cec78f9b5b1b0a51263a6179dd1fede561",
+    "python/gp_faco/dataset_index.py": "02ea9f00d526efb6120d5cb95493540274738e82bcfa00fa8481c029eeff680e",
+    "python/gp_faco/evaluation_run.py": "36cba9c9abf2f286e864390c6e346a1e60a293e0d0154b4e3491b0416674f46c",
+    "python/gp_faco/evolution.py": "6d52a114fc9fe5cb07a433b5537ed6e4bc2ab29118214146175efafad03d1fbe",
+    "python/gp_faco/fitness.py": "3219b0c414a792280d58180791c622088f07fd8eaf0ea13e15872af5a239714d",
+    "python/gp_faco/graph_catalog.py": "9372f3d4aba5d235191ddb42b6f260a970893d60c78cc999b740a399d411ff58",
+    "python/gp_faco/graph_matching.py": "46d684f35d44dabe83863956e45dd3d7ebc51e271cef19fd9a411a94d0fb91b3",
+    "python/gp_faco/primitives.py": "e3c8f385517d2e8b0d5112dfb2d5de0e1304ef8ae4542a77305b4a48d73f9143",
+    "python/gp_faco/program_ir.py": "829c51117d0f80518aaf30be1fae5040dc506b1edd2bd82392177b37c8787ce1",
+    "python/gp_faco/training.py": "2bf63e7468bd603428541a06120dd00f961df6aa8444240dda3305aefec1c170",
+    "python/gp_faco/worker.py": "b9ab29e60de5adca5c6db096712e484284fe27fcf3387552d4fe7216d0a544d4",
+    "scripts/audit_graph_worker.py": "05030627f611d6ef3261b891b865d83a3a3d3024d2daa881f86beafb3b1c35a7",
+    "scripts/check_graph_training.py": "95f12756dec5744d6940c552e2393be1c05392341207545430a88cb3350f629a",
+    "scripts/check_graph_worker.py": "1d2df181f52b8328ae62d3b9ad32c7cb8e5dbd318206c9417d9d3e77291b69e4",
+    "scripts/prepare_graph_catalog.py": "841d194489087b4dcdbb51269f132337d103227aaffd2ea4b65d6bb164fb4e4a",
+    "scripts/summarize_training.py": "cf3cc4cb2e98d350c9b397385acd48f8146e03ba0638baa5336d545779a6b5a1"
+  },
+  "status": "passed",
+  "training": [
+    {
+      "artifact_directory": "artifacts/graph-worker/train-hard-alpha-v1",
+      "artifact_sha256": {
+        "checkpoint.json": "be23114f5f8749176e81e0b3cfa2ecc10604cda196c7381e6b3dea1c0254ea97",
+        "data_selection.json": "62c34e6ce0f7ab40799698700323ffebdcda3ec9192c56bfbd44a609a04435fc",
+        "manifest.json": "fda8cd3c804710e332919e6fb67491d75bb037845bd4bb812edfde0379ffc80c",
+        "paused-checkpoint.json": "291ec3f4c64bac75034b262cd32da71efc1c961cd848496f7638e3b83409cbb4",
+        "selected_program.json": "960133a73a66554fd19b8d1264f0637d2bd7e0e3b0cbc1856222ea4a86abde9e",
+        "summary.json": "8f31eb0ef44690cf0e6e8bfdee53cd4f3c416158a692862d2dbcd7032e55b209"
+      },
+      "audit_path": "artifacts/graph-worker/train-hard-alpha-v1-audit-v2.json",
+      "audit_sha256": "968ab0830e55dde6f06c2a4d281ea300e5757800bfc6fb4e397f5074f5c1ae85",
+      "condition": "hard-alpha",
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 480,
+        "completed_construction_steps": 9560655,
+        "completed_ls_evaluations": 1545020301,
+        "evaluator_seconds": 1.9125544093549252,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 23.039165815000004,
+        "observer_timeouts": 0,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 4,
+        "registration_seconds": 0.6135587450116873,
+        "search_tour_evaluations": 491520,
+        "solve_jobs": 60,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1920,
+        "worker_seconds": 24.807899365201592
+      },
+      "generations": [
+        {
+          "generation": 0,
+          "panel_id": "ab3cbb779f499b99e48a74a3e0d57e4ec8007e7d845e7a9092a2e96198b33ac3",
+          "unique_programs": 8,
+          "winner_sha256": "67356ee0a2b28edce3fee3ad05dc0eb2f15d368da44988ca93d3490e9a7e9869"
+        },
+        {
+          "generation": 1,
+          "panel_id": "7e3da529f0243e874dc85c2ffd6307e91526b55d4c9808179160f8553ecfcbc3",
+          "unique_programs": 8,
+          "winner_sha256": "67356ee0a2b28edce3fee3ad05dc0eb2f15d368da44988ca93d3490e9a7e9869"
+        },
+        {
+          "generation": 2,
+          "panel_id": "f57a8e4c87892a0090ab4a6b0bfbe71ac1eacc650b0b381dd18c6d93955f0df5",
+          "unique_programs": 6,
+          "winner_sha256": "67356ee0a2b28edce3fee3ad05dc0eb2f15d368da44988ca93d3490e9a7e9869"
+        }
+      ],
+      "max_independent_cost_error": 4.618527782440651e-14,
+      "preserved_completed_records_after_pause": 7,
+      "protocol": {
+        "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+        "colonies": 32,
+        "constraint_mode": "hard",
+        "dimensions": [
+          500,
+          1000
+        ],
+        "driver_version": "610.43.02",
+        "escape_spec_id": 0,
+        "execution_host": "cuda05.ecs.vuw.ac.nz",
+        "extension_directory": "build/cuda",
+        "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+        "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+        "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+        "gpu_uuid": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978",
+        "graph_catalog_path": "artifacts/graph-worker/catalog-v1.json",
+        "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+        "graph_prior_kind": "ALPHA",
+        "graph_spec_id": 1,
+        "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+        "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+        "matching_spec_id": 2,
+        "maximum_registered_per_dimension": 32,
+        "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+        "protocol_version": 5,
+        "settings": {
+          "ants": 32,
+          "backup_width": 64,
+          "beta": 1.0,
+          "epoch_source_probability": 0.01,
+          "initial_ls_evaluation_limit": 100000,
+          "ls_evaluation_limit": 100000,
+          "ls_width": 20,
+          "p_best": 0.1,
+          "primary_width": 16,
+          "retention": 0.5
+        },
+        "submission_boundary": "native_whole_panel_completed_and_verified"
+      },
+      "resources": {
+        "exit_code": 0,
+        "max_rss_kib": 334200,
+        "system_seconds": 3.3,
+        "user_seconds": 47.15,
+        "wall_seconds": 41.22
+      },
+      "run_id": "a817ea8a046b623b5b97c063b28716b65dbc3ede0f1894497a58d96736d0b968",
+      "search_tour_evaluations": 491520,
+      "settings": {
+        "budget_kind": "search_tour_evaluations",
+        "budgets": [
+          [
+            500,
+            256
+          ],
+          [
+            1000,
+            256
+          ]
+        ],
+        "evolution": {
+          "crossover_probability": 0.8,
+          "elites": 2,
+          "feature_spec_id": 2,
+          "generations": 3,
+          "initial_depth_max": 3,
+          "initial_depth_min": 1,
+          "max_depth": 5,
+          "max_nodes": 63,
+          "mutation_depth_max": 2,
+          "mutation_depth_min": 0,
+          "mutation_probability": 0.2,
+          "no_feedback": false,
+          "population": 8,
+          "tournament_size": 4
+        },
+        "evolution_seed": 1103,
+        "experiment_mask": 4294967295,
+        "infrastructure_retries": 1,
+        "instances_per_panel": 8,
+        "panel_seed": 73001,
+        "preparation_mode": "cached",
+        "scope": "engineering_development",
+        "solver_seeds_per_instance": 4,
+        "validation_seeds": [
+          17,
+          29,
+          41,
+          53
+        ]
+      },
+      "solve_jobs": 60,
+      "source_sha256": {
+        "checkpoint.py": "1f1474cb4d51e5211844e90bf253c487ca93bd78ff5ef306dc26a25552f18627",
+        "dataset_index.py": "02ea9f00d526efb6120d5cb95493540274738e82bcfa00fa8481c029eeff680e",
+        "evaluation_run.py": "36cba9c9abf2f286e864390c6e346a1e60a293e0d0154b4e3491b0416674f46c",
+        "evolution.py": "6d52a114fc9fe5cb07a433b5537ed6e4bc2ab29118214146175efafad03d1fbe",
+        "scripts/check_graph_training.py": "95f12756dec5744d6940c552e2393be1c05392341207545430a88cb3350f629a",
+        "summarize_training.py": "cf3cc4cb2e98d350c9b397385acd48f8146e03ba0638baa5336d545779a6b5a1",
+        "training.py": "2bf63e7468bd603428541a06120dd00f961df6aa8444240dda3305aefec1c170"
+      },
+      "training_individuals": 24,
+      "valid_members": 1920,
+      "validation_candidates": 6,
+      "variation_counts": {
+        "crossovers": 4,
+        "fallbacks": 0,
+        "mutations": 4
+      },
+      "work_by_phase": {
+        "training": {
+          "completed_batches": 384,
+          "completed_construction_steps": 7738247,
+          "completed_ls_evaluations": 1250846448,
+          "solve_jobs": 48,
+          "total_tour_evaluations": 393216
+        },
+        "validation": {
+          "completed_batches": 96,
+          "completed_construction_steps": 1822408,
+          "completed_ls_evaluations": 294173853,
+          "solve_jobs": 12,
+          "total_tour_evaluations": 98304
+        }
+      },
+      "worker_pids": [
+        608239,
+        608357,
+        608768
+      ]
+    },
+    {
+      "artifact_directory": "artifacts/graph-worker/train-escape-alpha-v1",
+      "artifact_sha256": {
+        "checkpoint.json": "10ce63228cf387a5e63465e041989bc8d6a06058dd59029213e29f6045a88b88",
+        "data_selection.json": "62c34e6ce0f7ab40799698700323ffebdcda3ec9192c56bfbd44a609a04435fc",
+        "manifest.json": "df701196de221192cea3d4b3e491e2c3a0fcdc28599ea642eec1b7f4c7cc017b",
+        "paused-checkpoint.json": "29f3b933487cf5bc14ae7f0dc590642be22542cd869648c4fd5f26d4276cbe78",
+        "selected_program.json": "9457067705d399ea76aa63a6702ed01abceedb053373184965081b2fff6daefa",
+        "summary.json": "b1e7cbed663a5172768bb426d96ea5a9186b31427b3458936e63f66312609c59"
+      },
+      "audit_path": "artifacts/graph-worker/train-escape-alpha-v1-audit.json",
+      "audit_sha256": "5f78b1a7f156f1a14ba07baeed4d5c7fc88154d70983bc58626a823fb1623b88",
+      "condition": "escape-alpha",
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 480,
+        "completed_construction_steps": 6082993,
+        "completed_ls_evaluations": 1521591061,
+        "evaluator_seconds": 0.6814375859685242,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 27.505791163000012,
+        "observer_timeouts": 0,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 4,
+        "registration_seconds": 0.6210308871231973,
+        "search_tour_evaluations": 491520,
+        "solve_jobs": 60,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1920,
+        "worker_seconds": 29.272507509216666
+      },
+      "generations": [
+        {
+          "generation": 0,
+          "panel_id": "e89f49f132e06bc4189479ac1da3bc9dbaba5d17265403261a35e763b15ce75d",
+          "unique_programs": 8,
+          "winner_sha256": "67356ee0a2b28edce3fee3ad05dc0eb2f15d368da44988ca93d3490e9a7e9869"
+        },
+        {
+          "generation": 1,
+          "panel_id": "6f095001787768853caf11000d6d99d0d8eb500fb0d156c62b9ede7359a664e3",
+          "unique_programs": 8,
+          "winner_sha256": "67356ee0a2b28edce3fee3ad05dc0eb2f15d368da44988ca93d3490e9a7e9869"
+        },
+        {
+          "generation": 2,
+          "panel_id": "982a9941bc51c2ea6a62f5e321d96003f20873d4d8fe1519735c63004f2e9af7",
+          "unique_programs": 6,
+          "winner_sha256": "67356ee0a2b28edce3fee3ad05dc0eb2f15d368da44988ca93d3490e9a7e9869"
+        }
+      ],
+      "max_independent_cost_error": 4.618527782440651e-14,
+      "preserved_completed_records_after_pause": 7,
+      "protocol": {
+        "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+        "colonies": 32,
+        "constraint_mode": "escape",
+        "dimensions": [
+          500,
+          1000
+        ],
+        "driver_version": "610.43.02",
+        "escape_spec_id": 1,
+        "execution_host": "cuda05.ecs.vuw.ac.nz",
+        "extension_directory": "build/cuda",
+        "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+        "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+        "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+        "gpu_uuid": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978",
+        "graph_catalog_path": "artifacts/graph-worker/catalog-v1.json",
+        "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+        "graph_prior_kind": "ALPHA",
+        "graph_spec_id": 1,
+        "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+        "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+        "matching_spec_id": 2,
+        "maximum_registered_per_dimension": 32,
+        "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+        "protocol_version": 5,
+        "settings": {
+          "ants": 32,
+          "backup_width": 64,
+          "beta": 1.0,
+          "epoch_source_probability": 0.01,
+          "initial_ls_evaluation_limit": 100000,
+          "ls_evaluation_limit": 100000,
+          "ls_width": 20,
+          "p_best": 0.1,
+          "primary_width": 16,
+          "retention": 0.5
+        },
+        "submission_boundary": "native_whole_panel_completed_and_verified"
+      },
+      "resources": {
+        "exit_code": 0,
+        "max_rss_kib": 328272,
+        "system_seconds": 3.01,
+        "user_seconds": 45.89,
+        "wall_seconds": 44.15
+      },
+      "run_id": "3e1a96dc669dd85912c3e96b780a6ceafd8f9b085f977c1af541660fac9ac0a5",
+      "search_tour_evaluations": 491520,
+      "settings": {
+        "budget_kind": "search_tour_evaluations",
+        "budgets": [
+          [
+            500,
+            256
+          ],
+          [
+            1000,
+            256
+          ]
+        ],
+        "evolution": {
+          "crossover_probability": 0.8,
+          "elites": 2,
+          "feature_spec_id": 2,
+          "generations": 3,
+          "initial_depth_max": 3,
+          "initial_depth_min": 1,
+          "max_depth": 5,
+          "max_nodes": 63,
+          "mutation_depth_max": 2,
+          "mutation_depth_min": 0,
+          "mutation_probability": 0.2,
+          "no_feedback": false,
+          "population": 8,
+          "tournament_size": 4
+        },
+        "evolution_seed": 1103,
+        "experiment_mask": 4294967295,
+        "infrastructure_retries": 1,
+        "instances_per_panel": 8,
+        "panel_seed": 73001,
+        "preparation_mode": "cached",
+        "scope": "engineering_development",
+        "solver_seeds_per_instance": 4,
+        "validation_seeds": [
+          17,
+          29,
+          41,
+          53
+        ]
+      },
+      "solve_jobs": 60,
+      "source_sha256": {
+        "checkpoint.py": "1f1474cb4d51e5211844e90bf253c487ca93bd78ff5ef306dc26a25552f18627",
+        "dataset_index.py": "02ea9f00d526efb6120d5cb95493540274738e82bcfa00fa8481c029eeff680e",
+        "evaluation_run.py": "36cba9c9abf2f286e864390c6e346a1e60a293e0d0154b4e3491b0416674f46c",
+        "evolution.py": "6d52a114fc9fe5cb07a433b5537ed6e4bc2ab29118214146175efafad03d1fbe",
+        "scripts/check_graph_training.py": "95f12756dec5744d6940c552e2393be1c05392341207545430a88cb3350f629a",
+        "summarize_training.py": "cf3cc4cb2e98d350c9b397385acd48f8146e03ba0638baa5336d545779a6b5a1",
+        "training.py": "2bf63e7468bd603428541a06120dd00f961df6aa8444240dda3305aefec1c170"
+      },
+      "training_individuals": 24,
+      "valid_members": 1920,
+      "validation_candidates": 6,
+      "variation_counts": {
+        "crossovers": 4,
+        "fallbacks": 0,
+        "mutations": 4
+      },
+      "work_by_phase": {
+        "training": {
+          "completed_batches": 384,
+          "completed_construction_steps": 4891790,
+          "completed_ls_evaluations": 1228594292,
+          "solve_jobs": 48,
+          "total_tour_evaluations": 393216
+        },
+        "validation": {
+          "completed_batches": 96,
+          "completed_construction_steps": 1191203,
+          "completed_ls_evaluations": 292996769,
+          "solve_jobs": 12,
+          "total_tour_evaluations": 98304
+        }
+      },
+      "worker_pids": [
+        609070,
+        609355,
+        610225
+      ]
+    },
+    {
+      "artifact_directory": "artifacts/graph-worker/train-hard-popmusic-v1",
+      "artifact_sha256": {
+        "checkpoint.json": "00d21d1a70ff8968b9adfa2676838aeb1d6847b50d1539f4fc08c5938d04863c",
+        "data_selection.json": "62c34e6ce0f7ab40799698700323ffebdcda3ec9192c56bfbd44a609a04435fc",
+        "manifest.json": "89389337a9e534bfe6fa380b5158a5c4336bd3e356c4bd9f00de9f2eed54268a",
+        "paused-checkpoint.json": "130fe5dc7290b88d4a05650e184f8ec7524d08486308f07efd8110a1cbe86390",
+        "selected_program.json": "bfc16caef98245526eed664635ace3d6cfb28573de9f3e41f1465fd7f2b64fd2",
+        "summary.json": "2303840f18674698ce33964a03a5c92bde9dad54bc19b0b9c3a04a516cbd2f4e"
+      },
+      "audit_path": "artifacts/graph-worker/train-hard-popmusic-v1-audit.json",
+      "audit_sha256": "76285abe9a1a72b00a11a4ebdd1ab48a5e5e2577aa0d080917ae7edd267893d3",
+      "condition": "hard-popmusic",
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 480,
+        "completed_construction_steps": 15604721,
+        "completed_ls_evaluations": 1616237294,
+        "evaluator_seconds": 1.9534211922436953,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 22.113050010000002,
+        "observer_timeouts": 0,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 4,
+        "registration_seconds": 0.6211141208186746,
+        "search_tour_evaluations": 491520,
+        "solve_jobs": 60,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1920,
+        "worker_seconds": 23.88438428984955
+      },
+      "generations": [
+        {
+          "generation": 0,
+          "panel_id": "5b39d3705fda48c7189f334f4479138795dfd279231093ae4d432e945d39ec1d",
+          "unique_programs": 8,
+          "winner_sha256": "67356ee0a2b28edce3fee3ad05dc0eb2f15d368da44988ca93d3490e9a7e9869"
+        },
+        {
+          "generation": 1,
+          "panel_id": "b73247336bc254b8d4ee6c5215a2a1d7e86294015f06108c7b00bbd12a216b96",
+          "unique_programs": 8,
+          "winner_sha256": "67356ee0a2b28edce3fee3ad05dc0eb2f15d368da44988ca93d3490e9a7e9869"
+        },
+        {
+          "generation": 2,
+          "panel_id": "9f7b1835d317f0f7ca8663755d557b4a1158b4b9767d17ab3a023b5d50afdbf0",
+          "unique_programs": 6,
+          "winner_sha256": "18525b20aa694f9da2a553e667e42234555a660069118b622856b77cfcd85675"
+        }
+      ],
+      "max_independent_cost_error": 3.907985046680551e-14,
+      "preserved_completed_records_after_pause": 7,
+      "protocol": {
+        "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+        "colonies": 32,
+        "constraint_mode": "hard",
+        "dimensions": [
+          500,
+          1000
+        ],
+        "driver_version": "610.43.02",
+        "escape_spec_id": 0,
+        "execution_host": "cuda05.ecs.vuw.ac.nz",
+        "extension_directory": "build/cuda",
+        "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+        "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+        "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+        "gpu_uuid": "GPU-f92178e7-9654-8706-adb7-bc338a8ea311",
+        "graph_catalog_path": "artifacts/graph-worker/catalog-v1.json",
+        "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+        "graph_prior_kind": "POPMUSIC",
+        "graph_spec_id": 1,
+        "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+        "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+        "matching_spec_id": 2,
+        "maximum_registered_per_dimension": 32,
+        "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+        "protocol_version": 5,
+        "settings": {
+          "ants": 32,
+          "backup_width": 64,
+          "beta": 1.0,
+          "epoch_source_probability": 0.01,
+          "initial_ls_evaluation_limit": 100000,
+          "ls_evaluation_limit": 100000,
+          "ls_width": 20,
+          "p_best": 0.1,
+          "primary_width": 16,
+          "retention": 0.5
+        },
+        "submission_boundary": "native_whole_panel_completed_and_verified"
+      },
+      "resources": {
+        "exit_code": 0,
+        "max_rss_kib": 334812,
+        "system_seconds": 3.24,
+        "user_seconds": 43.13,
+        "wall_seconds": 40.6
+      },
+      "run_id": "c0d3ed279ca377becdf9d128f6ecc344414d4aca395fc5255caaf8b0853f5888",
+      "search_tour_evaluations": 491520,
+      "settings": {
+        "budget_kind": "search_tour_evaluations",
+        "budgets": [
+          [
+            500,
+            256
+          ],
+          [
+            1000,
+            256
+          ]
+        ],
+        "evolution": {
+          "crossover_probability": 0.8,
+          "elites": 2,
+          "feature_spec_id": 2,
+          "generations": 3,
+          "initial_depth_max": 3,
+          "initial_depth_min": 1,
+          "max_depth": 5,
+          "max_nodes": 63,
+          "mutation_depth_max": 2,
+          "mutation_depth_min": 0,
+          "mutation_probability": 0.2,
+          "no_feedback": false,
+          "population": 8,
+          "tournament_size": 4
+        },
+        "evolution_seed": 1103,
+        "experiment_mask": 4294967295,
+        "infrastructure_retries": 1,
+        "instances_per_panel": 8,
+        "panel_seed": 73001,
+        "preparation_mode": "cached",
+        "scope": "engineering_development",
+        "solver_seeds_per_instance": 4,
+        "validation_seeds": [
+          17,
+          29,
+          41,
+          53
+        ]
+      },
+      "solve_jobs": 60,
+      "source_sha256": {
+        "checkpoint.py": "1f1474cb4d51e5211844e90bf253c487ca93bd78ff5ef306dc26a25552f18627",
+        "dataset_index.py": "02ea9f00d526efb6120d5cb95493540274738e82bcfa00fa8481c029eeff680e",
+        "evaluation_run.py": "36cba9c9abf2f286e864390c6e346a1e60a293e0d0154b4e3491b0416674f46c",
+        "evolution.py": "6d52a114fc9fe5cb07a433b5537ed6e4bc2ab29118214146175efafad03d1fbe",
+        "scripts/check_graph_training.py": "95f12756dec5744d6940c552e2393be1c05392341207545430a88cb3350f629a",
+        "summarize_training.py": "cf3cc4cb2e98d350c9b397385acd48f8146e03ba0638baa5336d545779a6b5a1",
+        "training.py": "2bf63e7468bd603428541a06120dd00f961df6aa8444240dda3305aefec1c170"
+      },
+      "training_individuals": 24,
+      "valid_members": 1920,
+      "validation_candidates": 6,
+      "variation_counts": {
+        "crossovers": 4,
+        "fallbacks": 0,
+        "mutations": 4
+      },
+      "work_by_phase": {
+        "training": {
+          "completed_batches": 384,
+          "completed_construction_steps": 12449852,
+          "completed_ls_evaluations": 1288485049,
+          "solve_jobs": 48,
+          "total_tour_evaluations": 393216
+        },
+        "validation": {
+          "completed_batches": 96,
+          "completed_construction_steps": 3154869,
+          "completed_ls_evaluations": 327752245,
+          "solve_jobs": 12,
+          "total_tour_evaluations": 98304
+        }
+      },
+      "worker_pids": [
+        609069,
+        609307,
+        610083
+      ]
+    },
+    {
+      "artifact_directory": "artifacts/graph-worker/train-escape-popmusic-v1",
+      "artifact_sha256": {
+        "checkpoint.json": "ee1aff0c97bf026915f88d370be6217cf9037460fe95d5c256d631aae1965b88",
+        "data_selection.json": "62c34e6ce0f7ab40799698700323ffebdcda3ec9192c56bfbd44a609a04435fc",
+        "manifest.json": "62be733a33a1d28aa6e27f2bc93c65af28d5505bde7fd914fa58a278727634a3",
+        "paused-checkpoint.json": "2054f576f8a4c8815c7d6c3e1d1cbb1602adb851598295268aa019901495d7dd",
+        "selected_program.json": "616911810628d02cf654d92eeb0f0bb1544c4e87edeaea1f72cff592ad24fbc8",
+        "summary.json": "ad448b4043b4b8fc516195ed239cbd0af70af8459c07b8859757dd961044b132"
+      },
+      "audit_path": "artifacts/graph-worker/train-escape-popmusic-v1-audit.json",
+      "audit_sha256": "327cfd4230443b34bfe999d4e52e7bb7396ef3968bdb379a2dd9f2532649ec6f",
+      "condition": "escape-popmusic",
+      "costs": {
+        "charged_seconds": 0.0,
+        "completed_batches": 480,
+        "completed_construction_steps": 8323420,
+        "completed_ls_evaluations": 1527180400,
+        "evaluator_seconds": 0.6821633595973253,
+        "failed_solves": 0,
+        "infrastructure_failures": 0,
+        "native_actual_seconds": 25.078431067999997,
+        "observer_timeouts": 0,
+        "overrun_seconds": 0.0,
+        "preparation_jobs": 4,
+        "registration_seconds": 0.6134994826279581,
+        "search_tour_evaluations": 491520,
+        "solve_jobs": 60,
+        "unobserved_terminated_attempts": 0,
+        "valid_members": 1920,
+        "worker_seconds": 26.843285921029747
+      },
+      "generations": [
+        {
+          "generation": 0,
+          "panel_id": "c77c6f7024ab10de831a5d24ba49511f7329766f9c3406943521ebdbc9e94215",
+          "unique_programs": 8,
+          "winner_sha256": "67356ee0a2b28edce3fee3ad05dc0eb2f15d368da44988ca93d3490e9a7e9869"
+        },
+        {
+          "generation": 1,
+          "panel_id": "aee6277dbc8144c91f3e1812645cf2d47a8e44059405536b0131123f0aa6092c",
+          "unique_programs": 8,
+          "winner_sha256": "67356ee0a2b28edce3fee3ad05dc0eb2f15d368da44988ca93d3490e9a7e9869"
+        },
+        {
+          "generation": 2,
+          "panel_id": "8f2274ddda7198f7246048d9d766f19e61595c9f99d38f8d5d62bea4d2a5eedf",
+          "unique_programs": 6,
+          "winner_sha256": "18525b20aa694f9da2a553e667e42234555a660069118b622856b77cfcd85675"
+        }
+      ],
+      "max_independent_cost_error": 3.552713678800501e-14,
+      "preserved_completed_records_after_pause": 7,
+      "protocol": {
+        "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+        "colonies": 32,
+        "constraint_mode": "escape",
+        "dimensions": [
+          500,
+          1000
+        ],
+        "driver_version": "610.43.02",
+        "escape_spec_id": 1,
+        "execution_host": "cuda05.ecs.vuw.ac.nz",
+        "extension_directory": "build/cuda",
+        "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+        "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+        "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+        "gpu_uuid": "GPU-f92178e7-9654-8706-adb7-bc338a8ea311",
+        "graph_catalog_path": "artifacts/graph-worker/catalog-v1.json",
+        "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+        "graph_prior_kind": "POPMUSIC",
+        "graph_spec_id": 1,
+        "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+        "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+        "matching_spec_id": 2,
+        "maximum_registered_per_dimension": 32,
+        "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+        "protocol_version": 5,
+        "settings": {
+          "ants": 32,
+          "backup_width": 64,
+          "beta": 1.0,
+          "epoch_source_probability": 0.01,
+          "initial_ls_evaluation_limit": 100000,
+          "ls_evaluation_limit": 100000,
+          "ls_width": 20,
+          "p_best": 0.1,
+          "primary_width": 16,
+          "retention": 0.5
+        },
+        "submission_boundary": "native_whole_panel_completed_and_verified"
+      },
+      "resources": {
+        "exit_code": 0,
+        "max_rss_kib": 334812,
+        "system_seconds": 8.74,
+        "user_seconds": 90.63,
+        "wall_seconds": 45.93
+      },
+      "run_id": "2b90dad8d63478e53d432e4ee3cedb5793d649ed8152421fee218eba57a446fb",
+      "search_tour_evaluations": 491520,
+      "settings": {
+        "budget_kind": "search_tour_evaluations",
+        "budgets": [
+          [
+            500,
+            256
+          ],
+          [
+            1000,
+            256
+          ]
+        ],
+        "evolution": {
+          "crossover_probability": 0.8,
+          "elites": 2,
+          "feature_spec_id": 2,
+          "generations": 3,
+          "initial_depth_max": 3,
+          "initial_depth_min": 1,
+          "max_depth": 5,
+          "max_nodes": 63,
+          "mutation_depth_max": 2,
+          "mutation_depth_min": 0,
+          "mutation_probability": 0.2,
+          "no_feedback": false,
+          "population": 8,
+          "tournament_size": 4
+        },
+        "evolution_seed": 1103,
+        "experiment_mask": 4294967295,
+        "infrastructure_retries": 1,
+        "instances_per_panel": 8,
+        "panel_seed": 73001,
+        "preparation_mode": "cached",
+        "scope": "engineering_development",
+        "solver_seeds_per_instance": 4,
+        "validation_seeds": [
+          17,
+          29,
+          41,
+          53
+        ]
+      },
+      "solve_jobs": 60,
+      "source_sha256": {
+        "checkpoint.py": "1f1474cb4d51e5211844e90bf253c487ca93bd78ff5ef306dc26a25552f18627",
+        "dataset_index.py": "02ea9f00d526efb6120d5cb95493540274738e82bcfa00fa8481c029eeff680e",
+        "evaluation_run.py": "36cba9c9abf2f286e864390c6e346a1e60a293e0d0154b4e3491b0416674f46c",
+        "evolution.py": "6d52a114fc9fe5cb07a433b5537ed6e4bc2ab29118214146175efafad03d1fbe",
+        "scripts/check_graph_training.py": "95f12756dec5744d6940c552e2393be1c05392341207545430a88cb3350f629a",
+        "summarize_training.py": "cf3cc4cb2e98d350c9b397385acd48f8146e03ba0638baa5336d545779a6b5a1",
+        "training.py": "2bf63e7468bd603428541a06120dd00f961df6aa8444240dda3305aefec1c170"
+      },
+      "training_individuals": 24,
+      "valid_members": 1920,
+      "validation_candidates": 6,
+      "variation_counts": {
+        "crossovers": 4,
+        "fallbacks": 0,
+        "mutations": 4
+      },
+      "work_by_phase": {
+        "training": {
+          "completed_batches": 384,
+          "completed_construction_steps": 6701016,
+          "completed_ls_evaluations": 1222540359,
+          "solve_jobs": 48,
+          "total_tour_evaluations": 393216
+        },
+        "validation": {
+          "completed_batches": 96,
+          "completed_construction_steps": 1622404,
+          "completed_ls_evaluations": 304640041,
+          "solve_jobs": 12,
+          "total_tour_evaluations": 98304
+        }
+      },
+      "worker_pids": [
+        610488,
+        610637,
+        611054
+      ]
+    }
+  ],
+  "training_totals": {
+    "search_tour_evaluations": 1966080,
+    "solve_jobs": 240,
+    "training_individuals": 96,
+    "valid_members": 7680
+  },
+  "wall_clock_limit": null,
+  "worker_matrix": {
+    "audit": {
+      "audit_source_sha256": "05030627f611d6ef3261b891b865d83a3a3d3024d2daa881f86beafb3b1c35a7",
+      "catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+      "escape_counters": {
+        "anchor_reactivations": 11445,
+        "construction_capacity_rejections": 0,
+        "construction_gates": 41615,
+        "construction_opportunities": 655344,
+        "construction_replaced_slots": 56149,
+        "escape_relocations": 10048,
+        "ls_anchor_nodes": 49236,
+        "ls_capacity_rejections": 0,
+        "ls_replaced_slots": 66677,
+        "new_edges": 29925,
+        "old_view_reactivations": 1632
+      },
+      "hard_tour_edges_checked": 480000,
+      "limits": [
+        "Full per-move Escape permission checked by separate native oracle tests",
+        "External LKH/matching already cached; not total end-to-end timing",
+        "Formal four-condition independent training/validation remains pending"
+      ],
+      "max_independent_cost_error": 3.552713678800501e-14,
+      "preparation_jobs": 8,
+      "routes": 1280,
+      "same_pid_replay_pairs": 16,
+      "scope": "engineering_development; no formal E3 inference",
+      "search_tour_evaluations": 114688,
+      "solve_jobs": 40,
+      "source_manifest_sha256": "7d6038ffbe9745b0274bbd281ee6a479cfc001a070f020a135c32dfe999325b8",
+      "status": "passed",
+      "workers": [
+        {
+          "protocol": {
+            "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+            "colonies": 32,
+            "constraint_mode": "hard",
+            "dimensions": [
+              500,
+              1000
+            ],
+            "driver_version": "610.43.02",
+            "escape_spec_id": 0,
+            "execution_host": "cuda05.ecs.vuw.ac.nz",
+            "extension_directory": "build/cuda",
+            "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+            "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+            "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+            "gpu_uuid": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978",
+            "graph_catalog_path": "artifacts/graph-worker/catalog-v1.json",
+            "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+            "graph_prior_kind": "ALPHA",
+            "graph_spec_id": 1,
+            "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+            "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+            "matching_spec_id": 2,
+            "maximum_registered_per_dimension": 32,
+            "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+            "protocol_version": 5,
+            "settings": {
+              "ants": 32,
+              "backup_width": 64,
+              "beta": 1.0,
+              "epoch_source_probability": 0.01,
+              "initial_ls_evaluation_limit": 100000,
+              "ls_evaluation_limit": 100000,
+              "ls_width": 20,
+              "p_best": 0.1,
+              "primary_width": 16,
+              "retention": 0.5
+            },
+            "submission_boundary": "native_whole_panel_completed_and_verified"
+          },
+          "runtime": {
+            "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+            "constraint_mode": "hard",
+            "device": {
+              "compute_capability_major": 12,
+              "compute_capability_minor": 0,
+              "name": "NVIDIA RTX PRO 5000 Blackwell",
+              "total_memory_bytes": 50795053056
+            },
+            "device_before_start": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978, NVIDIA RTX PRO 5000 Blackwell, 2, 0, 610.43.02",
+            "gpu_lock_path": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/.tmp/worker-GPU-d2f06ac8-94bb-9744-3791-f0d636d29978.lock",
+            "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+            "graph_prior_kind": "ALPHA",
+            "host": "cuda05.ecs.vuw.ac.nz",
+            "idle_observations": [
+              {
+                "device": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978, NVIDIA RTX PRO 5000 Blackwell, 2, 0, 610.43.02",
+                "foreign_processes": 0
+              }
+            ],
+            "pid": 607434,
+            "protocol_sha256": "1ce675746f7b3129e123c244f1dd3396279f28915006ad9db3129ce16784b346",
+            "start_method": "spawn",
+            "startup_seconds": 0.3666398418135941
+          }
+        },
+        {
+          "protocol": {
+            "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+            "colonies": 32,
+            "constraint_mode": "hard",
+            "dimensions": [
+              500,
+              1000
+            ],
+            "driver_version": "610.43.02",
+            "escape_spec_id": 0,
+            "execution_host": "cuda05.ecs.vuw.ac.nz",
+            "extension_directory": "build/cuda",
+            "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+            "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+            "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+            "gpu_uuid": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978",
+            "graph_catalog_path": "artifacts/graph-worker/catalog-v1.json",
+            "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+            "graph_prior_kind": "POPMUSIC",
+            "graph_spec_id": 1,
+            "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+            "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+            "matching_spec_id": 2,
+            "maximum_registered_per_dimension": 32,
+            "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+            "protocol_version": 5,
+            "settings": {
+              "ants": 32,
+              "backup_width": 64,
+              "beta": 1.0,
+              "epoch_source_probability": 0.01,
+              "initial_ls_evaluation_limit": 100000,
+              "ls_evaluation_limit": 100000,
+              "ls_width": 20,
+              "p_best": 0.1,
+              "primary_width": 16,
+              "retention": 0.5
+            },
+            "submission_boundary": "native_whole_panel_completed_and_verified"
+          },
+          "runtime": {
+            "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+            "constraint_mode": "hard",
+            "device": {
+              "compute_capability_major": 12,
+              "compute_capability_minor": 0,
+              "name": "NVIDIA RTX PRO 5000 Blackwell",
+              "total_memory_bytes": 50795053056
+            },
+            "device_before_start": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978, NVIDIA RTX PRO 5000 Blackwell, 2, 0, 610.43.02",
+            "gpu_lock_path": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/.tmp/worker-GPU-d2f06ac8-94bb-9744-3791-f0d636d29978.lock",
+            "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+            "graph_prior_kind": "POPMUSIC",
+            "host": "cuda05.ecs.vuw.ac.nz",
+            "idle_observations": [
+              {
+                "device": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978, NVIDIA RTX PRO 5000 Blackwell, 2, 0, 610.43.02",
+                "foreign_processes": 0
+              }
+            ],
+            "pid": 607592,
+            "protocol_sha256": "ea086f0d92ec91b9227ee0142f73d1c118d0731a58bcb1bf334c843e88af0c73",
+            "start_method": "spawn",
+            "startup_seconds": 0.23646082123741508
+          }
+        },
+        {
+          "protocol": {
+            "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+            "colonies": 32,
+            "constraint_mode": "escape",
+            "dimensions": [
+              500,
+              1000
+            ],
+            "driver_version": "610.43.02",
+            "escape_spec_id": 1,
+            "execution_host": "cuda05.ecs.vuw.ac.nz",
+            "extension_directory": "build/cuda",
+            "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+            "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+            "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+            "gpu_uuid": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978",
+            "graph_catalog_path": "artifacts/graph-worker/catalog-v1.json",
+            "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+            "graph_prior_kind": "ALPHA",
+            "graph_spec_id": 1,
+            "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+            "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+            "matching_spec_id": 2,
+            "maximum_registered_per_dimension": 32,
+            "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+            "protocol_version": 5,
+            "settings": {
+              "ants": 32,
+              "backup_width": 64,
+              "beta": 1.0,
+              "epoch_source_probability": 0.01,
+              "initial_ls_evaluation_limit": 100000,
+              "ls_evaluation_limit": 100000,
+              "ls_width": 20,
+              "p_best": 0.1,
+              "primary_width": 16,
+              "retention": 0.5
+            },
+            "submission_boundary": "native_whole_panel_completed_and_verified"
+          },
+          "runtime": {
+            "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+            "constraint_mode": "escape",
+            "device": {
+              "compute_capability_major": 12,
+              "compute_capability_minor": 0,
+              "name": "NVIDIA RTX PRO 5000 Blackwell",
+              "total_memory_bytes": 50795053056
+            },
+            "device_before_start": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978, NVIDIA RTX PRO 5000 Blackwell, 2, 0, 610.43.02",
+            "gpu_lock_path": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/.tmp/worker-GPU-d2f06ac8-94bb-9744-3791-f0d636d29978.lock",
+            "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+            "graph_prior_kind": "ALPHA",
+            "host": "cuda05.ecs.vuw.ac.nz",
+            "idle_observations": [
+              {
+                "device": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978, NVIDIA RTX PRO 5000 Blackwell, 2, 0, 610.43.02",
+                "foreign_processes": 0
+              }
+            ],
+            "pid": 607752,
+            "protocol_sha256": "d3adbd1d416ae9bda7bd970c8e183ced67963c16760b049db5cca868f4492a22",
+            "start_method": "spawn",
+            "startup_seconds": 0.241374549921602
+          }
+        },
+        {
+          "protocol": {
+            "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+            "colonies": 32,
+            "constraint_mode": "escape",
+            "dimensions": [
+              500,
+              1000
+            ],
+            "driver_version": "610.43.02",
+            "escape_spec_id": 1,
+            "execution_host": "cuda05.ecs.vuw.ac.nz",
+            "extension_directory": "build/cuda",
+            "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
+            "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+            "gpu_model": "NVIDIA RTX PRO 5000 Blackwell",
+            "gpu_uuid": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978",
+            "graph_catalog_path": "artifacts/graph-worker/catalog-v1.json",
+            "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+            "graph_prior_kind": "POPMUSIC",
+            "graph_spec_id": 1,
+            "implementation_sha256": "53fe661cd8e7cc303870a86ef90a951de0df16825f39b45e268011a1834d3600",
+            "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
+            "matching_spec_id": 2,
+            "maximum_registered_per_dimension": 32,
+            "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
+            "protocol_version": 5,
+            "settings": {
+              "ants": 32,
+              "backup_width": 64,
+              "beta": 1.0,
+              "epoch_source_probability": 0.01,
+              "initial_ls_evaluation_limit": 100000,
+              "ls_evaluation_limit": 100000,
+              "ls_width": 20,
+              "p_best": 0.1,
+              "primary_width": 16,
+              "retention": 0.5
+            },
+            "submission_boundary": "native_whole_panel_completed_and_verified"
+          },
+          "runtime": {
+            "binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+            "constraint_mode": "escape",
+            "device": {
+              "compute_capability_major": 12,
+              "compute_capability_minor": 0,
+              "name": "NVIDIA RTX PRO 5000 Blackwell",
+              "total_memory_bytes": 50795053056
+            },
+            "device_before_start": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978, NVIDIA RTX PRO 5000 Blackwell, 2, 0, 610.43.02",
+            "gpu_lock_path": "/vol/grid-solar/sgeusers/linbocheng/SparseACO/GPLSACO/.tmp/worker-GPU-d2f06ac8-94bb-9744-3791-f0d636d29978.lock",
+            "graph_catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+            "graph_prior_kind": "POPMUSIC",
+            "host": "cuda05.ecs.vuw.ac.nz",
+            "idle_observations": [
+              {
+                "device": "GPU-d2f06ac8-94bb-9744-3791-f0d636d29978, NVIDIA RTX PRO 5000 Blackwell, 2, 0, 610.43.02",
+                "foreign_processes": 0
+              }
+            ],
+            "pid": 607910,
+            "protocol_sha256": "e48ae5c668d0de6a3314e8555be8f36fd7b56b33407b92b65a2fa47027dbfb33",
+            "start_method": "spawn",
+            "startup_seconds": 0.2449663351289928
+          }
+        }
+      ]
+    },
+    "audit_file_sha256": "d2d81ef875f894f904fe5848a83c00bd2de492c6e83b95b5e75fb02b7e044816",
+    "resources": {
+      "exit_code": 0,
+      "max_rss_kib": 350596,
+      "system_seconds": 4.73,
+      "user_seconds": 37.51,
+      "wall_seconds": 27.28
+    }
+  },
+  "worker_matrix_source_snapshot_sha256": "fcfee4fba86adc1d17920f7e12dc1479a352d5be6ecf7f7ae604fe7a00104bab"
+}

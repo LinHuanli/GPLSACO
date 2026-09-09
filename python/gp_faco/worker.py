@@ -23,6 +23,7 @@ import numpy as np
 from gp_faco.baseline_policy import BaselinePolicy
 from gp_faco.data import Instance
 from gp_faco.factorial_policy import FactorialPolicy
+from gp_faco.graph_catalog import GraphCatalog
 from gp_faco.program_ir import Program
 
 PROJECT = Path(__file__).resolve().parents[2]
@@ -50,6 +51,8 @@ def implementation_hash() -> str:
                 "baseline_policy.py",
                 "factorial_policy.py",
                 "behavior.py",
+                "graph_catalog.py",
+                "graph_matching.py",
             )
         }
     )
@@ -133,6 +136,10 @@ class WorkerProtocol:
     extension_directory: str = "build/cuda"
     maximum_registered_per_dimension: int = 1024
     execution_host: str = field(default_factory=platform.node)
+    constraint_mode: str = "unrestricted"
+    graph_prior_kind: str | None = None
+    graph_catalog_path: str | None = None
+    graph_catalog_sha256: str | None = None
     implementation_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
@@ -162,15 +169,56 @@ class WorkerProtocol:
         directory = (PROJECT / self.extension_directory).resolve()
         if not directory.is_relative_to(PROJECT):
             raise ValueError("扩展必须位于GPLSACO内")
+        if self.constraint_mode not in ("unrestricted", "hard", "escape"):
+            raise ValueError("未知图限制模式")
+        catalog = None
+        if self.constraint_mode == "unrestricted":
+            if any(
+                v is not None
+                for v in (self.graph_prior_kind, self.graph_catalog_path, self.graph_catalog_sha256)
+            ):
+                raise ValueError("普通worker不能携带图先验或图目录")
+        else:
+            if self.graph_prior_kind not in ("ALPHA", "POPMUSIC"):
+                raise ValueError("图worker必须固定一个先验类型")
+            catalog = GraphCatalog(PROJECT, self.graph_catalog_path, self.graph_catalog_sha256)
+            catalog.require_settings(self.settings)
+            if self.constraint_mode == "escape" and (
+                self.settings.primary_width > 16
+                or self.settings.backup_width > 64
+                or self.settings.ls_width > 20
+            ):
+                raise ValueError("Escape超出已验证物理槽位上限")
+        # 不将整份目录反复展开到每个task/checkpoint；manifest已绑定完整文件SHA。
+        object.__setattr__(self, "_graph_catalog", catalog)
+
+    @property
+    def graph_catalog(self) -> GraphCatalog | None:
+        return self._graph_catalog
+
+    def graph_identity(self, problems) -> dict:
+        if self.graph_catalog is None:
+            return {}
+        return {"graph_inputs": self.graph_catalog.describe(problems, self.graph_prior_kind)}
 
     def manifest(self) -> dict:
         return {
             **asdict(self),
-            "protocol_version": 4,
+            "protocol_version": 5,
             "preparation_fee_policy": "wall_clock_charged_or_count_mode_resource_only",
             "instance_key_policy": "uint64_prefix_ordered_continuous_fp64_v1",
             "fitness_spec_id": "reference_gap_instance_then_scale_macro_v1",
             "submission_boundary": "native_whole_panel_completed_and_verified",
+            "gpu_lease_policy": "git_common_root_uuid_lock_v1",
+            **(
+                {
+                    "graph_spec_id": 1,
+                    "matching_spec_id": 2,
+                    "escape_spec_id": 1 if self.constraint_mode == "escape" else 0,
+                }
+                if self.graph_catalog is not None
+                else {}
+            ),
         }
 
     @property
@@ -206,12 +254,15 @@ def _task_manifest(task, protocol):
         or task.evaluation_limit_per_colony // protocol.settings.ants > 0xFFFFFFFF
     ):
         raise ValueError("次数限额必须为ants整批且批次数不超出uint32")
+    if protocol.graph_catalog is not None and task.evaluation_limit_per_colony is None:
+        raise ValueError("图worker只接受无时间上限的evaluation-count任务")
     return {
         "occurrence_id": task.occurrence_id,
         **task.controller_identity(),
         "protocol_sha256": protocol.sha256,
         "dimension": task.dimension,
         "problems": [(p.instance_id, coordinate_hash(p)) for p in task.problems],
+        **protocol.graph_identity(task.problems),
         "replicas": task.replicas,
         "budget_seconds": task.budget_seconds,
         "evaluation_limit_per_colony": task.evaluation_limit_per_colony,
@@ -395,6 +446,7 @@ class BaselineTask:
 _runtime: dict = {}
 _engines: dict = {}
 _registered: dict = {}
+_registration_fees: dict = {}
 _engine_generations: dict = {}
 _assigned_charges: dict = {}
 _protocol: WorkerProtocol | None = None
@@ -412,10 +464,47 @@ def _settings_object():
 def _replace_engine(dimension: int) -> None:
     # 只在任务边界替换通用缓冲；容量策略属于公开protocol，不在批内作隐式释放。
     _engines.pop(dimension, None)
-    _engines[dimension] = _native.FacoBatchEngine(dimension, _protocol.colonies, _settings_object())
+    _engines[dimension] = _native.FacoBatchEngine(
+        dimension, _protocol.colonies, _settings_object(), _protocol.constraint_mode
+    )
     _registered[dimension] = {}
+    _registration_fees[dimension] = {}
     _assigned_charges[dimension] = {}
     _engine_generations[dimension] = _engine_generations.get(dimension, -1) + 1
+
+
+def _wait_for_idle(protocol):
+    """已持UUID锁但尚未创建CUDA上下文；等待上一进程释放后的空闲读数。"""
+    observations = []
+    while True:
+        apps = subprocess.check_output(
+            ["nvidia-smi", "--query-compute-apps=gpu_uuid,pid", "--format=csv,noheader"], text=True
+        )
+        if any(
+            row and row[0].strip() == protocol.gpu_uuid for row in csv.reader(apps.splitlines())
+        ):
+            raise RuntimeError("指定GPU已有计算进程，worker不启动")
+        device = subprocess.check_output(
+            [
+                "nvidia-smi",
+                f"--id={protocol.gpu_uuid}",
+                "--query-gpu=uuid,name,memory.used,utilization.gpu,driver_version",
+                "--format=csv,noheader,nounits",
+            ],
+            text=True,
+        )
+        row = [value.strip() for value in next(csv.reader(device.splitlines()))]
+        if (
+            row[0] != protocol.gpu_uuid
+            or row[1] != protocol.gpu_model
+            or (row[4] != protocol.driver_version)
+        ):
+            raise RuntimeError("实际GPU/driver与任务硬件协议不一致")
+        observations.append({"device": device.strip(), "foreign_processes": 0})
+        if int(row[2]) <= 1024 and int(row[3]) <= 5:
+            return device, observations
+        # 观察等待不扣搜索FE、不产生求解deadline；下一次仍重查外来进程。
+        time.sleep(1)
 
 
 def _initialize(protocol: WorkerProtocol) -> None:
@@ -434,31 +523,27 @@ def _initialize(protocol: WorkerProtocol) -> None:
         raise RuntimeError("CUDA扩展与冻结的任务协议指纹不同")
     for relative in (".tmp", ".cache/cuda"):
         (PROJECT / relative).mkdir(parents=True, exist_ok=True)
-    _lease = (PROJECT / ".tmp" / f"worker-{protocol.gpu_uuid}.lock").open("a")
+    # 各隔离工作树必须使用同一UUID锁，不能各自在自己的.tmp中持有无关锁。
+    common_git = Path(
+        subprocess.check_output(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            cwd=PROJECT,
+            text=True,
+        ).strip()
+    ).resolve()
+    workspace = common_git.parent
+    if common_git.name != ".git" or not PROJECT.is_relative_to(workspace):
+        raise RuntimeError("无法确定项目内所有工作树共享的GPU锁目录")
+    lock_path = workspace / ".tmp" / f"worker-{protocol.gpu_uuid}.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    _lease = lock_path.open("a")
     fcntl.flock(_lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    apps = subprocess.check_output(
-        ["nvidia-smi", "--query-compute-apps=gpu_uuid,pid", "--format=csv,noheader"], text=True
-    )
-    if any(row and row[0].strip() == protocol.gpu_uuid for row in csv.reader(apps.splitlines())):
-        raise RuntimeError("指定GPU已有计算进程，worker不启动")
-    device = subprocess.check_output(
-        [
-            "nvidia-smi",
-            f"--id={protocol.gpu_uuid}",
-            "--query-gpu=uuid,name,memory.used,utilization.gpu,driver_version",
-            "--format=csv,noheader,nounits",
-        ],
-        text=True,
-    )
-    row = [value.strip() for value in next(csv.reader(device.splitlines()))]
-    if (
-        row[0] != protocol.gpu_uuid
-        or row[1] != protocol.gpu_model
-        or row[4] != protocol.driver_version
-    ):
-        raise RuntimeError("实际GPU/driver与任务硬件协议不一致")
-    if int(row[2]) > 1024 or int(row[3]) > 5:
-        raise RuntimeError("指定GPU未满足空闲阈值")
+    if protocol.graph_catalog is not None:
+        # spawn期间重验目录身份；子进程不能依赖协调端更早读取的可变文件。
+        catalog = GraphCatalog(PROJECT, protocol.graph_catalog_path, protocol.graph_catalog_sha256)
+        catalog.require_settings(protocol.settings)
+        object.__setattr__(protocol, "_graph_catalog", catalog)
+    device, idle_observations = _wait_for_idle(protocol)
     os.environ["CUDA_VISIBLE_DEVICES"] = protocol.gpu_uuid
     os.environ["CUDA_CACHE_PATH"] = str(PROJECT / ".cache/cuda")
     os.environ["TMPDIR"] = str(PROJECT / ".tmp")
@@ -480,6 +565,11 @@ def _initialize(protocol: WorkerProtocol) -> None:
         "device": device_info,
         "startup_seconds": time.perf_counter() - started,
         "binary_sha256": protocol.binary_sha256,
+        "gpu_lock_path": str(lock_path),
+        "constraint_mode": protocol.constraint_mode,
+        "graph_prior_kind": protocol.graph_prior_kind,
+        "graph_catalog_sha256": protocol.graph_catalog_sha256,
+        "idle_observations": idle_observations,
     }
 
 
@@ -494,14 +584,28 @@ def _register(problems: tuple[Instance, ...]) -> tuple[dict, dict]:
     if len(_registered[n]) + len(new_keys) > _protocol.maximum_registered_per_dimension:
         _replace_engine(n)
     fees = {}
+    graph_ids = {
+        row["instance_id"]: row
+        for row in _protocol.graph_identity(problems).get("graph_inputs", ())
+    }
     for problem in problems:
         key, fingerprint = problem_keys[problem.instance_id], coordinate_hash(problem)
+        if graph_ids:
+            fingerprint = content_hash(graph_ids[problem.instance_id])
         old = _registered[n].get(key)
         if old is not None and old != fingerprint:
-            raise ValueError("不同坐标的实例key发生64位碰撞")
-        fees[problem.instance_id] = _engines[n].register_problem(
-            key, np.asarray(problem.coordinates, dtype=np.float64)
-        )
+            raise ValueError("实例key发生64位碰撞或已注册图身份改变")
+        if graph_ids:
+            if old is None:
+                graph = _protocol.graph_catalog.load_graph(problem, _protocol.graph_prior_kind)
+                _registration_fees[n][key] = _engines[n].register_graph_problem(
+                    key, np.asarray(problem.coordinates, dtype=np.float64), graph
+                )
+            fees[problem.instance_id] = dict(_registration_fees[n][key])
+        else:
+            fees[problem.instance_id] = _engines[n].register_problem(
+                key, np.asarray(problem.coordinates, dtype=np.float64)
+            )
         _registered[n][key] = fingerprint
     return problem_keys, fees
 
@@ -513,6 +617,7 @@ def _prepare(problems: tuple[Instance, ...]) -> dict:
         "protocol_sha256": _protocol.sha256,
         "dimension": n,
         "problems": [(p.instance_id, coordinate_hash(p)) for p in problems],
+        **_protocol.graph_identity(problems),
     }
     output = {
         **description,
@@ -545,6 +650,7 @@ def _execute(task: SolveTask | BaselineTask | FactorialTask) -> dict:
         "occurrence_id": task.occurrence_id,
         "dimension": task.dimension,
         "worker_pid": os.getpid(),
+        **_protocol.graph_identity(task.problems),
     }
     try:
         n = task.dimension
@@ -651,6 +757,7 @@ class PersistentGpuWorker:
             or len(frozen) > self.protocol.colonies
         ):
             raise ValueError("准备问题超出固定worker规模或容量")
+        self.protocol.graph_identity(frozen)
         self._check_idle()
         self._active = self._executor.submit(_prepare, frozen)
         return self._active

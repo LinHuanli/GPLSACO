@@ -1,0 +1,256 @@
+{
+  "a5000_matrix": {
+    "audit_source_sha256": "05030627f611d6ef3261b891b865d83a3a3d3024d2daa881f86beafb3b1c35a7",
+    "catalog_sha256": "242b47dd677006de4d8a32925dc4166ddee8d37561a2e4ebd9d47e7a13a2e689",
+    "escape_counters": {
+      "anchor_reactivations": 11445,
+      "construction_capacity_rejections": 0,
+      "construction_gates": 41615,
+      "construction_opportunities": 655344,
+      "construction_replaced_slots": 56149,
+      "escape_relocations": 10048,
+      "ls_anchor_nodes": 49236,
+      "ls_capacity_rejections": 0,
+      "ls_replaced_slots": 66677,
+      "new_edges": 29925,
+      "old_view_reactivations": 1632
+    },
+    "hard_tour_edges_checked": 480000,
+    "limits": [
+      "Full per-move Escape permission checked by separate native oracle tests",
+      "External LKH/matching already cached; not total end-to-end timing",
+      "Formal four-condition independent training/validation remains pending"
+    ],
+    "max_independent_cost_error": 3.552713678800501e-14,
+    "preparation_jobs": 8,
+    "routes": 1280,
+    "same_pid_replay_pairs": 16,
+    "scope": "engineering_development; no formal E3 inference",
+    "search_tour_evaluations": 114688,
+    "solve_jobs": 40,
+    "source_manifest_sha256": "6969e87f43e323ef14f87999f8b10e66956a8fdfd1401f276ea45d422795164b",
+    "status": "passed"
+  },
+  "a5000_matrix_resources": {
+    "exit_code": 0,
+    "max_rss_kib": 276012,
+    "system_seconds": 4.39,
+    "user_seconds": 31.24,
+    "wall_seconds": 42.87
+  },
+  "a5000_workers": [
+    {
+      "constraint_mode": "hard",
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A5000",
+      "gpu_uuid": "GPU-cc91c3d0-a556-edeb-c53f-b64bf8bbe1f7",
+      "host": "cuda03.sms.vuw.ac.nz",
+      "idle_observations": [
+        {
+          "device": "GPU-cc91c3d0-a556-edeb-c53f-b64bf8bbe1f7, NVIDIA RTX A5000, 4, 0, 610.43.02",
+          "foreign_processes": 0
+        }
+      ],
+      "pid": 3481071,
+      "prior_kind": "ALPHA"
+    },
+    {
+      "constraint_mode": "hard",
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A5000",
+      "gpu_uuid": "GPU-cc91c3d0-a556-edeb-c53f-b64bf8bbe1f7",
+      "host": "cuda03.sms.vuw.ac.nz",
+      "idle_observations": [
+        {
+          "device": "GPU-cc91c3d0-a556-edeb-c53f-b64bf8bbe1f7, NVIDIA RTX A5000, 4, 0, 610.43.02",
+          "foreign_processes": 0
+        }
+      ],
+      "pid": 3481195,
+      "prior_kind": "POPMUSIC"
+    },
+    {
+      "constraint_mode": "escape",
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A5000",
+      "gpu_uuid": "GPU-cc91c3d0-a556-edeb-c53f-b64bf8bbe1f7",
+      "host": "cuda03.sms.vuw.ac.nz",
+      "idle_observations": [
+        {
+          "device": "GPU-cc91c3d0-a556-edeb-c53f-b64bf8bbe1f7, NVIDIA RTX A5000, 4, 0, 610.43.02",
+          "foreign_processes": 0
+        }
+      ],
+      "pid": 3481306,
+      "prior_kind": "ALPHA"
+    },
+    {
+      "constraint_mode": "escape",
+      "driver_version": "610.43.02",
+      "gpu_model": "NVIDIA RTX A5000",
+      "gpu_uuid": "GPU-cc91c3d0-a556-edeb-c53f-b64bf8bbe1f7",
+      "host": "cuda03.sms.vuw.ac.nz",
+      "idle_observations": [
+        {
+          "device": "GPU-cc91c3d0-a556-edeb-c53f-b64bf8bbe1f7, NVIDIA RTX A5000, 4, 0, 610.43.02",
+          "foreign_processes": 0
+        }
+      ],
+      "pid": 3481430,
+      "prior_kind": "POPMUSIC"
+    }
+  ],
+  "artifacts": {
+    "artifacts/e3/a5000-worker-matrix-v1-audit.json": "034d0c1dc774747f98b25bbcaccf277e67fd011c547750ae7ea5c2494020b37f",
+    "artifacts/e3/a5000-worker-matrix-v1/manifest.json": "6969e87f43e323ef14f87999f8b10e66956a8fdfd1401f276ea45d422795164b",
+    "artifacts/e3/graph-audit-v1.json": "9a82a15158251be5220f955285749c79eb1f0c943f0c9caacfb9cb4a258b06cc",
+    "artifacts/e3/graph-catalog-v1.json": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+    "artifacts/e3/graph-preparation-v1/manifest.json": "29897ad4173d24d3e9e870512de0216d21eccd4d3777f01907b664b06b07607a"
+  },
+  "audit_resources": {
+    "exit_code": 0,
+    "max_rss_kib": 187616,
+    "system_seconds": 10.7,
+    "user_seconds": 1378.89,
+    "wall_seconds": 183.65
+  },
+  "candidate_binary_sha256": "ce924b112288d485fb5c699c8241f819d410568962de39971cc993e6304169d8",
+  "checks": [
+    {
+      "passed": 38,
+      "path": ".tmp/pytest-e3-preparation-v2.log",
+      "scope": "initial preparation/prior/graph target run; eight opt-in LKH replay tests skipped",
+      "sha256": "fe6ac6eaf51308f49d3697545a5d7560ed22c91f69d436344be16de3d261d31e",
+      "skipped": 8
+    },
+    {
+      "passed": 36,
+      "path": ".tmp/pytest-e3-preparation-static-v3.log",
+      "scope": "preparation/auditor membership plus configuration search, including static-only full validation/resume",
+      "sha256": "822251e6cd7f36f6a42547eed4c18effa944045ac43e8be33fd1b8f75bb5d13d",
+      "skipped": 0
+    },
+    {
+      "passed": 26,
+      "path": ".tmp/pytest-e3-auditor-v4.log",
+      "scope": "final preparation/auditor tests after parallel audit refactor",
+      "sha256": "ec719c1deaba12ffa9b9532c28eb76851633a410971fceaf5e456188611512fc",
+      "skipped": 0
+    }
+  ],
+  "engineering_check_report_sha256": "23cfc829dbd6c18402f45d0fb58b870dd7ea165a2b3234d658db37a28ff021cc",
+  "engineering_check_source_archive_sha256": "2e69f3b5fcb99ac5b71c018ca9916f394a97bd214f4d4d8411ea6d4b66c73907",
+  "graph_audit": {
+    "audit_source_sha256": "84d9c926d07ddbc5e27d85db2cd360b50996e85fe4341865cece68100c04ad2f",
+    "catalog_path": "artifacts/e3/graph-catalog-v1.json",
+    "catalog_sha256": "e7aee30b8feef55182cbf0ee049989f93200530a11c5bc3fde719eb4b57064e3",
+    "formal_test_released": false,
+    "graphs": 4592,
+    "input_manifest_sha256": "29897ad4173d24d3e9e870512de0216d21eccd4d3777f01907b664b06b07607a",
+    "instances": 2296,
+    "label_queries": 0,
+    "max_common_cost_error": 8.171241461241152e-14,
+    "modes": {
+      "fresh_paired_preparation": 2264,
+      "reuse_verified_development_cache": 32
+    },
+    "plan_sha256": "8a43009604769d94898f2d92b066072c29f0ea6685de6521519aa2d730150822",
+    "scope": "complete non-test graph preparation audit; formal training gate pending",
+    "status": "passed",
+    "wall_seconds": 182.70189533708617,
+    "workers": [
+      {
+        "host": "cuda05.ecs.vuw.ac.nz",
+        "pid": 616277
+      },
+      {
+        "host": "cuda05.ecs.vuw.ac.nz",
+        "pid": 616280
+      },
+      {
+        "host": "cuda05.ecs.vuw.ac.nz",
+        "pid": 616281
+      },
+      {
+        "host": "cuda05.ecs.vuw.ac.nz",
+        "pid": 616282
+      },
+      {
+        "host": "cuda05.ecs.vuw.ac.nz",
+        "pid": 616283
+      },
+      {
+        "host": "cuda05.ecs.vuw.ac.nz",
+        "pid": 616284
+      },
+      {
+        "host": "cuda05.ecs.vuw.ac.nz",
+        "pid": 616285
+      },
+      {
+        "host": "cuda05.ecs.vuw.ac.nz",
+        "pid": 616286
+      }
+    ]
+  },
+  "graph_totals": {
+    "edges_per_graph": 5442898,
+    "ls_slots": 9576653,
+    "native_backup_slots": 143,
+    "nodes": 1723000,
+    "primary_slots": 9576653,
+    "uniform_slots": 27568000
+  },
+  "limitations": [
+    "Formal 20 GP training/validation runs and four Static searches have not begun",
+    "No formal TEST coordinates, labels, or outcomes used in this preparation",
+    "GPU timings kept by model; no claim of universal cross-device bitwise identity",
+    "Reference labels have no independently verified optimality certificates; parentage metadata unavailable"
+  ],
+  "native_binary_sha256": "fdd64ce88f8e58b144c95cc97805fe213fc96bffeae7674d51be981aa4d701bd",
+  "original_candidate_resources_by_mode": {
+    "fresh_paired_preparation": {
+      "ALPHA": {
+        "calls": 2264,
+        "cpu_system_seconds": 4.881514,
+        "cpu_user_seconds": 1165.325895,
+        "note": "sum of original per-native receipts; parallel wall sum is not coordinator elapsed; cached receipts are historical costs",
+        "wall_seconds": 1230.314559600316
+      },
+      "POPMUSIC": {
+        "calls": 2264,
+        "cpu_system_seconds": 3.148001,
+        "cpu_user_seconds": 554.242189,
+        "note": "sum of original per-native receipts; parallel wall sum is not coordinator elapsed; cached receipts are historical costs",
+        "wall_seconds": 584.4204291529022
+      }
+    },
+    "reuse_verified_development_cache": {
+      "ALPHA": {
+        "calls": 32,
+        "cpu_system_seconds": 0.14179799999999998,
+        "cpu_user_seconds": 19.874725999999995,
+        "note": "sum of original per-native receipts; parallel wall sum is not coordinator elapsed; cached receipts are historical costs",
+        "wall_seconds": 21.254054157063365
+      },
+      "POPMUSIC": {
+        "calls": 32,
+        "cpu_system_seconds": 0.09278800000000002,
+        "cpu_user_seconds": 10.671503000000003,
+        "note": "sum of original per-native receipts; parallel wall sum is not coordinator elapsed; cached receipts are historical costs",
+        "wall_seconds": 11.148508189246058
+      }
+    }
+  },
+  "plan_file_sha256": "8071ead998f911a4cc435a5ed43aaccd2853fc28398f1960546b455c4b9d5af0",
+  "plan_sha256": "8a43009604769d94898f2d92b066072c29f0ea6685de6521519aa2d730150822",
+  "preparation_resources": {
+    "exit_code": 0,
+    "max_rss_kib": 203728,
+    "system_seconds": 35.75,
+    "user_seconds": 3853.75,
+    "wall_seconds": 602.39
+  },
+  "scope": "formal E3 graph preparation and prerequisites; full GP/Static execution gate pending",
+  "status": "passed"
+}

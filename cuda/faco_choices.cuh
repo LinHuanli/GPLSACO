@@ -37,7 +37,7 @@ __device__ inline double uniform53(curandStatePhilox4_32_10_t& state) {
 template<class Allowed>
 __device__ bool available_node(const std::uint8_t* visited, const Node* tour,
     const Node* position, Node n, Node current, Node node, const Allowed& allowed) {
-    if (visited[node]) return false;
+    if (node >= n || visited[node]) return false;
     // 无约束的主实验路径保留原有visited筛选，不额外执行图/重连判断。
     if constexpr (std::is_same_v<Allowed, UnrestrictedEdges>) return true;
     else return relocation_allowed(tour, position, n, current, node, allowed);
