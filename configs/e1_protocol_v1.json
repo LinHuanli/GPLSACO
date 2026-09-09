@@ -1,0 +1,82 @@
+{
+  "protocol_spec_id": 1,
+  "scope": "E1_training_and_preregistered_comparisons",
+  "conditions": ["GP-Full", "GP-NoFeedback"],
+  "evolution_seeds": [1103, 2207, 3313, 4409, 5519],
+  "dimensions": [500, 1000],
+  "colonies": 32,
+  "maximum_registered_per_dimension": 1056,
+  "gpu_model": "NVIDIA RTX A5000",
+  "driver_version": "610.43.02",
+  "wall_clock_limit": null,
+  "solver": {
+    "ants": 32,
+    "primary_width": 16,
+    "backup_width": 64,
+    "ls_width": 20,
+    "beta": 1.0,
+    "retention": 0.5,
+    "p_best": 0.1,
+    "epoch_source_probability": 0.01,
+    "ls_evaluation_limit": 100000,
+    "initial_ls_evaluation_limit": 100000
+  },
+  "evolution": {
+    "population": 128,
+    "generations": 50,
+    "initial_depth_min": 1,
+    "initial_depth_max": 3,
+    "max_depth": 5,
+    "max_nodes": 63,
+    "tournament_size": 4,
+    "elites": 4,
+    "crossover_probability": 0.8,
+    "mutation_probability": 0.2,
+    "mutation_depth_min": 0,
+    "mutation_depth_max": 2,
+    "feature_spec_id": 2
+  },
+  "training": {
+    "panel_seed": 73001,
+    "instances_per_panel": 16,
+    "solver_seeds_per_instance": 2,
+    "validation_seeds": [17, 29],
+    "budgets": [[500, 4096], [1000, 4096]],
+    "preparation_mode": "cached",
+    "experiment_mask": 4294967295,
+    "infrastructure_retries": 1,
+    "budget_kind": "search_tour_evaluations"
+  },
+  "data": {
+    "training_split": "train",
+    "validation_split": "validation",
+    "test_split": "test",
+    "selection": "all members of the existing independently indexed split",
+    "expected_counts": {
+      "500": {"train": 63744, "validation": 256, "test": 128},
+      "1000": {"train": 63648, "validation": 256, "test": 128}
+    },
+    "parentage_limitation": "rotation_scaling_subsampling_parent_metadata_unavailable",
+    "label_status": "user_supplied_reference; no independent optimality certificate"
+  },
+  "comparison": {
+    "primary_fe_per_colony": 4096,
+    "additional_fe_per_colony": [1024, 16384],
+    "solve_seeds": [17, 29, 41, 53, 67, 79, 97, 109, 127, 149],
+    "primary_contrasts": ["GP-Full versus Static-Control", "GP-Full versus Rule-Control", "GP-Full versus GP-NoFeedback"],
+    "sign": "control reference gap minus GP-Full reference gap",
+    "statistical_unit": "instance; solve seeds averaged within instance; all five GP training replicates reported",
+    "macro_weighting": "equal weight for 500 and 1000",
+    "bootstrap": {"replicates": 10000, "seed": 20260909, "confidence": 0.95, "stratify_by_dimension": true},
+    "p_value": {"method": "paired random sign permutation of per-instance differences", "replicates": 100000, "seed": 20260910, "alternative": "two_sided", "correction": "Holm over three primary contrasts"},
+    "failure_policy": "retain every predefined failure; no finite-only primary comparison",
+    "test_gate": "all 10 training/validation runs and full 776-configuration baseline tuning independently audited and selected identities sealed"
+  },
+  "execution": {
+    "independent_training_and_baseline_tuning_may_run_in_parallel": true,
+    "training_reads_baseline_results": false,
+    "training_reads_test_labels_or_scores": false,
+    "main_constraint_mode": "unrestricted",
+    "mechanism_forks_and_external_references": "separate preregistered work; not claimed complete by primary training"
+  }
+}

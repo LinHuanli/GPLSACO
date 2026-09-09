@@ -2,10 +2,11 @@
 
 - 所有代码、构建、虚拟环境、临时文件和运行输出均位于本目录；外部 `../Datasets` 与 `../references` 只读。
 - 以 `docs/design/GP_ACO_TSP_Research_Proposal_v4.md` 为科学范围；实现细化见 `docs/README.md`。不得把准备工作或 smoke test 写成 E1–E4 的完成证据。
+- 按用户2026-09-09最新指示，后续只使用实时空闲的RTX A5000；用gpu-free发现并核查目标设备。旧的“任意空闲型号”授权已被收紧。
+- 不再进行文件、代码版本、检查点和实验管理记录的哈希计算或完整性哈希校验；训练、验证、测试、恢复均适用。采用普通编号、参数记录和必要的直接数据检查。算法内部若哈希适合性能与正确性则可使用，不为统一禁用而改变算法。
 - 按用户2026-09-08补充，进化和ACO主实验按evaluation次数终止，尽量不设时间上限；最新协议见 `docs/planning/12_evaluation_count_protocol.md`，优先于旧wall-clock主协议。旧计时记录保留为工程证据。
 - Python 管理离线 GP；C++17/CUDA 执行在线求解。新增核心逻辑写中文注释，保留第三方原有版权。
 - 求解器输入不包含最优值、最优 tour 或标签文件路径；评分位于外部 evaluator。
 - 使用项目 `.venv`；设置 `TMPDIR=$PWD/.tmp`、`PIP_CACHE_DIR=$PWD/.cache/pip`。只版本化源码、配置、manifest 和精简报告，不提交原始数据、二进制或完整运行日志。
-- 按用户2026-09-09补充，任何实时空闲的兼容GPU均可使用，不再限定型号；先用gpu-free发现设备，再核查目标UUID的compute processes。固定batch shape，每个运行记录实际host/UUID/型号/driver，恢复不能静默迁移；不同型号计时分列。繁忙时换空闲设备或保留任务等待，不中断他人任务。
 - 数值语义、候选限制、重启事务、deadline 和数据划分改变需更新对应协议与有针对性的验证。正式测试揭盲后不改冻结方法。
 - 完成一项可复核工作后更新 `docs/reports/progress.md`，注明证据、未完成项与下一步。
