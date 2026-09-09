@@ -1,0 +1,74 @@
+{
+  "scope": "engineering_development",
+  "evidence_limit": "E2 factorization engineering only; no selected M00 or formal result",
+  "development_training_per_scale": 48,
+  "development_validation_per_scale": 16,
+  "colonies": 32,
+  "maximum_registered_per_dimension": 128,
+  "solver": {
+    "ants": 32,
+    "primary_width": 16,
+    "backup_width": 64,
+    "ls_width": 20,
+    "beta": 1.0,
+    "retention": 0.5,
+    "p_best": 0.1,
+    "epoch_source_probability": 0.01,
+    "ls_evaluation_limit": 100000,
+    "initial_ls_evaluation_limit": 100000
+  },
+  "evolution": {
+    "population": 8,
+    "generations": 3,
+    "initial_depth_min": 1,
+    "initial_depth_max": 3,
+    "max_depth": 5,
+    "max_nodes": 63,
+    "tournament_size": 4,
+    "elites": 2,
+    "crossover_probability": 0.8,
+    "mutation_probability": 0.2,
+    "mutation_depth_min": 0,
+    "mutation_depth_max": 2,
+    "no_feedback": false,
+    "feature_spec_id": 2
+  },
+  "training": {
+    "evolution_seed": 1103,
+    "panel_seed": 73001,
+    "instances_per_panel": 16,
+    "solver_seeds_per_instance": 2,
+    "validation_seeds": [
+      17,
+      29
+    ],
+    "budgets": [
+      [
+        500,
+        256
+      ],
+      [
+        1000,
+        256
+      ]
+    ],
+    "preparation_mode": "cached",
+    "experiment_mask": 4294967295,
+    "infrastructure_retries": 1,
+    "budget_kind": "search_tour_evaluations"
+  },
+  "wall_clock_limit": null,
+  "baseline_policy": {
+    "policy_spec_id": 1,
+    "kind": "rule",
+    "mne_level": 0,
+    "max_mne_level": 3,
+    "region": 1,
+    "restart_mode": "none",
+    "restart_period": 0,
+    "restart_probability": 0.0,
+    "stagnation_step": 2,
+    "restart_stagnation": 3,
+    "restart_cooldown": 3
+  }
+}

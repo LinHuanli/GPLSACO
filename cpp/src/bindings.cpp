@@ -151,10 +151,92 @@ py::dict baseline_output(const gp_faco::BaselinePolicy& p) {
     return result;
 }
 
+gp_faco::FactorialPolicy read_factorial(const py::dict& dictionary) {
+    if (dictionary.size() != 3 || !dictionary.contains("factorial_spec_id") ||
+        !dictionary.contains("variant") || !dictionary.contains("baseline_policy") ||
+        read_unsigned(dictionary["factorial_spec_id"]) != 1 ||
+        !py::isinstance<py::dict>(dictionary["baseline_policy"]))
+        throw std::invalid_argument("析因配置字段或规格版本无效");
+    gp_faco::FactorialPolicy result;
+    const auto variant = py::cast<std::string>(dictionary["variant"]);
+    if (variant == "M00") result.variant = gp_faco::FactorialVariant::M00;
+    else if (variant == "M10") result.variant = gp_faco::FactorialVariant::M10;
+    else if (variant == "M01") result.variant = gp_faco::FactorialVariant::M01;
+    else if (variant == "M11") result.variant = gp_faco::FactorialVariant::M11;
+    else throw std::invalid_argument("未知析因变体");
+    result.baseline = read_baseline(py::cast<py::dict>(dictionary["baseline_policy"]));
+    gp_faco::validate_factorial(result);
+    return result;
+}
+
+py::dict factorial_output(const gp_faco::FactorialPolicy& policy) {
+    py::dict result;
+    result["factorial_spec_id"] = 1;
+    result["variant"] = policy.variant == gp_faco::FactorialVariant::M00 ? "M00" :
+        policy.variant == gp_faco::FactorialVariant::M10 ? "M10" :
+        policy.variant == gp_faco::FactorialVariant::M01 ? "M01" : "M11";
+    result["baseline_policy"] = baseline_output(policy.baseline);
+    return result;
+}
+
 gp_faco::PreparationMode preparation_mode(const std::string& mode) {
     if (mode == "cached_charged") return gp_faco::PreparationMode::CachedCharged;
     if (mode == "end_to_end") return gp_faco::PreparationMode::EndToEnd;
     throw std::invalid_argument("未知准备模式");
+}
+
+py::dict feedback_output(const gp_faco::FeedbackState& feedback) {
+    py::dict output;
+    output["return_rate"] = feedback.return_rate;
+    output["ls_work"] = feedback.ls_work;
+    output["stagnant_batches"] = feedback.stagnant_batches;
+    output["epoch_batches"] = feedback.epoch_batches;
+    output["restarts"] = feedback.restarts;
+    return output;
+}
+
+py::dict behavior_output(const gp_faco::BatchEvaluation& result) {
+    py::dict output;
+    output["behavior_spec_id"] = 1;
+    output["device_bytes"] = result.behavior_device_bytes;
+    output["host_row_bytes"] = result.behavior_rows.size() * sizeof(gp_faco::BatchBehaviorRow);
+    py::list rows;
+    for (const auto& row : result.behavior_rows) {
+        py::dict item;
+        item["batch"] = row.batch; item["colony"] = row.colony;
+        item["ants"] = row.ants; item["dimension"] = row.dimension;
+        item["alternative"] = row.alternative;
+        item["legal_mask"] = row.legal_mask; item["action_mask"] = row.action_mask;
+        item["action"] = row.action;
+        item["baseline_requested_action"] = row.baseline_requested_action < 0 ? py::none() :
+            py::cast(row.baseline_requested_action);
+        item["global_before"] = row.global_before; item["reference_before"] = row.reference_before;
+        item["reference_used"] = row.reference_used; item["global_after"] = row.global_after;
+        item["iteration_best_cost"] = row.iteration_best_cost;
+        item["feedback_before"] = feedback_output(row.feedback_before);
+        item["feedback_after"] = feedback_output(row.feedback_after);
+        item["construction_mne"] = row.construction_mne;
+        item["construction_steps"] = row.construction_steps;
+        item["construction_relocations"] = row.construction_relocations;
+        item["construction_exhausted_ants"] = row.construction_exhausted_ants;
+        item["construction_new_edges"] = row.construction_new_edges;
+        item["final_new_edges"] = row.final_new_edges;
+        item["exact_returns"] = row.exact_returns;
+        item["fingerprint_returns"] = row.fingerprint_returns;
+        item["ls_move_evaluations"] = row.ls_move_evaluations;
+        item["ls_accepted_moves"] = row.ls_accepted_moves;
+        item["ls_limit_reached_ants"] = row.ls_limit_reached_ants;
+        rows.append(item);
+    }
+    output["rows"] = rows;
+    return output;
+}
+
+gp_faco::BatchDiagnosticControls behavior_controls(const py::object& record) {
+    if (!PyBool_Check(record.ptr())) throw std::invalid_argument("record_behavior必须是bool");
+    gp_faco::BatchDiagnosticControls result;
+    result.record_behavior = py::cast<bool>(record);
+    return result;
 }
 
 py::dict batch_output(const gp_faco::BatchEvaluation& result, const std::string& mode) {
@@ -189,6 +271,7 @@ py::dict batch_output(const gp_faco::BatchEvaluation& result, const std::string&
     output["allocated_device_bytes"] = result.allocated_device_bytes;
     output["preparation_completed"] = result.preparation_completed;
     output["preparation_mode"] = mode;
+    if (result.behavior_recorded) output["behavior"] = behavior_output(result);
     // 只导出最后一个按时完成批次的计数，迟到状态和完整诊断轨迹不进入Python。
     if (!result.completed_control_states.empty()) {
         py::list states;
@@ -351,7 +434,7 @@ PYBIND11_MODULE(gp_faco_ext, module) {
            py::arg("preparation_mode") = "cached_charged", py::arg("experiment_mask") = UINT32_MAX)
         .def("evaluate_program_evaluations", [](gp_faco::FacoBatchEngine& engine,
                 const Keys& keys, const Keys& seeds, const py::object& evaluations,
-                const py::dict& dictionary, const std::string& mode, const py::object& mask) {
+                const py::dict& dictionary, const std::string& mode, const py::object& mask, const py::object& record) {
             if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size() ||
                 !PyLong_CheckExact(evaluations.ptr()) || !PyLong_CheckExact(mask.ptr()))
                 throw std::invalid_argument("次数入口需要整数限额与完整任务数组");
@@ -367,18 +450,20 @@ PYBIND11_MODULE(gp_faco_ext, module) {
             const auto preparation = preparation_mode(mode == "cached" ? "cached_charged" : mode);
             std::vector<gp_faco::BatchTask> tasks;
             for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            const auto observation = behavior_controls(record);
             gp_faco::BatchEvaluation result;
             {
                 py::gil_scoped_release release;
-                result = engine.evaluate_program_evaluations(tasks, limit, program, preparation, experiment_mask);
+                result = engine.evaluate_program_evaluations(tasks, limit, program, preparation, experiment_mask, observation);
             }
             return batch_output(result, mode);
         }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
            py::arg("evaluation_limit_per_colony"), py::arg("program"),
-           py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX)
+           py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX,
+           py::kw_only(), py::arg("record_behavior") = false)
         .def("evaluate_baseline_evaluations", [](gp_faco::FacoBatchEngine& engine,
                 const Keys& keys, const Keys& seeds, const py::object& evaluations,
-                const py::dict& dictionary, const std::string& mode, const py::object& mask) {
+                const py::dict& dictionary, const std::string& mode, const py::object& mask, const py::object& record) {
             if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size())
                 throw std::invalid_argument("基线次数入口需要完整任务数组");
             if (mode != "cached" && mode != "end_to_end")
@@ -389,17 +474,48 @@ PYBIND11_MODULE(gp_faco_ext, module) {
             const auto preparation = preparation_mode(mode == "cached" ? "cached_charged" : mode);
             std::vector<gp_faco::BatchTask> tasks;
             for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            const auto observation = behavior_controls(record);
             gp_faco::BatchEvaluation result;
             {
                 py::gil_scoped_release release;
-                result = engine.evaluate_baseline_evaluations(tasks, limit, policy, preparation, experiment_mask);
+                result = engine.evaluate_baseline_evaluations(tasks, limit, policy, preparation, experiment_mask, observation);
             }
             auto output = batch_output(result, mode);
             output["baseline_policy"] = baseline_output(policy);
             return output;
         }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
            py::arg("evaluation_limit_per_colony"), py::arg("policy"),
-           py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX)
+           py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX,
+           py::kw_only(), py::arg("record_behavior") = false)
+        .def("evaluate_factorial_evaluations", [](gp_faco::FacoBatchEngine& engine,
+                const Keys& keys, const Keys& seeds, const py::object& evaluations,
+                const py::dict& dictionary, const py::dict& policy_dictionary,
+                const std::string& mode, const py::object& mask, const py::object& record) {
+            if (keys.ndim() != 1 || seeds.ndim() != 1 || keys.size() != seeds.size())
+                throw std::invalid_argument("析因次数入口需要完整任务数组");
+            if (mode != "cached" && mode != "end_to_end")
+                throw std::invalid_argument("次数入口只接受cached或end_to_end准备");
+            const auto program = read_program(dictionary);
+            const auto policy = read_factorial(policy_dictionary);
+            const auto limit = read_unsigned(evaluations);
+            const auto experiment_mask = read_node(mask);
+            const auto preparation = preparation_mode(mode == "cached" ? "cached_charged" : mode);
+            std::vector<gp_faco::BatchTask> tasks;
+            for (py::ssize_t i = 0; i < keys.size(); ++i) tasks.push_back({keys.data()[i], seeds.data()[i]});
+            const auto observation = behavior_controls(record);
+            gp_faco::BatchEvaluation result;
+            {
+                py::gil_scoped_release release;
+                result = engine.evaluate_factorial_evaluations(tasks, limit, program, policy,
+                                                               preparation, experiment_mask, observation);
+            }
+            auto output = batch_output(result, mode);
+            output["factorial_policy"] = factorial_output(policy);
+            return output;
+        }, py::arg("instance_keys").noconvert(), py::arg("seeds").noconvert(),
+           py::arg("evaluation_limit_per_colony"), py::arg("program"), py::arg("policy"),
+           py::arg("preparation_mode") = "cached", py::arg("experiment_mask") = UINT32_MAX,
+           py::kw_only(), py::arg("record_behavior") = false)
         .def("run_program_diagnostic", [](gp_faco::FacoBatchEngine& engine, const Keys& keys,
                 const Keys& seeds, const py::dict& dictionary, const py::object& batches,
                 const py::object& ratio, const py::object& enabled, const py::object& mask,

@@ -22,6 +22,7 @@ import numpy as np
 
 from gp_faco.baseline_policy import BaselinePolicy
 from gp_faco.data import Instance
+from gp_faco.factorial_policy import FactorialPolicy
 from gp_faco.program_ir import Program
 
 PROJECT = Path(__file__).resolve().parents[2]
@@ -47,6 +48,8 @@ def implementation_hash() -> str:
                 "program_ir.py",
                 "primitives.py",
                 "baseline_policy.py",
+                "factorial_policy.py",
+                "behavior.py",
             )
         }
     )
@@ -215,6 +218,7 @@ def _task_manifest(task, protocol):
         "preparation_mode": task.preparation_mode,
         "experiment_mask": task.experiment_mask,
         "preparation_charges": task.preparation_charges,
+        **({"behavior_spec_id": 1} if type(task) is FactorialTask and task.record_behavior else {}),
     }
 
 
@@ -308,6 +312,35 @@ class SolveTask:
 
     def task_id(self, protocol: WorkerProtocol) -> str:
         return content_hash(self.manifest(protocol))
+
+
+@dataclass(frozen=True)
+class FactorialTask(SolveTask):
+    """同时绑定程序与M00规则，不能用相同IR冒充另一格的评价。"""
+
+    factorial_policy: FactorialPolicy = field(kw_only=True)
+    record_behavior: bool = field(default=False, kw_only=True)
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.evaluation_limit_per_colony is None:
+            raise ValueError("析因任务只允许评价次数预算")
+        if type(self.factorial_policy) is not FactorialPolicy:
+            raise TypeError("析因任务需要已验证的FactorialPolicy")
+        self.factorial_policy.validate_mask(self.experiment_mask)
+        if type(self.record_behavior) is not bool:
+            raise TypeError("record_behavior必须是bool")
+
+    @property
+    def controller_sha256(self):
+        return content_hash(self.controller_identity())
+
+    def controller_identity(self):
+        return {
+            "program_sha256": self.program.sha256,
+            "factorial_policy_sha256": self.factorial_policy.sha256,
+            "factorial_policy": self.factorial_policy.to_dict(),
+        }
 
 
 @dataclass(frozen=True)
@@ -502,7 +535,7 @@ def _prepare(problems: tuple[Instance, ...]) -> dict:
     return output
 
 
-def _execute(task: SolveTask | BaselineTask) -> dict:
+def _execute(task: SolveTask | BaselineTask | FactorialTask) -> dict:
     started = time.perf_counter()
     identity = task.task_id(_protocol)
     output = {
@@ -529,7 +562,18 @@ def _execute(task: SolveTask | BaselineTask) -> dict:
             raise ValueError("该实例已有冻结费用，任务必须显式携带同一费用")
         keys = np.asarray([problem_keys[name] for name, _ in task.replicas], dtype=np.uint64)
         seeds = np.asarray([seed for _, seed in task.replicas], dtype=np.uint64)
-        if type(task) is BaselineTask:
+        if type(task) is FactorialTask:
+            native_result = _engines[n].evaluate_factorial_evaluations(
+                keys,
+                seeds,
+                task.evaluation_limit_per_colony,
+                task.program.to_dict(),
+                task.factorial_policy.to_dict(),
+                task.preparation_mode,
+                task.experiment_mask,
+                record_behavior=task.record_behavior,
+            )
+        elif type(task) is BaselineTask:
             native_result = _engines[n].evaluate_baseline_evaluations(
                 keys,
                 seeds,
@@ -592,9 +636,9 @@ class PersistentGpuWorker:
     def ready(self, timeout: float | None = None) -> dict:
         return self._ready_future.result(timeout=timeout)
 
-    def submit(self, task: SolveTask | BaselineTask) -> Future:
-        if type(task) not in (SolveTask, BaselineTask):
-            raise TypeError("worker仅接受已验证的GP或基线任务")
+    def submit(self, task: SolveTask | BaselineTask | FactorialTask) -> Future:
+        if type(task) not in (SolveTask, BaselineTask, FactorialTask):
+            raise TypeError("worker仅接受已验证的GP、基线或析因任务")
         task.manifest(self.protocol)
         self._check_idle()
         self._active = self._executor.submit(_execute, task)

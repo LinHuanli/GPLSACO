@@ -234,7 +234,7 @@ class TrainingRun(EvaluationRun):
         self._stop_after = None
         self.path = self.directory / "checkpoint.json"
         try:
-            manifest = training_manifest(settings, protocol, data)
+            manifest = self._training_manifest()
             self.run_id = content_hash(manifest)
             if resume:
                 self.state = load_checkpoint(self.path)
@@ -326,6 +326,9 @@ class TrainingRun(EvaluationRun):
         except BaseException:
             self._lease.close()
             raise
+
+    def _training_manifest(self):
+        return training_manifest(self.settings, self.protocol, self.data)
 
     def _save(self):
         self.state["evolution"] = self.evolution.state_dict()

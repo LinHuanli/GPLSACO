@@ -79,6 +79,16 @@ if(GP_FACO_CUDA)
     target_link_libraries(baseline_engine_semantics PRIVATE gp_faco_cuda)
     add_test(NAME baseline_engine_semantics COMMAND baseline_engine_semantics
         "${CMAKE_CURRENT_BINARY_DIR}/baseline_engine_results.json")
+    add_executable(factorial_engine_semantics tests/cpp/test_factorial_engine.cpp)
+    target_compile_options(factorial_engine_semantics PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
+    target_link_libraries(factorial_engine_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME factorial_engine_semantics COMMAND factorial_engine_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/factorial_engine_results.json")
+    add_executable(behavior_engine_semantics tests/cpp/test_behavior_engine.cpp)
+    target_compile_options(behavior_engine_semantics PRIVATE -Wall -Wextra -Wpedantic -ffp-contract=off)
+    target_link_libraries(behavior_engine_semantics PRIVATE gp_faco_cuda)
+    add_test(NAME behavior_engine_semantics COMMAND behavior_engine_semantics
+        "${CMAKE_CURRENT_BINARY_DIR}/behavior_engine_results.json")
 endif()
 
 if(GP_FACO_PYTHON)

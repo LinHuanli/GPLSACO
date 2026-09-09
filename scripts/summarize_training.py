@@ -16,10 +16,12 @@ from gp_faco.checkpoint import atomic_json, load_checkpoint  # noqa: E402
 from gp_faco.data import tour_cost  # noqa: E402
 from gp_faco.dataset_index import IndexedDataset  # noqa: E402
 from gp_faco.evolution import Evolution, EvolutionSettings  # noqa: E402
+from gp_faco.factorial_policy import FactorialPolicy  # noqa: E402
 from gp_faco.fitness import aggregate_panels, score_panel  # noqa: E402
 from gp_faco.program_ir import Program, export_tree  # noqa: E402
 from gp_faco.training import json_value  # noqa: E402
 from gp_faco.worker import (  # noqa: E402
+    FactorialTask,
     SolverSettings,
     SolveTask,
     WorkerProtocol,
@@ -34,7 +36,7 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
-def summarize(directory):
+def summarize(directory, *, database=None, dataset_root=None, entrypoint=None, checks=None):
     state = load_checkpoint(directory / "checkpoint.json")
     require(state["phase"] == "complete" and state["pending"] is None, "运行尚未完整结束")
     require(state["active_worker"] is None, "checkpoint仍标记活动worker")
@@ -70,14 +72,16 @@ def summarize(directory):
     )
     selection = load_checkpoint(directory / "data_selection.json")
     require(selection["identity"] == manifest["data"]["identity"], "数据身份不符")
-    database = PROJECT / "artifacts/data/main-index-v1/instances.sqlite"
+    database = database or PROJECT / "artifacts/data/main-index-v1/instances.sqlite"
+    dataset_root = dataset_root or PROJECT.parent / "Datasets/TSP"
+    entrypoint = entrypoint or PROJECT / "scripts/train_gp.py"
     require(file_hash(database) == selection["identity"]["database_sha256"], "索引身份改变")
     require(
         file_hash(PROJECT / "provenance/splits.v1.json") == selection["identity"]["split_sha256"],
         "split身份改变",
     )
     require(
-        file_hash(PROJECT / "scripts/train_gp.py") == selection["identity"]["entrypoint_sha256"],
+        file_hash(entrypoint) == selection["identity"]["entrypoint_sha256"],
         "训练入口改变",
     )
     for role in ("training", "validation"):
@@ -87,6 +91,15 @@ def summarize(directory):
                 "数据成员表摘要不符",
             )
     settings = manifest["settings"]
+    factorial = None
+    if "factorial_policy" in manifest:
+        factorial = FactorialPolicy.from_dict(manifest["factorial_policy"])
+        require(
+            factorial.sha256 == manifest["factorial_policy_sha256"]
+            and factorial.variant in ("M10", "M01")
+            and settings["evolution"]["no_feedback"] is False,
+            "析因规则身份或Full终端集不符",
+        )
     counted = settings.get("budget_kind") == "search_tour_evaluations"
     width = settings["instances_per_panel"]
     fixed_validation = [
@@ -125,7 +138,7 @@ def summarize(directory):
     max_cost_error = 0.0
     members, total_restarts = 0, 0
     problems, labels = {}, {}
-    with IndexedDataset(database, PROJECT.parent / "Datasets/TSP") as source:
+    with IndexedDataset(database, dataset_root) as source:
         for n in protocol.dimensions:
             development = set(source.record_ids("development", n))
             train = set(selection["training"][str(n)])
@@ -177,7 +190,9 @@ def summarize(directory):
                 actual_measurements.setdefault(name, set()).add(
                     (actual["cheap_seconds"], actual["preparation_seconds"])
                 )
-            task = SolveTask(
+            task_type = FactorialTask if factorial is not None else SolveTask
+            extra = {"factorial_policy": factorial} if factorial is not None else {}
+            task = task_type(
                 d["occurrence_id"],
                 ir,
                 tuple(problems[name] for name, _ in d["problems"]),
@@ -189,6 +204,7 @@ def summarize(directory):
                 if d["preparation_charges"] is None
                 else tuple(tuple(v) for v in d["preparation_charges"]),
                 d.get("evaluation_limit_per_colony"),
+                **extra,
             )
             require(json_value(task.manifest(protocol)) == d, "重建任务manifest不符")
             require(
@@ -356,7 +372,7 @@ def summarize(directory):
         sum(v["solve_jobs"] for v in work_by_phase.values()) == len(solves),
         "训练/验证工作量分组有遗漏",
     )
-    checks = PROJECT / (
+    checks = checks or PROJECT / (
         "artifacts/gpu/evaluation-count" if counted else "artifacts/gpu/gp-training"
     )
     pytest_log, ctest_log = checks / "pytest.log", checks / "ctest.log"
@@ -368,6 +384,7 @@ def summarize(directory):
     return {
         "status": "passed",
         "scope": "engineering development only; no formal E1 conclusion",
+        "factorial_policy": factorial.to_dict() if factorial is not None else None,
         "run_id": state["run_id"],
         "artifact_directory": str(directory.relative_to(PROJECT)),
         "protocol": p,
@@ -442,7 +459,7 @@ def summarize(directory):
         "source_sha256": {
             **manifest["sources"],
             "summarize_training.py": file_hash(Path(__file__)),
-            "train_gp.py": file_hash(PROJECT / "scripts/train_gp.py"),
+            str(entrypoint.relative_to(PROJECT)): file_hash(entrypoint),
         },
         "artifact_sha256": {
             name: file_hash(directory / name)

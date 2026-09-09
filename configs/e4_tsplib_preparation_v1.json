@@ -1,0 +1,320 @@
+{
+  "schema_version": 1,
+  "scope": "all 49 supplied TSPLIB targets; data/distance audit, no learned solver performance",
+  "targets": [
+    {
+      "path": "test_dataset/tsp/tsplib/a280.txt",
+      "bytes": 6610,
+      "instances": 1,
+      "dimension": 280
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/berlin52.txt",
+      "bytes": 1253,
+      "instances": 1,
+      "dimension": 52
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/bier127.txt",
+      "bytes": 3054,
+      "instances": 1,
+      "dimension": 127
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/ch130.txt",
+      "bytes": 3180,
+      "instances": 1,
+      "dimension": 130
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/ch150.txt",
+      "bytes": 3679,
+      "instances": 1,
+      "dimension": 150
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/d198.txt",
+      "bytes": 4859,
+      "instances": 1,
+      "dimension": 198
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/d493.txt",
+      "bytes": 12209,
+      "instances": 1,
+      "dimension": 493
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/d657.txt",
+      "bytes": 16332,
+      "instances": 1,
+      "dimension": 657
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/eil101.txt",
+      "bytes": 2054,
+      "instances": 1,
+      "dimension": 101
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/eil51.txt",
+      "bytes": 954,
+      "instances": 1,
+      "dimension": 51
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/eil76.txt",
+      "bytes": 1713,
+      "instances": 1,
+      "dimension": 76
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/fl417.txt",
+      "bytes": 10240,
+      "instances": 1,
+      "dimension": 417
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/gil262.txt",
+      "bytes": 6402,
+      "instances": 1,
+      "dimension": 262
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/kroA100.txt",
+      "bytes": 2445,
+      "instances": 1,
+      "dimension": 100
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/kroA150.txt",
+      "bytes": 3732,
+      "instances": 1,
+      "dimension": 150
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/kroA200.txt",
+      "bytes": 4996,
+      "instances": 1,
+      "dimension": 200
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/kroB100.txt",
+      "bytes": 2430,
+      "instances": 1,
+      "dimension": 100
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/kroB150.txt",
+      "bytes": 3713,
+      "instances": 1,
+      "dimension": 150
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/kroB200.txt",
+      "bytes": 4990,
+      "instances": 1,
+      "dimension": 200
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/kroC100.txt",
+      "bytes": 2453,
+      "instances": 1,
+      "dimension": 100
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/kroD100.txt",
+      "bytes": 2459,
+      "instances": 1,
+      "dimension": 100
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/kroE100.txt",
+      "bytes": 2437,
+      "instances": 1,
+      "dimension": 100
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/lin105.txt",
+      "bytes": 2570,
+      "instances": 1,
+      "dimension": 105
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/lin318.txt",
+      "bytes": 7889,
+      "instances": 1,
+      "dimension": 318
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/p654.txt",
+      "bytes": 15821,
+      "instances": 1,
+      "dimension": 654
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/pcb442.txt",
+      "bytes": 10960,
+      "instances": 1,
+      "dimension": 442
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/pr1002.txt",
+      "bytes": 24758,
+      "instances": 1,
+      "dimension": 1002
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/pr107.txt",
+      "bytes": 2506,
+      "instances": 1,
+      "dimension": 107
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/pr124.txt",
+      "bytes": 2906,
+      "instances": 1,
+      "dimension": 124
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/pr136.txt",
+      "bytes": 3187,
+      "instances": 1,
+      "dimension": 136
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/pr144.txt",
+      "bytes": 3409,
+      "instances": 1,
+      "dimension": 144
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/pr152.txt",
+      "bytes": 3737,
+      "instances": 1,
+      "dimension": 152
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/pr226.txt",
+      "bytes": 5631,
+      "instances": 1,
+      "dimension": 226
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/pr264.txt",
+      "bytes": 6567,
+      "instances": 1,
+      "dimension": 264
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/pr299.txt",
+      "bytes": 7511,
+      "instances": 1,
+      "dimension": 299
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/pr439.txt",
+      "bytes": 10560,
+      "instances": 1,
+      "dimension": 439
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/pr76.txt",
+      "bytes": 1784,
+      "instances": 1,
+      "dimension": 76
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/rat195.txt",
+      "bytes": 4847,
+      "instances": 1,
+      "dimension": 195
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/rat575.txt",
+      "bytes": 14555,
+      "instances": 1,
+      "dimension": 575
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/rat783.txt",
+      "bytes": 19634,
+      "instances": 1,
+      "dimension": 783
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/rat99.txt",
+      "bytes": 2394,
+      "instances": 1,
+      "dimension": 99
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/rd100.txt",
+      "bytes": 2424,
+      "instances": 1,
+      "dimension": 100
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/rd400.txt",
+      "bytes": 10009,
+      "instances": 1,
+      "dimension": 400
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/st70.txt",
+      "bytes": 1688,
+      "instances": 1,
+      "dimension": 70
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/ts225.txt",
+      "bytes": 3841,
+      "instances": 1,
+      "dimension": 225
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/tsp225.txt",
+      "bytes": 5432,
+      "instances": 1,
+      "dimension": 225
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/u159.txt",
+      "bytes": 2882,
+      "instances": 1,
+      "dimension": 159
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/u574.txt",
+      "bytes": 14329,
+      "instances": 1,
+      "dimension": 574
+    },
+    {
+      "path": "test_dataset/tsp/tsplib/u724.txt",
+      "bytes": 18108,
+      "instances": 1,
+      "dimension": 724
+    }
+  ],
+  "coordinate_only_mapping": {
+    "transforms": [
+      "global_minmax",
+      "axis_min_shared_span",
+      "axis_minmax",
+      "global_max"
+    ],
+    "arithmetic": [
+      "fp64_then_fp32",
+      "fp32"
+    ],
+    "maximum_absolute_error": 9.5367431640625e-07,
+    "exact_float32_match_preferred": true,
+    "label_cost_used_to_select_transform": false
+  },
+  "formal_test_released": false,
+  "source_archive": ".deps/tsplib/official-v1/ALL_tsp.tar.gz",
+  "source_index": ".deps/tsplib/official-v1/tspindex.html",
+  "optimal_lengths_source": ".deps/tsplib/official-v1/TSP-BEST.html",
+  "integrity_hash_checks": false
+}

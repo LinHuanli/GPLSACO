@@ -5,6 +5,7 @@
 #include "faco_device.cuh"
 #include "control_state.cuh"
 #include "baseline_policy.cuh"
+#include "behavior.cuh"
 #include "gp_score.cuh"
 #include "profile_events.cuh"
 
@@ -194,10 +195,25 @@ BatchEvaluation FacoBatchEngine::evaluate_baseline_evaluations(const std::vector
     return evaluate_impl(tasks, 0, 2, mode, controls, nullptr, experiment_mask, true, evaluations, &policy);
 }
 
+BatchEvaluation FacoBatchEngine::evaluate_factorial_evaluations(const std::vector<BatchTask>& tasks,
+    std::uint64_t evaluations, const Program& program, const FactorialPolicy& policy, PreparationMode mode,
+    std::uint32_t experiment_mask, BatchDiagnosticControls controls) {
+    validate_factorial(policy, experiment_mask);
+    validate_program(program);
+    require(program.feature_spec_id == 2, "析因入口只接受评价次数特征v2");
+    // M00不执行评分树，M11完全沿用Full入口；两端点没有额外的动作限制内核。
+    if (policy.variant == FactorialVariant::M00)
+        return evaluate_baseline_evaluations(tasks, evaluations, policy.baseline, mode, experiment_mask, controls);
+    if (policy.variant == FactorialVariant::M11)
+        return evaluate_program_evaluations(tasks, evaluations, program, mode, experiment_mask, controls);
+    return evaluate_impl(tasks, 0, 2, mode, controls, &program, experiment_mask, true, evaluations,
+                         nullptr, &policy);
+}
+
 BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tasks, double seconds,
     Node mne_target, PreparationMode mode, BatchDiagnosticControls controls, const Program* program,
     std::uint32_t experiment_mask, bool count_limited, std::uint64_t evaluation_limit,
-    const BaselinePolicy* baseline) {
+    const BaselinePolicy* baseline, const FactorialPolicy* factorial) {
     const auto started = Clock::now();
     auto& p = *impl_;
     const bool controlled = program || baseline;
@@ -216,6 +232,8 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
             "固定elapsed特征只能用于固定批次诊断且须在[0,1]");
     require(!controls.profile || count_limited || (controls.fixed_batches > 0 && controls.fixed_elapsed_ratio >= 0),
             "profile必须固定批次数与elapsed特征，不能混入主fitness");
+    require(!controls.record_behavior || (count_limited && controlled),
+            "轻量行为记录只允许受控的评价次数入口");
     if (program) {
         validate_program(*program);
         require(program->feature_spec_id == (count_limited ? 2 : 1),
@@ -225,6 +243,10 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         require(count_limited && !program, "基线需要独立的次数入口");
         validate_baseline(*baseline, experiment_mask);
     }
+    if (factorial) {
+        require(count_limited && program && !baseline, "析因学习需要独立的次数入口");
+        validate_factorial(*factorial, experiment_mask);
+    }
     if (controlled) {
         require((experiment_mask & 0xffffu) != 0, "实验mask必须保留至少一个保持模式动作");
         require(!controls.force_fingerprint_collisions || controls.capture_control,
@@ -233,7 +255,7 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     int device = -1; checked(cudaGetDevice(&device));
     require(device == p.device, "Engine必须在创建它的CUDA设备上评价");
     DeviceArray<double> baseline_uniforms;
-    if (baseline && controls.capture_control) baseline_uniforms.allocate(p.colonies);
+    if ((baseline || factorial) && controls.capture_control) baseline_uniforms.allocate(p.colonies);
     const auto actual_elapsed = [&]() { return std::chrono::duration<double>(Clock::now() - started).count(); };
     DeadlineLedger budget = count_limited ? DeadlineLedger(std::nullopt, actual_elapsed)
                                          : DeadlineLedger(seconds, actual_elapsed);
@@ -242,6 +264,21 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
     result.count_limited = count_limited;
     result.evaluation_limit_per_colony = evaluation_limit;
     result.allocated_device_bytes = p.allocated_bytes;
+    result.behavior_recorded = controls.record_behavior;
+    DeviceArray<BatchBehaviorRow> behavior_rows;
+    DeviceArray<Node> construction_new_edges, final_new_edges, diagnostic_construction;
+    if (controls.record_behavior) {
+        behavior_rows.allocate(p.colonies);
+        // cudaMemcpy会复制结构体padding；先完整清零，避免未初始化字节进入host诊断。
+        behavior_rows.zero();
+        construction_new_edges.allocate(static_cast<std::size_t>(p.config.ants) * p.colonies);
+        final_new_edges.allocate(static_cast<std::size_t>(p.config.ants) * p.colonies);
+        result.behavior_device_bytes = behavior_rows.bytes() + construction_new_edges.bytes() +
+            final_new_edges.bytes();
+        // 完整构造tour仅供C++诊断，生产记录不分配该缓冲。
+        if (controls.capture_control) diagnostic_construction.allocate(
+            static_cast<std::size_t>(p.n) * p.config.ants * p.colonies);
+    }
     if (controls.profile) {
         const auto setup = Clock::now();
         // 临时对象完整构造后才发布；分配失败不能留下可被后续调用误用的半成品。
@@ -394,7 +431,17 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
                 p.trails.data(), p.experiment_masks.data(), p.regions.data(), p.alternatives.data(),
                 p.masks.data(), p.features.data());
             event_end(GpuProfileStage::Features);
+            if (controls.record_behavior) cuda_detail::begin_behavior<<<(p.colonies + 127) / 128, 128>>>(
+                p.n, c.ants, p.colonies, batch, p.controllers.data(), p.state.data(), p.alternatives.data(),
+                p.masks.data(), p.keys.data(), baseline || factorial,
+                baseline ? *baseline : factorial ? factorial->baseline : BaselinePolicy{}, behavior_rows.data());
+            if (factorial && controls.capture_control) trace.legal_masks = p.masks.download();
             event_begin(GpuProfileStage::Scoring);
+            if (factorial) {
+                cuda_detail::restrict_factorial_actions<<<(p.colonies + 127) / 128, 128>>>(*factorial,
+                    p.controllers.data(), p.keys.data(), batch, p.masks.data(), p.colonies,
+                    baseline_uniforms.data());
+            }
             if (program) {
                 cuda_detail::score_actions<<<(p.colonies + 3) / 4, 128>>>(*program, p.features.data(),
                     p.masks.data(), p.scores.data(), p.actions.data(), p.colonies);
@@ -407,11 +454,14 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
             if (controls.capture_control) {
                 trace.features = p.features.download();
                 if (program) trace.scores = p.scores.download();
-                else trace.baseline_uniforms = baseline_uniforms.download();
+                if (baseline || factorial) trace.baseline_uniforms = baseline_uniforms.download();
                 trace.masks = p.masks.download(); trace.actions = p.actions.download();
                 trace.alternatives = p.alternatives.download(); trace.regions = p.regions.download();
             }
             event_begin(GpuProfileStage::Action);
+            if (controls.record_behavior) cuda_detail::observe_behavior_action<<<(p.colonies + 127) / 128, 128>>>(
+                p.colonies, p.controllers.data(), p.state.data(), p.actions.data(), p.masks.data(),
+                behavior_rows.data());
             p.apply_actions();
             event_end(GpuProfileStage::Action);
             if (controls.capture_control) trace.after_restart = p.snapshot();
@@ -425,12 +475,14 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
                     <<<ants, 128>>>(distance, p.ls.data(), p.n, c.ls_width,
                     p.parent.data(), view, p.targets.data(), c.ls_evaluation_limit, p.tours.data(),
                     p.positions.data(), p.parent_positions.data(), p.scratch.data(), p.pending.data(),
-                    p.gains.data(), nullptr, p.info.data(), p.visited.data(), {}, p.profiling->cycles.data());
+                    p.gains.data(), diagnostic_construction.data(), p.info.data(), p.visited.data(), {},
+                    p.profiling->cycles.data(), construction_new_edges.data());
             } else {
                 cuda_detail::construct_and_search<<<ants, 128>>>(distance, p.ls.data(), p.n, c.ls_width,
                     p.parent.data(), view, p.targets.data(), c.ls_evaluation_limit, p.tours.data(),
                     p.positions.data(), p.parent_positions.data(), p.scratch.data(), p.pending.data(),
-                    p.gains.data(), nullptr, p.info.data(), p.visited.data());
+                    p.gains.data(), diagnostic_construction.data(), p.info.data(), p.visited.data(), {},
+                    nullptr, construction_new_edges.data());
             }
         };
         event_begin(GpuProfileStage::ConstructionAndSearch);
@@ -452,6 +504,13 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
             cuda_detail::fingerprint_ants<<<ants, 128>>>(p.n, p.tours.data(), p.identities.data(),
                 controls.force_fingerprint_collisions);
             event_end(GpuProfileStage::Fingerprints);
+            if (controls.record_behavior) {
+                cuda_detail::observe_terminal_edges<<<ants, 128>>>(p.n, p.tours.data(),
+                    p.parent_positions.data(), final_new_edges.data());
+                cuda_detail::finish_behavior<<<(p.colonies + 127) / 128, 128>>>(c.ants, p.colonies,
+                    p.controllers.data(), p.state.data(), p.info.data(), p.identities.data(),
+                    construction_new_edges.data(), final_new_edges.data(), behavior_rows.data());
+            }
             event_begin(GpuProfileStage::ArchiveAndFeedback);
             cuda_detail::update_control<<<p.colonies, 128>>>(p.n, c.ants, p.tours.data(), p.positions.data(),
                 p.info.data(), p.identities.data(), p.state.data(), p.archive.data(), p.archive_positions.data(),
@@ -464,6 +523,10 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         const auto tours = p.global.download();
         const auto info = p.info.download();
         const auto controller_state = controlled ? p.controllers.download() : std::vector<ControllerState>{};
+        auto observations = controls.record_behavior ? behavior_rows.download() : std::vector<BatchBehaviorRow>{};
+        for (auto& row : observations) row.feedback_after = controller_state[row.colony].feedback;
+        if (controls.capture_control && controls.record_behavior)
+            trace.construction_tours = diagnostic_construction.download();
         if (controls.capture_control) trace.after_batch = p.snapshot();
         if (controls.profile) profile.download_seconds = host_duration(download_started);
         const auto verification_started = profile_now();
@@ -504,6 +567,7 @@ BatchEvaluation FacoBatchEngine::evaluate_impl(const std::vector<BatchTask>& tas
         ++result.completed_batches;
         if (controls.profile) { profile.committed = true; result.profile.batches.push_back(std::move(profile)); }
         if (controlled) result.completed_control_states = controller_state;
+        result.behavior_rows.insert(result.behavior_rows.end(), observations.begin(), observations.end());
         if (controls.capture_control) result.control_trace.push_back(std::move(trace));
         for (const auto& ant : info) {
             result.completed_construction_steps += ant.construction.steps;

@@ -7,7 +7,7 @@ import statistics
 from dataclasses import dataclass
 
 from gp_faco.data import Label, tour_cost
-from gp_faco.worker import BaselineTask, SolveTask, WorkerProtocol
+from gp_faco.worker import BaselineTask, FactorialTask, SolveTask, WorkerProtocol
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ class PanelFitness:
 
 
 def score_panel(
-    task: SolveTask | BaselineTask,
+    task: SolveTask | BaselineTask | FactorialTask,
     protocol: WorkerProtocol,
     outcome: dict,
     labels: dict[str, Label],
@@ -61,6 +61,27 @@ def score_panel(
         result = outcome["native_result"]
         if type(task) is BaselineTask and result.get("baseline_policy") != task.policy.to_dict():
             return failed("原生实际基线配置与预定任务不符")
+        if (
+            type(task) is FactorialTask
+            and result.get("factorial_policy") != task.factorial_policy.to_dict()
+        ):
+            return failed("原生实际析因配置与预定任务不符")
+        if type(task) is FactorialTask:
+            if task.record_behavior:
+                from gp_faco.behavior import validate_behavior
+
+                validate_behavior(
+                    result,
+                    dimension=task.dimension,
+                    colonies=protocol.colonies,
+                    ants=protocol.settings.ants,
+                    evaluation_limit=task.evaluation_limit_per_colony,
+                    ls_evaluation_limit=protocol.settings.ls_evaluation_limit,
+                    policy=task.factorial_policy,
+                    experiment_mask=task.experiment_mask,
+                )
+            elif "behavior" in result:
+                return failed("未请求的行为记录进入结果")
         if (
             result["budget_seconds"] != task.budget_seconds
             or result["preparation_mode"] != task.preparation_mode
@@ -148,7 +169,7 @@ def score_panel(
 
 
 def aggregate_panels(
-    tasks: tuple[SolveTask | BaselineTask, ...],
+    tasks: tuple[SolveTask | BaselineTask | FactorialTask, ...],
     protocol: WorkerProtocol,
     outcomes: tuple[PanelFitness, ...],
     dimensions: tuple[int, ...],
