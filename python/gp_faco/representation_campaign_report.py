@@ -192,6 +192,7 @@ def publish_report(directory, *, engineering_preview=False):
         "本报告说明实验做了什么、参数如何设置、现在有什么结果。训练只用TSP500；六个程序选定并冻结后才测试TSP500和TSP1000。",
         "",
         "- [完整参数和评价流程](../experiments/representation_50gen_v3.md)",
+        "- [50代结果分析：质量、曲线、反馈与重启行为](50代结果分析.md)",
         "- [10代预实验结论与加速分析](预实验结论与后续加速.md)",
         "",
         "## 实验怎么设置",
