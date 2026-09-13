@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "docs/EvoStar"
-GEN = ROOT / ".tmp/evostar/generated"
+GEN = SOURCE / "generated"
 EVIDENCE = ROOT / "results/v3/evostar/evidence.json"
 BASE = ROOT / "results/v3/representation-50gen"
 LABELS = {
@@ -112,21 +112,16 @@ def figures(summary, analysis):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import numpy as np
-    from matplotlib import font_manager
 
-    font = Path(
-        subprocess.check_output(
-            ["fc-match", "-f", "%{file}", "Droid Sans Fallback"], text=True
-        ).strip()
-    )
-    font_manager.fontManager.addfont(font)
-    chinese_family = font_manager.FontProperties(fname=font).get_name()
+    # 保存可随论文提交的矢量源码，直接编译不依赖 Python、额外系统字体或临时 PDF。
     plt.rcParams.update(
         {
-            "font.family": [chinese_family, "DejaVu Sans"],
+            "font.family": "serif",
             "font.size": 9,
             "axes.unicode_minus": False,
-            "pdf.fonttype": 42,
+            "pgf.texsystem": "xelatex",
+            "pgf.rcfonts": False,
+            "pgf.preamble": r"\usepackage[UTF8,scheme=plain,fontset=fandol]{ctex}",
             "savefig.bbox": "tight",
         }
     )
@@ -160,7 +155,7 @@ def figures(summary, analysis):
     axes[0, 0].set_ylabel("训练改善（百分点）")
     axes[1, 0].set_ylabel("快速验证差距（%）")
     axes[2, 0].set_ylabel("开发监控差距（%）")
-    fig.savefig(GEN / "curves.pdf")
+    fig.savefig(GEN / "curves.pgf", backend="pgf")
     plt.close(fig)
 
     # 全部 50 代的绝对训练冠军与种群中位数，供补充材料辨识训练信号。
@@ -178,7 +173,7 @@ def figures(summary, analysis):
         ax.set_xlabel("进化代数")
     for ax in axes[:, 0]:
         ax.set_ylabel("训练参考差距（%）")
-    fig.savefig(GEN / "training_absolute.pdf")
+    fig.savefig(GEN / "training_absolute.pgf", backend="pgf")
     plt.close(fig)
 
 

@@ -1,0 +1,54 @@
+\subsubsection{GP-J/1103：g22-i012}
+联合评分树：
+\begin{TreeCode}
+ADD(MUL(SUB(mne_level, restart), AQ(MAX(AQ(return_rate, region_excess), archive_disagreement), SUB(mne_level, AQ(return_rate, region_excess)))), MIN(AQ(SUB(mne_level, AQ(archive_disagreement, 1.0)), 1.0), pheromone_strength))
+\end{TreeCode}
+\subsubsection{GP-J/2207：g37-i041}
+联合评分树：
+\begin{TreeCode}
+AQ(AQ(mne_level, AQ(mne_level, MIN(MIN(ls_work, region_excess), region_excess))), SUB(stagnation, return_rate))
+\end{TreeCode}
+\subsubsection{GP-J/3313：g36-i078}
+联合评分树：
+\begin{TreeCode}
+AQ(mne_level, AQ(return_rate, region_dispersion))
+\end{TreeCode}
+\subsubsection{GP-C/1103：g32-i097}
+参考路径树：
+\begin{TreeCode}
+SUB(progress, MAX(SUB(return_rate, ref_gap), SUB(MUL(SUB(return_rate, ref_gap), SUB(stagnation, 0.8487823009490967)), MIN(MIN(restart, -1.570115566253662), restart))))
+\end{TreeCode}
+区域树：
+\begin{TreeCode}
+MUL(MUL(MAX(restart, pheromone_strength), ABS(return_rate)), SUB(SUB(archive_disagreement, ABS(region_dispersion)), -0.25930285453796387))
+\end{TreeCode}
+强度树：
+\begin{TreeCode}
+AQ(mne_level, mne_level)
+\end{TreeCode}
+\subsubsection{GP-C/2207：g37-i072}
+参考路径树：
+\begin{TreeCode}
+AQ(MAX(stagnation, ADD(AQ(0.0, 1.0), stagnation)), MUL(AQ(stagnation, ref_gap), AQ(stagnation, ref_gap)))
+\end{TreeCode}
+区域树：
+\begin{TreeCode}
+archive_disagreement
+\end{TreeCode}
+强度树：
+\begin{TreeCode}
+AQ(MAX(mne_level, MUL(mne_level, progress)), MIN(ABS(ls_work), ABS(progress)))
+\end{TreeCode}
+\subsubsection{GP-C/3313：g50-i010}
+参考路径树：
+\begin{TreeCode}
+MUL(MUL(MUL(ls_work, stagnation), MUL(stagnation, ref_gap)), AQ(restart, -1.0))
+\end{TreeCode}
+区域树：
+\begin{TreeCode}
+ADD(progress, MAX(progress, MUL(archive_disagreement, pheromone_strength)))
+\end{TreeCode}
+强度树：
+\begin{TreeCode}
+ADD(mne_level, ADD(progress, return_rate))
+\end{TreeCode}

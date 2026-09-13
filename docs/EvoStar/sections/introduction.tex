@@ -1,3 +1,4 @@
+% !TeX root = ../samplepaper.tex
 \section{引言}
 旅行商问题（TSP）的高质量启发式求解通常结合路径构造与局部搜索。蚁群优化以信息素积累搜索经验，MAX--MIN Ant System限制信息素范围以平衡利用与探索\cite{stuetzle2000}。当实例规模增大时，反复构造完整路径与局部搜索的代价随之增加。聚焦蚁群优化（Focused Ant Colony Optimization，FACO）围绕参考路径构造新解，只主动引入有限数量的新连接，再通过局部搜索改善路径\cite{skinderowicz2022}。这种结构复用降低了搜索成本，也使参考路径的选择和扰动方式直接影响后续搜索。
 

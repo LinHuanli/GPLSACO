@@ -1,3 +1,6 @@
+% 必须在加载中文字体前选用 XeLaTeX，避免误用 pdfLaTeX 后查找 unihei 字体。
+\RequirePackage{iftex}
+\RequireXeTeX
 \usepackage[UTF8,scheme=plain,fontset=fandol]{ctex}
 \usepackage{amsmath,amssymb,graphicx,booktabs,tabularx,array,longtable}
 \usepackage{algorithm,algpseudocode}
@@ -32,6 +35,6 @@
 \newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \setlength{\emergencystretch}{1em}
-\graphicspath{{../../.tmp/evostar/generated/}}
-\newcommand{\gentable}[1]{\input{../../.tmp/evostar/generated/#1.tex}}
+\newcommand{\gentable}[1]{\input{generated/#1.tex}}
+\newcommand{\genfigure}[1]{\resizebox{\textwidth}{!}{\input{generated/#1.pgf}}}
 \DefineVerbatimEnvironment{TreeCode}{Verbatim}{fontsize=\small,breaklines=true,breakanywhere=true}

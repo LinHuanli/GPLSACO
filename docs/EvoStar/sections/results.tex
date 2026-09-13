@@ -1,3 +1,4 @@
+% !TeX root = ../samplepaper.tex
 \section{实验结果}
 \subsection{主测试与规模迁移}
 表\ref{tab:quality}汇总正式测试质量。TSP500中，\JS{}与\CT{}的平均参考差距分别为0.14759\%和0.15007\%，低于四种对照的均值。但表\ref{tab:primary}显示，校正后的可靠优势仅出现在相对\Ueight{}的比较中，改善分别为0.02183和0.01936个百分点。相对\FACO{}、\Rsixteen{}和\Usixteen{}，两种GP的区间均跨越零；两种表示之间也没有可靠差异。
@@ -21,7 +22,7 @@ TSP1000上，\Rsixteen{}的平均差距0.22825\%低于\JS{}的0.25236\%和\CT{}�
 图\ref{fig:curves}展示训练冠军、固定快速验证及开发监控。训练面板随代变化，原始训练适应度不可直接作为同一目标上的单调收敛曲线；图中同时给出同代\Rsixteen{}对照。快速验证曲线在训练结束后用固定面板重评每代冠军，因此适合比较历代候选，但不是每代都在线执行的完整验证。
 
 \begin{figure}[!t]
-\centering\includegraphics[width=\textwidth]{curves.pdf}
+\centering\genfigure{curves}
 \caption{六次运行的曲线。上：训练冠军相对同代\Rsixteen{}的改善；中：固定快速验证的每代冠军差距；下：每5代在线开发监控。细线为各GP种子，粗线为3种子均值；未平滑。正训练改善表示优于该代静态对照，验证差距越低越好。}
 \label{fig:curves}
 \end{figure}
