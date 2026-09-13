@@ -1,40 +1,67 @@
 % !TeX root = ../samplepaper.tex
-\section{实验设计}
-\subsection{数据、参数依据与分阶段预算}
-主实验只在500节点欧氏TSP上训练，1000节点实例仅用于冻结后的规模迁移测试。实例、参考路径和面板归属由现有数据清单固定，清单将该合成实例族记为uniform。现存元数据没有完整记录生成器及父实例关系，本文不额外假定未记录的生成过程。参考路径是数据集提供的比较基准，未逐例独立认证最优性。对路径$T$，评价指标为
-\begin{equation}
- \gap(T)=100\left(\frac{C(T)}{C_{\mathrm{ref}}}-1\right)\%,
-\end{equation}
-其中$C$按连续欧氏距离计算。文中称其为\emph{参考差距}，而非已认证最优差距。标签仅由外部评价器读取，以高精度求和计算长度；在线求解器不读取标签或标签路径。
+\section{Experimental Design}
+\subsection{Research Questions and Baselines}
+实验回答三个问题：（RQ1）GP控制是否改善FACO的求解质量？（RQ2）GP学到了什么控制行为，single-tree与multi-tree有何差异？（RQ3）所学策略能否迁移至更大实例，其计算成本如何？RQ1使用冻结测试及静态对照；RQ2结合训练与validation曲线、选中规则和决策回放；RQ3考察TSP1000迁移及搜索工作量。
 
-蚂蚁数采用2022 FACO实验的规模规则$m=64\lceil\sqrt n/16\rceil$\cite{skinderowicz2022}，TSP500和TSP1000均为128。主要／备用候选数16／64、局部搜索候选数20、$\beta=1$、信息素保留系数0.5、$p_{\mathrm{best}}=0.1$、阶段最优使用概率0.01在GPU方法间固定。MNE8作为FACO式默认强度对照，MNE16用于排除最大强度本身带来的收益。GP种群、节点上限和算子概率是控制搜索规模的实验设计选择，并未经过全面超参数优化。
+比较方法包括\JS{}、\CT{}及以下四种baseline。两种GP各运行3个独立GP seed（1103、2207、3313），所有运行从头初始化。
+\begin{itemize}
+ \item \FACO{}：2022原生FACO的连续距离适配版，保留24条初始化路径及原生初始化local search，用于评价整体求解质量。
+ \item \Ueight{}：共享GPU底座，固定MNE=8，从全体节点均匀选择起点，不重启，作为默认强度对照。
+ \item \Usixteen{}：将\Ueight{}的MNE改为16，检验较大扰动强度的表现。
+ \item \Rsixteen{}：固定MNE=16，从每次迭代随机生成的区域0选择起点，不重启，检验简单区域策略的表现。
+\end{itemize}
+三个GPU baseline与GP共享路径构造、local search及数值后端。\FACO{}使用连续FP64距离，并对依赖整数距离的近邻实现和恒等移动处理作相应适配；详细改动见补充材料。另有六个TSPLIB实例、各30个seed的原始整数距离复现\cite{reinelt1991}，单独作为原生FACO与参数核查的证据。
 
-训练迭代数允许少于测试，但不按时间截断。先前开发标定比较24个固定或规则控制器，使用32个开发实例与5个ACO种子，在候选$H\in\{100,250,500,1000,2500,5000\}$上要求保留至少95\%的相对初始化改善，且与$H=5000$的控制器排名Spearman相关至少0.9。TSP500中，$H=1000$是首个同时达标的候选，改善保留率为98.73\%，排名相关为0.9383。此依据来自开发控制器，并不保证进化GP在短、长预算下排名一致。
+\subsection{Data and Evaluation Protocol}
+训练仅使用500节点欧氏TSP，1000节点实例用于冻结后的规模迁移。数据清单将该合成实例族记为uniform；现存元数据没有完整记录生成器及父实例关系。数据提供的参考路径用于式\eqref{eq:fitness}中的外部评分，路径长度按连续欧氏距离计算。下文所有合成实例的gap均指reference gap，越低越好。
 
-表\ref{tab:protocol}给出正式轮次预算。三种GP种子为1103、2207、3313，每种表示各运行一次，共6次。所有运行在同一代共享实例与ACO随机种子面板，训练面板随代变化，50个面板合计覆盖794个不同训练实例。监控、选模和测试均不含这些训练实例，快速验证与完整验证的实例也不重叠。每个个体每代$16\times1\times128\times1000=2{,}048{,}000$ FE，每次50代训练为$13{,}107{,}200{,}000$ FE；六次合计$78{,}643{,}200{,}000$ FE，不含监控、选模和测试。
+训练包含50个评价代，每代16个实例、1个ACO seed，所有individual使用相同面板。面板随代变化，合计覆盖794个不同训练实例。固定开发面板每5代监控一次冠军。训练结束后，用quick validation重评历代冠军及末代种群，再对前4名执行full validation，选出本次运行的控制器。六个控制器全部冻结后，才在两个规模的测试集上评价。表\ref{tab:protocol}给出各阶段预算。
 
 \begin{table}[tb]
-\caption{正式实验流程。每次求解均使用128只蚂蚁；快速与完整验证使用不同面板。}
+\caption{评价流程。每次求解使用128只蚂蚁；两级validation采用不同实例面板。}
 \label{tab:protocol}
 \small
 \begin{tabularx}{\textwidth}{@{}lrrY@{}}
 \toprule
-阶段 & 实例$\times$ACO种子 & $H$ & 评价对象与用途\\ \midrule
-训练 & $16\times1$ & 1000 & 每代128个体，50代，面板随代变化\\
-开发监控 & $16\times1$ & 1000 & 第5、10、$\ldots$、50代冠军；固定面板\\
-快速验证 & $32\times1$ & 1000 & 历代冠军与末代种群，去重后最多177个\\
-完整验证 & $64\times3$ & 5000 & 每次运行快速验证前4名，选出1个\\
-TSP500测试 & $128\times10$ & 5000 & 六个冻结控制器及四种对照\\
-TSP1000测试 & $128\times10$ & 5000 & 原样迁移，不重新进化或选模\\
+阶段 & 实例$\times$ACO seed & 迭代$H$ & 评价对象\\ \midrule
+Training & $16\times1$ & 1000 & 每代128个individual，共50代\\
+Monitoring & $16\times1$ & 1000 & 每5代的冠军，固定开发面板\\
+Quick validation & $32\times1$ & 1000 & 历代冠军与末代种群，去重后至多177个\\
+Full validation & $64\times3$ & 5000 & 每次运行前4名，选出1个\\
+TSP500 test & $128\times10$ & 5000 & 六个冻结控制器及四种baseline\\
+TSP1000 test & $128\times10$ & 5000 & 原样迁移\\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-监控和快速验证的ACO种子为17；完整验证为17、29、41；测试为17、29、41、53、67、79、97、109、127、149。划分以实例清单为准，重复使用种子编号不意味着重复使用测试实例。六个控制器全部冻结后才执行正式测试。本次整理没有新增ACO评价，也没有根据测试结果修改方法。
+训练实例与开发、validation及测试实例分离，quick与full validation实例也不重叠。Monitoring与quick validation属于开发数据，可能重叠。ACO seed编号可以跨阶段复用，数据划分以实例为单位。每个individual每代使用$16\times128\times1000=2{,}048{,}000$ FE；每次训练共$13{,}107{,}200{,}000$ FE。该预算不包含监控、选模和测试，所有阶段均按固定迭代数终止。
 
-\subsection{对照与统计方法}
-四种对照分别为：\FACO{}，保留24条初始化路径的原生2022 FACO；\Ueight{}，GPU底座、MNE8、全体节点均匀起点且不重启；\Usixteen{}，仅将前者强度改为16；\Rsixteen{}，GPU底座、MNE16、每迭代随机生成的区域0起点且不重启。区域0对照可以检验局部起点限制是否已足以解释收益。GPU静态对照与GP使用相同构造、局部搜索及数值后端。
+\subsection{Parameter Settings}
+表\ref{tab:parameters}汇总关键参数。FACO蚂蚁数遵循2022论文的规模规则$m=64\lceil\sqrt n/16\rceil$\cite{skinderowicz2022}，两个规模均为128；共同基础参数在GPU方法间固定。GP的种群大小、代数及结构限制用于控制搜索规模，没有进行全面超参数寻优。Crossover、mutation和reproduction的概率与相关GP研究中的常用设置一致\cite{zhang2018multitree,sun2024multicloud}，其在本项目中的实际接受比例还受重复与结构约束影响。
 
-\FACO{}在合成数据上使用连续FP64距离，并将依赖距离取整的KD-tree邻域实现替换为近邻列表；对恒等2-opt移动赋零增益，并排除边集合不变的3-opt移动，以避免浮点误差触发虚假改善循环。它应理解为原生FACO的连续距离适配版。另有保留原始整数距离的TSPLIB\cite{reinelt1991}复现实验，详见补充材料；二者不合并为同一结果。
+\begin{table}[tb]
+\caption{关键参数及设置依据。完整配置与实现语义见补充材料。}
+\label{tab:parameters}
+\small
+\begin{tabularx}{\textwidth}{@{}l l Y@{}}
+\toprule
+参数 & 设置 & 依据\\ \midrule
+蚂蚁数 & 128 & 2022 FACO规模规则\\
+候选邻域 & 16／64；LS 20 & 主要候选、后续备用候选及LS候选\\
+信息素与启发式 & $\beta=1$，保留系数0.5 & GPU方法共享；$p_{\rm best}=0.1$\\
+ACO迭代 & 训练1000；测试5000 & 开发集预算标定\\
+Population / generations & 128 / 50 & 固定进化预算\\
+Elitism / tournament size & 4 / 4 & 本实验的selection设置\\
+Crossover / mutation / reproduction & 0.80 / 0.15 / 0.05 & 互斥抽样的尝试概率\\
+初始高度 / 最大高度 & 2--4 / 5 & Full/grow；最大高度按每棵树限制\\
+总节点数 & 至多63 & 按整个individual限制\\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-质量均值先对ACO种子求平均，再对实例和GP种子求平均。主检验以128个测试实例为配对单位，每个实例先平均10个ACO种子与3个GP种子，采用双侧Wilcoxon符号秩检验\cite{wilcoxon1945}。TSP500预定的9项比较为两种GP各对四种对照及GP之间比较，统一进行Holm校正\cite{holm1979}。95\%区间采用10\,000次分层配对bootstrap，重采样GP种子、实例及实例内ACO种子，统计种子为91001。定义改善$\Delta=\gap_{\text{对照}}-\gap_{\mathrm{GP}}$，以百分点报告，正值表示GP更好。TSP1000区间作为迁移效果的描述性证据，不额外扩展主检验族。3个GP种子仍限制了对进化随机性的估计精度。
+训练采用较短ACO预算的依据来自先前开发标定：24个固定或规则控制器在32个开发实例、5个ACO seed上比较$H\in\{100,250,500,1000,2500,5000\}$。选择条件为保留至少95\%的相对初始化改善，且与H5000的控制器排名Spearman相关至少0.9。H1000是首个达标候选；TSP500的改善保留率为98.73\%，排名相关为0.9383。该标定降低训练成本，GP的最终选模仍使用H5000评价。
+
+\subsection{Performance Measures and Statistical Analysis}
+质量以平均reference gap报告。先平均ACO seed，再平均实例及GP seed；同时报告相对baseline的改善$\Delta=\gap_{\rm baseline}-\gap_{\rm GP}$，单位为百分点，正值表示GP更好。计算成本分别使用GPU任务时间、构造步数和local-search移动评价数。
+
+TSP500的主检验以128个测试实例为配对单位，每个实例先平均10个ACO seed和3个GP seed，采用双侧Wilcoxon signed-rank test\cite{wilcoxon1945}。两种GP各对四个baseline，加上GP之间的比较，共9项检验统一采用Holm校正\cite{holm1979}。95\%区间沿用10\,000次分层配对bootstrap，重采样GP seed、实例及实例内ACO seed。TSP1000区间用于描述迁移效果。三个GP seed限制了对进化随机性的估计精度，逐seed结果另列于补充材料。

@@ -39,6 +39,20 @@ FEATURES = [
     "pheromone_strength",
     "region_dispersion",
 ]
+SYMBOLS = [
+    "p",
+    "s",
+    r"\rho",
+    "w",
+    "r",
+    "u",
+    r"\delta_q",
+    "d_q",
+    "e_R",
+    "a_R",
+    r"\tau_R",
+    "d_R",
+]
 
 
 def read(path):
@@ -89,6 +103,56 @@ def expression(program):
     return stack[0]
 
 
+def tree_figure(program):
+    """从冻结IR绘制真实树结构；短符号与论文terminal表一致。"""
+    stack, nodes = [], []
+    names = {2: "+", 3: "-", 4: r"\times", 5: r"\min", 6: r"\max", 8: r"\AQ"}
+    for op, arg in zip(program["opcode"], program["operand"], strict=True):
+        children = []
+        if op == 0:
+            symbol = SYMBOLS[arg]
+        elif op == 1:
+            value = struct.unpack("<f", struct.pack("<I", program["constant_bits"][arg]))[0]
+            symbol = str(int(value)) if value in [-1, 0, 1] else f"c_{{{arg}}}"
+        elif op == 7:
+            children, symbol = [stack.pop()], r"\mathrm{abs}"
+        else:
+            right, left = stack.pop(), stack.pop()
+            children, symbol = [left, right], names[op]
+        nodes.append({"symbol": symbol, "children": children})
+        stack.append(len(nodes) - 1)
+    if len(stack) != 1:
+        raise ValueError("树图需要一个完整的冻结表达式")
+    leaf = 0
+
+    def place(idx, depth):
+        nonlocal leaf
+        node = nodes[idx]
+        if node["children"]:
+            for child in node["children"]:
+                place(child, depth + 1)
+            node["x"] = sum(nodes[c]["x"] for c in node["children"]) / len(node["children"])
+        else:
+            node["x"] = leaf
+            leaf += 1
+        node["y"] = -depth
+
+    place(stack[0], 0)
+    out = [
+        r"\begin{tikzpicture}[x=8mm,y=8mm,every node/.style={font=\small,inner sep=1.5pt}]",
+    ]
+    # 先画边，再用有底色的节点遮住连接端点，避免线段穿过字符。
+    for node in nodes:
+        for child in node["children"]:
+            c = nodes[child]
+            out.append(rf"\draw[gray] ({node['x']},{node['y']}) -- ({c['x']},{c['y']});")
+    for node in nodes:
+        style = "draw,rounded corners=1pt,fill=white" if node["children"] else "fill=blue!7"
+        out.append(rf"\node[{style}] at ({node['x']},{node['y']}) {{$" + node["symbol"] + "$};")
+    out.append(r"\end{tikzpicture}")
+    return "\n".join(out) + "\n"
+
+
 def refresh_evidence():
     """仅在整理历史记录时手动使用；之后构建只需版本化结果。"""
     sources = {
@@ -127,34 +191,31 @@ def figures(summary, analysis):
     )
     colors = ["#2166ac", "#b35806"]
     fig, axes = plt.subplots(
-        3, 2, figsize=(6.2, 5.8), sharex="col", sharey="row", constrained_layout=True
+        2, 2, figsize=(6.2, 3.9), sharex="col", sharey="row", constrained_layout=True
     )
     for col, rep in enumerate(["joint_single", "conditional_three"]):
         selected = [r for r in summary["runs"] if r["run_id"].startswith(rep)]
-        series = [[], [], []]
+        series = [[], []]
         for r in selected:
             train = [
                 b["gpu_fixed_mne16_region0_no_restart"] - min(h["population_fitness"])
                 for b, h in zip(r["baseline_curve"], r["history"], strict=True)
             ]
             val = [p["gap_percent"] for p in r["validation_curve"]]
-            ar = next(x for x in analysis["runs"] if x["run_id"] == r["run_id"])
-            monitor = [p["gap_percent"] for p in ar["monitor_curve"]]
-            for row, y in enumerate([train, val, monitor]):
-                x = np.arange(1, 51) if row < 2 else np.arange(5, 51, 5)
+            for row, y in enumerate([train, val]):
+                x = np.arange(1, 51)
                 axes[row, col].plot(x, y, color=colors[col], alpha=0.28, lw=0.7)
                 series[row].append(y)
-        for row in range(3):
-            x = np.arange(1, 51) if row < 2 else np.arange(5, 51, 5)
+        for row in range(2):
+            x = np.arange(1, 51)
             axes[row, col].plot(x, np.mean(series[row], axis=0), color=colors[col], lw=1.4)
             axes[row, col].grid(alpha=0.15)
             axes[row, col].spines[["top", "right"]].set_visible(False)
         axes[0, col].axhline(0, color="gray", lw=0.7, ls="--")
         axes[0, col].set_title(LABELS[rep])
-        axes[2, col].set_xlabel("进化代数")
+        axes[1, col].set_xlabel("Generation")
     axes[0, 0].set_ylabel("训练改善（百分点）")
     axes[1, 0].set_ylabel("快速验证差距（%）")
-    axes[2, 0].set_ylabel("开发监控差距（%）")
     fig.savefig(GEN / "curves.pgf", backend="pgf")
     plt.close(fig)
 
@@ -174,6 +235,66 @@ def figures(summary, analysis):
     for ax in axes[:, 0]:
         ax.set_ylabel("训练参考差距（%）")
     fig.savefig(GEN / "training_absolute.pgf", backend="pgf")
+    plt.close(fig)
+
+    fig, axes = plt.subplots(1, 2, figsize=(6.2, 2.1), sharey=True, constrained_layout=True)
+    for col, rep in enumerate(["joint_single", "conditional_three"]):
+        curves = [
+            [p["gap_percent"] for p in r["monitor_curve"]]
+            for r in analysis["runs"]
+            if r["run_id"].startswith(rep)
+        ]
+        for y in curves:
+            axes[col].plot(range(5, 51, 5), y, color=colors[col], alpha=0.3, lw=0.8)
+        axes[col].plot(range(5, 51, 5), np.mean(curves, axis=0), color=colors[col], lw=1.4)
+        axes[col].set(title=LABELS[rep], xlabel="Generation")
+        axes[col].grid(alpha=0.15)
+        axes[col].spines[["top", "right"]].set_visible(False)
+    axes[0].set_ylabel("开发监控差距（%）")
+    fig.savefig(GEN / "monitor.pgf", backend="pgf")
+    plt.close(fig)
+
+    # 区间和显著性均读取既有统计，不重新估计或按图中小数重新检验。
+    fig, axes = plt.subplots(1, 2, figsize=(6.4, 3.5), sharey=True, constrained_layout=True)
+    for ax, dimension in zip(axes, [500, 1000], strict=True):
+        rows = [r for r in analysis["comparisons"] if r["dimension"] == dimension]
+        for y, row in enumerate(rows):
+            center = row["improvement_percentage_points"]
+            lo, hi = row["improvement_ci95"]
+            color = colors[0 if row["method"] == "joint_single" else 1]
+            ax.errorbar(
+                center,
+                y,
+                xerr=[[center - lo], [hi - center]],
+                fmt="o",
+                color=color,
+                markersize=3.5,
+                capsize=2,
+                elinewidth=1,
+            )
+            if dimension == 500 and row["holm_p"] < 0.05:
+                ax.annotate(
+                    "*",
+                    (hi, y),
+                    xytext=(3, 0),
+                    textcoords="offset points",
+                    va="center",
+                    color=color,
+                    fontsize=11,
+                )
+        ax.axvline(0, color="0.4", lw=0.8, ls="--")
+        ax.axhline(3.5, color="0.85", lw=0.6)
+        ax.axhline(7.5, color="0.85", lw=0.6)
+        ax.set_yticks(
+            range(len(rows)), [LABELS[r["method"]] + " / " + LABELS[r["comparator"]] for r in rows]
+        )
+        ax.set(title=f"TSP{dimension}", xlabel="改善（百分点）", xlim=(-0.043, 0.045))
+        ax.set_xticks([-0.04, -0.02, 0, 0.02, 0.04])
+        ax.spines[["top", "right", "left"]].set_visible(False)
+        ax.tick_params(axis="y", length=0, labelsize=8)
+        ax.grid(axis="x", alpha=0.12)
+    axes[0].invert_yaxis()
+    fig.savefig(GEN / "effects.pgf", backend="pgf")
     plt.close(fig)
 
 
@@ -292,12 +413,13 @@ def tables(summary, analysis, evidence):
                 ar["fitness_unique_g1_g10_g50"][-1],
             ]
         )
+        tree_text.append(r"\par\noindent\begin{minipage}{\linewidth}")
         tree_text.append(
             r"\subsubsection{"
             + label(rid)
             + "："
             + esc(selected["controller_id"].split("-s")[1].split("-", 1)[1])
-            + "}"
+            + r"}\leavevmode\par"
         )
         for role, tree in enumerate(selected["trees"]):
             role_name = (
@@ -305,9 +427,24 @@ def tables(summary, analysis, evidence):
                 if len(selected["trees"]) == 1
                 else ["参考路径树", "区域树", "强度树"][role]
             )
+            tree_name = f"structure_{rid}_{role}"
+            (GEN / f"{tree_name}.tex").write_text(tree_figure(tree))
             tree_text.extend(
-                [role_name + "：", r"\begin{TreeCode}", expression(tree), r"\end{TreeCode}"]
+                [
+                    r"\noindent\begin{minipage}{\linewidth}",
+                    role_name + r"\par",
+                    r"\begin{center}\input{generated/" + tree_name + r".tex}\end{center}",
+                ]
             )
+            constants = []
+            for i, bits in enumerate(tree["constant_bits"]):
+                value = struct.unpack("<f", struct.pack("<I", bits))[0]
+                if value not in [-1, 0, 1]:
+                    constants.append(f"$c_{{{i}}}={value!r}$")
+            if constants:
+                tree_text.append("ERC：" + "，".join(constants) + r"。\par")
+            tree_text.append(r"\end{minipage}\par\medskip")
+        tree_text.append(r"\end{minipage}\par\bigskip")
     write_table(
         "selected",
         ["控制器", "个体", "节点", "快排", "完整验证", "测试500", "测试1000"],
@@ -319,6 +456,33 @@ def tables(summary, analysis, evidence):
         "diversity", ["控制器", "程序", "行为", "高度中位", "节点中位", "适应度"], diversity
     )
     (GEN / "trees.tex").write_text("\n".join(tree_text) + "\n")
+
+    # 时间先在每次运行内累计，再对三个进化seed取均值。
+    maincost = []
+    for method in ["joint_single", "conditional_three", *list(LABELS)[3:]]:
+        gp_runs = [r for r in analysis["runs"] if r["run_id"].startswith(method)]
+        test_rows = [
+            r
+            for r in analysis["test"]
+            if r["dimension"] == 500
+            and (r["method"] == method or r["method"].startswith(method + "-s"))
+        ]
+        count = len(test_rows)
+        train = f"{sum(r['training_gpu_minutes'] for r in gp_runs) / 3:.2f}" if gp_runs else "--"
+        validation_minutes = sum(
+            r["monitor_gpu_minutes"] + r["validation_gpu_minutes"] for r in gp_runs
+        )
+        val = f"{validation_minutes / 3:.2f}" if gp_runs else "--"
+        maincost.append(
+            [
+                LABELS[method],
+                train,
+                val,
+                f"{sum(r['solve_seconds'] for r in test_rows) / count:.1f}",
+                f"{sum(r['ls_evaluations_per_tour'] for r in test_rows) / count:.1f}",
+            ]
+        )
+    write_table("maincost", ["方法", "训练/分", "监控与选模/分", "测试/秒", "LS评价/FE"], maincost)
 
     for n in [500, 1000]:
         rows = []
@@ -436,6 +600,62 @@ def tables(summary, analysis, evidence):
 
 def decision_examples():
     examples = read(BASE / "decision_examples.json")
+    # 主图使用两个已冻结个体各自的真实状态；不把两条轨迹当成同状态消融。
+    joint = next(
+        v for v in examples["joint_single-s3313-n500"] if v["iteration"] == 100 and v["colony"] == 0
+    )
+    conditional = next(
+        v
+        for v in examples["conditional_three-s3313-n500"]
+        if v["iteration"] == 100 and v["colony"] == 0
+    )
+    figure = [
+        r"\begin{minipage}[t]{0.39\textwidth}\centering\small",
+        r"\textbf{GP-J/3313}\par\medskip",
+        r"\input{generated/structure_joint_single-s3313_0.tex}\par\medskip",
+        rf"$\rho={joint['features'][2][joint['action']]:.8f}$，$u=1$\par",
+        r"保留参考路径时：\par\smallskip",
+        r"\begin{tabular}{cr}\toprule 区域$j$ & MNE16得分\\\midrule",
+    ]
+    for region in range(4):
+        figure.append(f"{region} & {joint['scores'][4 * region + 3]:.9f}" + r"\\")
+    figure.extend(
+        [
+            r"\bottomrule\end{tabular}\par\smallskip",
+            r"输出：$(r,j,\mathrm{MNE})=(0,3,16)$",
+            r"\end{minipage}\hfill",
+            r"\begin{minipage}[t]{0.59\textwidth}\centering\small",
+            r"\textbf{GP-C/3313}\par\medskip",
+            r"$\begin{aligned}",
+            r" f_r&=(ws)(s\delta_q)\AQ(r,-1),\\",
+            r" f_j&=p+\max(p,a_R\tau_R),\\",
+            r" f_k&=u+(p+\rho).",
+            r"\end{aligned}$\par\medskip",
+            r"$p=0.0198$；依次比较以下候选：\par\smallskip",
+        ]
+    )
+    for role, stage in enumerate(conditional["stages"]):
+        heading = [
+            r"Reference：$r\in\{0,1\}$",
+            r"Region：$j\in\{0,1,2,3\}$",
+            r"MNE：$(2,4,8,16)$",
+        ][role]
+        scores = ",\\;".join(f"{v:.6f}" for v in stage["scores"])
+        choice = [r"$r=0$", r"$j=1$", r"$\mathrm{MNE}=16$"][role]
+        figure.extend(
+            [
+                heading + r"\par",
+                "$(" + scores + r")$\par",
+                r"$\longrightarrow$ " + choice + r"\par\smallskip",
+            ]
+        )
+    figure.extend(
+        [
+            r"输出：$(r,j,\mathrm{MNE})=(0,1,16)$",
+            r"\end{minipage}",
+        ]
+    )
+    (GEN / "decision_figure.tex").write_text("\n".join(figure) + "\n")
     parts = []
     for run in ["joint_single-s3313", "conditional_three-s3313"]:
         d = next(v for v in examples[run + "-n500"] if v["iteration"] == 100 and v["colony"] == 0)

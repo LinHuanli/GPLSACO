@@ -1,0 +1,32 @@
+\begin{minipage}[t]{0.39\textwidth}\centering\small
+\textbf{GP-J/3313}\par\medskip
+\input{generated/structure_joint_single-s3313_0.tex}\par\medskip
+$\rho=0.00746447$，$u=1$\par
+保留参考路径时：\par\smallskip
+\begin{tabular}{cr}\toprule 区域$j$ & MNE16得分\\\midrule
+0 & 0.999972165\\
+1 & 0.999972165\\
+2 & 0.999972999\\
+3 & 0.999985993\\
+\bottomrule\end{tabular}\par\smallskip
+输出：$(r,j,\mathrm{MNE})=(0,3,16)$
+\end{minipage}\hfill
+\begin{minipage}[t]{0.59\textwidth}\centering\small
+\textbf{GP-C/3313}\par\medskip
+$\begin{aligned}
+ f_r&=(ws)(s\delta_q)\AQ(r,-1),\\
+ f_j&=p+\max(p,a_R\tau_R),\\
+ f_k&=u+(p+\rho).
+\end{aligned}$\par\medskip
+$p=0.0198$；依次比较以下候选：\par\smallskip
+Reference：$r\in\{0,1\}$\par
+$(0.000000,\;0.000000)$\par
+$\longrightarrow$ $r=0$\par\smallskip
+Region：$j\in\{0,1,2,3\}$\par
+$(0.039600,\;0.051049,\;0.039600,\;0.039600)$\par
+$\longrightarrow$ $j=1$\par\smallskip
+MNE：$(2,4,8,16)$\par
+$(0.273764,\;0.523764,\;0.773764,\;1.023764)$\par
+$\longrightarrow$ $\mathrm{MNE}=16$\par\smallskip
+输出：$(r,j,\mathrm{MNE})=(0,1,16)$
+\end{minipage}
