@@ -1,0 +1,37 @@
+\usepackage[UTF8,scheme=plain,fontset=fandol]{ctex}
+\usepackage{amsmath,amssymb,graphicx,booktabs,tabularx,array,longtable}
+\usepackage{algorithm,algpseudocode}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit}
+\usepackage{url}
+% 本地TeX发行版未安装xurl；允许长来源路径在字母和数字间换行。
+\makeatletter
+\g@addto@macro\UrlBreaks{\do\a\do\b\do\c\do\d\do\e\do\f\do\g\do\h\do\i\do\j\do\k\do\l\do\m\do\n\do\o\do\p\do\q\do\r\do\s\do\t\do\u\do\v\do\w\do\x\do\y\do\z\do\A\do\B\do\C\do\D\do\E\do\F\do\G\do\H\do\I\do\J\do\K\do\L\do\M\do\N\do\O\do\P\do\Q\do\R\do\S\do\T\do\U\do\V\do\W\do\X\do\Y\do\Z\do\0\do\1\do\2\do\3\do\4\do\5\do\6\do\7\do\8\do\9}
+\makeatother
+\usepackage[hidelinks,unicode,bookmarksdepth=2]{hyperref}
+\usepackage{fvextra}
+\floatname{algorithm}{算法}
+\renewcommand{\figurename}{图}
+\renewcommand{\tablename}{表}
+\renewcommand{\refname}{参考文献}
+\renewcommand{\abstractname}{摘要：}
+\renewcommand{\keywordname}{{\bfseries 关键词：}}
+\renewcommand{\contentsname}{目录}
+\algrenewcommand\algorithmicrequire{\textbf{输入：}}
+\algrenewcommand\algorithmicensure{\textbf{输出：}}
+\newcommand{\clip}{\operatorname{clip}_{[0,1]}}
+\newcommand{\AQ}{\operatorname{AQ}}
+\newcommand{\gap}{\operatorname{gap}}
+\newcommand{\FE}{\mathrm{FE}}
+\newcommand{\JS}{\textsc{GP-J}}
+\newcommand{\CT}{\textsc{GP-C}}
+\newcommand{\FACO}{\textsc{FACO-N}}
+\newcommand{\Ueight}{\textsc{GPU-U8}}
+\newcommand{\Usixteen}{\textsc{GPU-U16}}
+\newcommand{\Rsixteen}{\textsc{GPU-R16}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\emergencystretch}{1em}
+\graphicspath{{../../.tmp/evostar/generated/}}
+\newcommand{\gentable}[1]{\input{../../.tmp/evostar/generated/#1.tex}}
+\DefineVerbatimEnvironment{TreeCode}{Verbatim}{fontsize=\small,breaklines=true,breakanywhere=true}

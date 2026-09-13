@@ -1,0 +1,15 @@
+# 本地原始模板的示例二进制，不属于本稿来源。
+/fig1.eps
+/llncsdoc.pdf
+# 编译入口默认写入项目 .tmp；兼容手动编译。
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.toc
+*.xdv
+*.synctex.gz
+*.pdf

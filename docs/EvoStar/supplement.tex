@@ -1,0 +1,213 @@
+\documentclass[runningheads,orivec]{llncs}
+\input{preamble}
+\begin{document}
+\title{补充材料：遗传编程驱动的聚焦蚁群结构控制}
+\titlerunning{结构控制实验补充材料}
+\author{匿名作者}\authorrunning{匿名作者}\institute{}\maketitle
+\begin{abstract}
+本材料整理截至2026年9月10日完成的实验记录，补充主稿的参数、开发标定、全部选中程序、输入输出、逐种子结果和计算成本。正式推断仅使用六次重新初始化的50代训练及冻结测试。旧版32蚂蚁实验、暂停轮次和工程检查单独说明。本文档的生成仅读取已有结果，没有新增蚁群评价。
+\end{abstract}
+\setcounter{tocdepth}{1}
+\section*{目录}
+\makeatletter
+\begingroup
+\let\l@title\@gobbletwo
+\let\l@author\@gobbletwo
+\let\authcount\@gobble
+\@starttoc{toc}
+\endgroup
+\makeatother
+\clearpage
+
+\section{实验沿革与证据范围}
+\begin{longtable}{@{}L{20mm}L{47mm}L{49mm}@{}}
+\caption{已开展工作的分类。完成工程检查、开始训练和完成科学比较是不同状态。}\label{tab:catalog}\\
+\toprule 阶段 & 做了什么 & 状态与可支持的结论\\ \midrule\endfirsthead
+\toprule 阶段 & 做了什么 & 状态与可支持的结论\\ \midrule\endhead
+早期底座与候选图 & 数据读取、CPU/CUDA路径构造、状态分叉、候选图匹配、Hard/Escape机制、计数预算和任务恢复。 & 工程记录位于results/v1；证明相应功能曾被检查，不证明E1--E4的算法假设。\\
+旧32蚂蚁实验 & E1反馈对照和E3候选图实验曾启动GP；E3的四组静态调参完成。 & 旧GP未完成50代及最终验证，测试未开放。预算、算子和硬件不同，不与新结果拼接。\\
+2022 FACO复现 & 六个TSPLIB实例，各30种子，原始整数距离，5000迭代。 & 180次运行完成。用于核查原生算法与论文参数；不是合成测试集上的GP收益。\\
+连续距离与精度 & 原生FACO连续距离适配；exact、fp32、fp32\_fast测速门槛。 & 两个FP32搜索候选均未满足加速门槛，保留exact。GP运算仍为FP32。\\
+预算标定 & 两个规模、24控制器、32开发实例、5个ACO种子，检查迭代预算与排名。 & 选择训练H1000，验证／测试H5000。标定对象不是后来进化出的GP。\\
+种群并行与旧GP & 个体、实例、蚂蚁展开并行，开发任务分片；旧单树运行出现浅树和无效交叉。 & 同卡加速证据与保存程序回放完整；旧训练约13代时暂停，保留检查点。\\
+表示10代预实验 & 联合单树／条件三树各3种子，每次128个体、10代；开发集终点评价。 & 六次完成，218任务无失败。仅探索性开发结果，无正式测试。\\
+最新布局标定 & 同卡四组种群样本、2/4/8 warp比较、六GPU分片大小与完整H1000验证。 & 选2 warp和64个体分片；同卡输出和工作计数保持。\\
+表示50代正式轮次 & 两种表示各3种子，从头训练；轻量监控、两级选模、全部冻结后测试。 & 六次训练完成，TSP500及TSP1000测试完成，2382任务无失败、无重试。主稿主要证据。\\
+冻结结果诊断 & 64训练情境及144条真实决策的CUDA评分回放、反馈0/1干预、重启累计量分析。 & 无新增ACO FE。证明部分动作对反馈敏感；未完成完整求解的反馈消融。\\
+\bottomrule
+\end{longtable}
+
+旧E3静态终态记录记载5280次调用、692\,060\,160 FE和168\,960条输出路径，四组为alpha/POPMUSIC候选与Hard/Escape组合，无失败求解。这里输出路径数与FE是不同统计量。该记录属于32蚂蚁旧协议，只有开发调参结果，不能与本稿128蚂蚁、软候选后备访问的结果比较。旧历史报告还记载E1的10次GP及E3的20次GP已启动；其保存前缀不构成完整实验结论。
+
+主稿未完成的科学问题包括：反馈的完整求解消融、区域／重启／强度的独立贡献、候选先验与逃逸机制的正式因子比较，以及更多规模和分布上的迁移。现有E1--E4设计文档保留这些研究范围，当前50代表示比较不能代替它们。
+
+\section{参数明细与实现语义}
+\subsection{当前正式轮次的固定设置}
+\begin{longtable}{@{}L{34mm}L{82mm}@{}}
+\caption{当前正式参数及依据。未标为论文继承的项目均为本实验的实现或预算选择。}\\
+\toprule 项目 & 设置与依据\\ \midrule\endfirsthead
+\toprule 项目 & 设置与依据\\ \midrule\endhead
+距离与评分 & 欧氏距离，几何、代价和局部增益FP64；外部参考差距评价。GP指令FP32，运算裁剪$[-8,8]$。\\
+蚂蚁数 & $64\lceil\sqrt n/16\rceil$，继承2022 FACO规模规则；n500/n1000为128。\\
+蚁群基础参数 & 主要为最近16邻居，备用为随后64邻居，LS为最近20邻居；$\beta=1$；保留系数0.5；$p_{best}=0.1$；阶段最优使用概率0.01。\\
+GPU初始化 & 从节点0的最近邻路径加检查表2-opt；每蚂蚁LS移动评价上限100000。\\
+原生CPU对照 & 8线程，保留24条初始路线及原生初始化LS；合成数据使用连续距离适配。\\
+档案与区域 & 档案容量4，质量窗2\%，差异采样64节点；每区域最多16节点，备选不足时屏蔽重启。\\
+反馈 & 全局停滞除以32后裁剪；回归率与LS工作量EMA权重1/16；重启不清零全局停滞。\\
+动作 & 重启2选项、区域4选项、MNE2/4/8/16。联合32评分或条件2/4/4评分。\\
+GP函数与常量 & ADD、SUB、MUL、MIN、MAX、ABS、AQ；常量$-1,0,1$，ERC均匀$[-2,2]$，保存FP32值。\\
+GP规模 & P128、G50；4精英、4元锦标赛。是固定计算预算选择，未进行超参数网格寻优。\\
+GP种子 & 1103、2207、3313；联合／条件分别从头初始化，不从10代检查点续接。\\
+初始化与限制 & full/grow，高度2/3/4分层并确保达到高度；每树高度不超过5，总节点不超过63。\\
+繁殖 & 交叉0.80、变异0.15、复制0.05互斥；选择位置90\%偏好非终端，根可选。\\
+变异与交叉 & 替换full子树高度0--2；叶子树高度1--3。三树未选角色整树来自第二父本。\\
+多样性 & 程序直接判等去重；64训练情境的动作向量相同者最多2个；生产CUDA评分器。\\
+重试范围 & 后代生成25次后用随机移民，移民最多128次；未满足约束则任务失败，不降低门槛。\\
+正式GPU布局 & 每block 2 warp；种群分片64个体；普通测试最多32实例--种子对批处理。只使用A5000。\\
+停止条件 & 训练50个完整评价代，ACO按固定迭代／FE；不设墙钟截断，不自动延长代数。\\
+统计与冻结 & 每次运行冻结1个控制器，共6个；bootstrap10000次，种子91001；TSP500九项Holm校正。\\
+\bottomrule
+\end{longtable}
+
+GP初始化和繁殖的限制改变了可接受后代分布，因此0.80/0.15/0.05是\emph{尝试算子}的概率，不是最终后代中交叉／变异／复制的必然比例。复制若与已经接受的个体程序相同，也会因唯一性约束被拒绝。三树总节点上限与单树相同，不代表三树每个角色可分别使用63个节点。
+
+\subsection{特征公式与条件特征可见性}
+令$q$为候选参考路径、$b$为全局最优路径、$R$为候选起点区域、$D_{\mathrm{sample}}$为64节点上计数的双向相邻边不一致数，则
+\begin{align}
+ \texttt{ref\_gap}&=\clip\bigl((C(q)/C(b)-1)/0.02\bigr),\\
+ \texttt{ref\_diff}&=D_{\mathrm{sample}}/(2\times64).
+\end{align}
+保留动作的\texttt{ref\_diff}为0。对区域节点$v$，令$e_v$为参考路径两条相邻边平均长度，$s_v$为最近8个邻居的平均距离，并以下限$\epsilon=10^{-12}\max(\Delta x,\Delta y,1)$保护分母，则\texttt{region\_excess}是$\clip((e_v/s_v-1)/3)$在$R$内的均值。档案分歧按区域相邻边在档案路径中的缺失比例平均；区域离散度统计相邻端点在$R$外的比例。
+
+信息素强度使用$(\tau-\tau_{min})/(\tau_{max}-\tau_{min})$的区域相邻边均值；上下界相等时取1。实现以主要候选表宽$c=16$计算界限：
+\begin{equation}
+ \tau_{max}=\frac{1}{C(q)(1-\lambda)},\quad
+ p=p_{best}^{1/c},\quad
+ \tau_{min}=\min\left(\tau_{max},\frac{\tau_{max}(1-p)}{(c-1)p}\right).
+\end{equation}
+其中$\lambda=0.5$。这一候选表相关公式应与常见使用城市数$n$的推导区分。
+
+条件参考路径树可见\texttt{progress, stagnation, return\_rate, ls\_work, restart, ref\_gap, ref\_diff}；区域树在此基础上增加四项区域特征；强度树再增加\texttt{mne\_level}。每阶段在合法完整动作投影得到的可行选项上评分。阶段间只确定动作前缀，不提前执行重启，也不更新反馈。因此，第三阶段读取的回归率和工作量仍是本次执行前的统计。
+
+\section{原生FACO复现与开发标定}
+\subsection{2022 FACO的TSPLIB复现}
+采用TSPLIB\cite{reinelt1991}中六个实例，保持原始整数距离与2022原生实现\cite{skinderowicz2022}，各运行30个随机种子（1--30），5000迭代，CPU 8线程，24条初始路线。表\ref{tab:tsplib}的差距针对这些TSPLIB实例的已知最优值；它与合成数据的“参考差距”定义依据不同。
+\begin{table}[htbp]\caption{原生FACO的180次TSPLIB运行。时间为现有运行记录，包含初始化。}\label{tab:tsplib}
+\centering\small\gentable{tsplib}\end{table}
+这组结果支持原生复现及规模参数的使用。硬件、随机过程和运行环境未与原论文逐项等同，故不要求逐次路径或耗时复现，也不据此声称GPU底座与原始FACO逐操作等价。
+
+\subsection{训练迭代数标定}
+24个固定／规则控制器在每个规模32个开发实例、5个ACO种子上产生长预算曲线。定义改善保留率
+\begin{equation}
+ R(H)=\frac{\bar g(0)-\bar g(H)}{\bar g(0)-\bar g(5000)},
+\end{equation}
+并计算各控制器在$H$与5000下的平均差距排名相关。需两个规模均满足$R\ge0.95$且Spearman相关$\ge0.9$，取最小候选预算。表\ref{tab:horizon}给出全部候选。TSP500初始化平均差距5.83718\%，H5000为0.19343\%；TSP1000分别为5.85762\%和0.23266\%。
+\begin{table}[htbp]\caption{开发控制器的预算标定。保留率衡量相对初始化的改善，不是终点差距的保留比例。}\label{tab:horizon}
+\centering\small\gentable{horizon}\end{table}
+H500虽然保留较多改善，但排名相关未达标；H1000在两个规模均通过。最终仅训练TSP500。对不依赖进度的固定／规则控制器，可以从长运行检查点取得短预算结果；进化GP使用$(t-1)/H$，其长运行前缀不必等价于独立短预算求解，后者需重新评价。该限制不能由本次标定消除。
+
+\subsection{数值后端选择}
+表\ref{tab:precision}比较两种低精度搜索候选与exact后端。四个样本分别为n500/n1000的固定MNE8区域3及代表性GP；静态区域3只在16个随机节点中取起点，不等同于正式\Ueight{}的全节点均匀起点。候选需先达到至少1.10的加速门槛，再进入完整质量门槛。两种候选均未通过速度条件，因此没有足够依据更换exact；不能把这一步写为已经发现FP32质量劣化。
+\begin{table}[htbp]\caption{数值搜索后端开发测速，加速比为exact耗时／候选耗时。}\label{tab:precision}
+\centering\small\gentable{precision}\end{table}
+
+\section{工程加速、旧GP问题与10代预实验}
+\subsection{已有加速证据及比较边界}
+早期同卡TSP500对比采用128个体、16实例、1个ACO种子：H100从22.076秒降至12.377秒，H1000从252.661秒降至137.522秒，保存轨迹相同。该结果来自v2构建，涉及档案／反馈更新和构造搜索等热点优化。后续v3以修复表示后的初代和第10代种群为样本，结果见表\ref{tab:speed}。四种样本采用相同A5000，在预热后重复3次取中位数；总预算均为26\,214\,400 FE。
+\begin{table}[htbp]\caption{最新v3同卡布局优化。g10为10代预实验末代样本，不是50代末代种群。}\label{tab:speed}
+\centering\small\gentable{speed}\end{table}
+每block 2、4、8个warp的四种样本比较均支持2 warp。六GPU、H100的分片16、32、64、128个体墙钟中位数依次为60.590、49.780、44.305、48.280秒，选择64。六个真实第10代种群的完整H1000验证共1\,572\,864\,000 FE，六GPU墙钟468.877秒、GPU任务时间和2375.953秒；这是含worker启动的一次完整预算测量。旧版加速比不能与新版百分比连乘为已测得的端到端加速比。
+
+RMTGP-ACO的展开思路为本项目的并行设计提供参考，但现有历史比较并非同卡同工作量。已有报告中，RMTGP的TSP500 AS、ACS、MMAS三种算法平均训练总时间为14.83、2.92、2.63小时，其硬件为RTX PRO 5000 Blackwell、搜索后端为fp32\_fast；本稿为A5000与FP64搜索，评价预算、初始化和终点评分也不同。故本文不将这些数字作为“快于RMTGP”的证据。具体历史记录及配置入口见来源索引。
+
+\subsection{旧单树繁殖问题}
+旧v2单树训练出现浅树与交叉无变化。保存的父代、随机状态和后代程序允许直接回放代际变化；表\ref{tab:old}来自已经完成的回放，不新增求解。第9到10代，三个种子交叉均完全没有改变程序，124个后代中只有21--29个新程序。第12到13代仍有相同现象。该证据解释了为何需要修改初始化、允许根交叉、偏好非终端、改善叶子变异并控制行为重复。
+\begin{table}[htbp]\caption{旧v2代际程序回放。所有保存的下一代程序均匹配回放结果。}\label{tab:old}
+\centering\small\gentable{old_variation}\end{table}
+该诊断与修复后的多样性改善之间存在版本差异；没有只改一个算子的完整对照，因而不能估计每条修复的独立效果。旧checkpoint保留且未向新轮次续接适应度。
+
+\subsection{修复表示后的10代预实验}
+预实验与正式轮次使用相同的两种表示、3个GP种子、128个体和每代16实例$\times$1个ACO种子$\times$1000迭代，但只运行10代。在固定32个开发实例$\times$3个ACO种子$\times$5000迭代上评价第10代冠军。表\ref{tab:pilot}列出六次结果。
+\begin{table}[htbp]\caption{10代预实验，仅开发集，不是正式测试结果。}\label{tab:pilot}
+\centering\small\gentable{pilot}\end{table}
+两种表示的开发差距均值分别为0.13172\%与0.16389\%；同面板\FACO{}、\Ueight{}、\Rsixteen{}、\Usixteen{}分别为0.20047\%、0.14446\%、0.14239\%、0.15469\%。预实验显示修复后仍有98--112种动作向量，值得完成更长训练；它没有证明单树在独立测试中稳定占优。后来的50代选模面板和正式测试面板不同，不能用两张表的均值直接计算“多训练40代”的收益。
+
+\section{正式轮次的逐运行结果}
+\subsection{选中个体与训练多样性}
+表\ref{tab:selected}中的个体编号包含首次产生的代数和种群位置。“快排”是该个体在本次运行快速验证中的名次，完整验证使用不同64实例、3个ACO种子与H5000。每个测试均值包含1280次求解，未只挑选表现最好的GP种子。
+\begin{table}[htbp]\caption{六个冻结个体。验证和测试列均为参考差距（\%）。}\label{tab:selected}
+\centering\small\gentable{selected}\end{table}
+\begin{table}[htbp]\caption{第50代种群多样性。程序、行为和适应度列为不同值的数量；高度是每个个体最大树高的中位数。}\label{tab:diversity}
+\centering\small\gentable{diversity}\end{table}
+\begin{figure}[htbp]\centering\includegraphics[width=\textwidth]{training_absolute.pdf}
+\caption{六次运行的原始训练差距。冠军和中位数都随每代面板改变，不能把波动直接解释为遗传退化；本图补充主稿中的同面板对照差值。}\end{figure}
+
+\subsection{完整冻结树表达式}
+下列程序由存档后缀IR还原为前缀表达式，没有代数化简。运算定义、FP32常量、裁剪与并列规则与主稿一致。\CT{}种子2207的区域树只有一个终端，但它与另外两棵树共同构成27节点个体，不能视为整个种群的深度退化。
+\gentable{trees}
+
+\section{真实决策与反馈诊断}
+联合树对完整动作评分，条件三树按角色输出分数向量；最终输出都是离散动作而非新路径。下面给出各一种已保存的真实决策，保留足够小数显示近并列。未显示的候选输入仍可从\path{results/v3/representation-50gen/decision_examples.json}读取，包含12$\times$32特征矩阵、合法性掩码及全评分或分阶段评分。
+\gentable{examples}
+
+\subsection{全部反馈置零／置一结果}
+表\ref{tab:diag}中每格为“置零改变动作数／置一改变动作数”。在训练64情境、TSP500回放12情境和TSP1000回放12情境上分别计算。训练情境没有对应的历史实际执行动作，因此其保存动作匹配标志不适用；真实回放的144个动作全部匹配生产CUDA评分器。全部528个原始动作取MNE16，所有干预均未改变MNE。
+\begin{table}[htbp]\caption{冻结状态反馈干预，不重新运行ACO。}\label{tab:diag}
+\centering\small\gentable{feedback_full}\end{table}
+一些特征出现在表达式中，却可能只对候选分数添加公共偏置，或因数值并列而不改变选项。因此，表达式出现频率、动作敏感性和质量因果效应需要分别报告。\CT{}种子3313的参考路径树在实数下等价于$\texttt{ls\_work}\times\texttt{stagnation}^2\times\texttt{ref\_gap}\times\texttt{restart}/\sqrt2$，容易在反馈正值时选择切换，但实际阈值仍受$10^{-6}$并列规则影响。
+
+\subsection{完整求解的累计重启}
+表\ref{tab:restart500}--\ref{tab:restart1000}使用测试求解的完整累计状态，而不是12情境采样的重启比例。每行1280次求解，每次5000迭代。“零重启次数”是完全没有重启的求解数。均值和中位数的差异表明部分控制器具有长尾重启频率。
+\begin{table}[htbp]\caption{TSP500累计重启次数。}\label{tab:restart500}
+\centering\small\gentable{restarts500}\end{table}
+\begin{table}[htbp]\caption{TSP1000累计重启次数。}\label{tab:restart1000}
+\centering\small\gentable{restarts1000}\end{table}
+六个控制器在两个规模的终点全局停滞计数第10百分位均超过32，说明大量终点的归一化停滞输入已饱和。这不意味着完整轨迹每步都饱和，也不能仅凭终点状态判断控制失败。
+
+\section{完整统计与资源成本}
+\subsection{配对统计补充}
+主稿已列TSP500的9项改善、区间与校正$p$值。表\ref{tab:wins500}补充胜平负及逐求解相对路径改善；表\ref{tab:transfer}和表\ref{tab:wins1000}列出TSP1000的全部描述性比较。胜平负在每实例平均GP/ACO种子后计算，不以1280个求解视为独立样本。相对路径改善是$100(C_b-C_a)/C_b$的平均值，与平均差距的比例不同。
+\begin{table}[htbp]\caption{TSP500胜平负与相对路径长度改善。}\label{tab:wins500}
+\centering\small\gentable{wins500}\end{table}
+\begin{table}[htbp]\caption{TSP1000完整描述性比较，单位为百分点；不进行额外主检验，$p_H$留空。}\label{tab:transfer}
+\centering\small\gentable{transfer}\end{table}
+\begin{table}[htbp]\caption{TSP1000胜平负与相对路径长度改善。}\label{tab:wins1000}
+\centering\small\gentable{wins1000}\end{table}
+
+\subsection{训练、监控、选模与测试工作量}
+表\ref{tab:costs}前三个数值列均为GPU任务时间求和，单位分钟；墙钟为训练起止间隔，包含并行重叠与等待，不能与GPU时间相加。“代评价等待”是协调器等待该代评价收齐的均值，不包含一代所有管理步骤。监控每次只评冠军，快速验证最多177个去重候选，完整验证只评4个，因此其预算远小于训练。按候选上限估算，监控加选模FE不超过训练的9.4375\%；实际时间比例略高，反映候选的搜索工作量和阶段开销不同。
+\begin{table}[htbp]\caption{正式轮次每次运行的成本。训练、监控、选模单位为GPU分钟。}\label{tab:costs}
+\centering\small\gentable{costs}\end{table}
+\begin{table}[htbp]\caption{TSP500测试吞吐及每FE搜索工作。总摊销秒为1280次求解的批处理时间分摊之和。}\label{tab:testcost500}
+\centering\small\gentable{testcost500}\end{table}
+\begin{table}[htbp]\caption{TSP1000测试吞吐及每FE搜索工作，口径同上。}\label{tab:testcost1000}
+\centering\small\gentable{testcost1000}\end{table}
+表中CPU原生对照未混入GPU时间比较；其1280次求解累计时间分别为4750.44和6397.49秒。GPU任务分布于不同服务器A5000，最多32个实例--种子对批处理，摊销时间可用于描述本次工作流吞吐，不能当成单实例独占设备的求解延迟。最新工程验证记录包括20项CTest、303项Python测试通过及8项跳过；这是构建验证范围，跳过项不计为通过，也不代替科学对照。
+
+\section{数据与实现来源索引}
+本材料的表格与曲线由\path{scripts/build_evostar_report.py}生成，主要读取已经版本化的精简JSON。完整日志、tour、数据库和checkpoint仍保存在artifacts中，不复制到论文目录。历史数值后端和预算标定的精简快照保存在\path{results/v3/evostar/evidence.json}，记录原始来源路径；默认编译不依赖那些未版本化的历史大文件。
+
+\begin{longtable}{@{}L{35mm}L{81mm}@{}}
+\caption{论文结论与来源的对应关系。路径均相对GPLSACO根目录。}\\
+\toprule 内容 & 来源\\ \midrule\endfirsthead
+\toprule 内容 & 来源\\ \midrule\endhead
+正式配置与划分 & \path{results/v3/representation-50gen/campaign.json}；同目录\path{panels.json}；\path{docs/experiments/representation_50gen_v3.md}。\\
+训练曲线、选中IR、统计 & \path{results/v3/representation-50gen/summary.json}。\\
+逐运行分析、资源与重启 & \path{results/v3/representation-50gen/analysis.json}。\\
+输入输出与反馈干预 & 同目录\path{decision_examples.json}及\path{selected_feedback_diagnostic.json}。\\
+原生180次复现 & \path{results/v2/faco_2022_tsplib.json}。\\
+开发预算与精度快照 & \path{results/v3/evostar/evidence.json}；原始路径在该文件的source\_paths中。\\
+最新工程速度 & \path{results/v3/representation_performance.json}及\path{representation_full_verification.json}。\\
+10代预实验 & \path{results/v3/pilot_analysis.json}；\path{results/v3/representation-pilot/}。\\
+旧GP回放与测速 & \path{results/v3/historical_variation_replay.json}；\path{results/v2/tsp500_performance.json}。\\
+旧32蚂蚁阶段 & \path{docs/archive/v1/README.md}；该目录reports；\path{results/v1/e3_static_terminal_results.json}。\\
+RMTGP历史对照 & \path{docs/reports/}中的《训练速度与信号分析.md》及其指向的只读MTGP\_ACO运行记录；硬件和工作量不匹配。\\
+GP与条件决策实现 & \path{python/gp_faco/diverse_evolution.py}、\path{python/gp_faco/controller.py}、\path{cuda/gp_score.cuh}。\\
+构造与状态实现 & \path{cuda/faco_device.cuh}、\path{cuda/control_state.cuh}、\path{cuda/colony_state.cuh}及相关batch实现。\\
+统计实现 & \path{python/gp_faco/representation_statistics.py}；方法间同步重采样，九项主检验。\\
+\bottomrule
+\end{longtable}
+
+正式冻结方法保持不变；如果后续实施新的消融或参数修改，应形成新实验版本，不能回写为本轮测试前已确定的设计。
+\bibliographystyle{splncs04}\bibliography{references}
+\end{document}

@@ -1,0 +1,17 @@
+{
+  "new_aco_evaluations": 0,
+  "documents": [
+    {
+      "name": "samplepaper",
+      "pages": 11,
+      "problems": [],
+      "pdf": "artifacts/papers/evostar/samplepaper.pdf"
+    },
+    {
+      "name": "supplement",
+      "pages": 17,
+      "problems": [],
+      "pdf": "artifacts/papers/evostar/supplement.pdf"
+    }
+  ]
+}

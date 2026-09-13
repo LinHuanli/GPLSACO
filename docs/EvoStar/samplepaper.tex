@@ -1,0 +1,21 @@
+\documentclass[runningheads,orivec]{llncs}
+\input{preamble}
+\begin{document}
+\title{遗传编程驱动的聚焦蚁群结构控制：联合与条件表示的实证比较}
+\titlerunning{遗传编程驱动的聚焦蚁群结构控制}
+\author{匿名作者}
+\authorrunning{匿名作者}
+\institute{}
+\maketitle
+\begin{abstract}
+聚焦蚁群优化通过保留参考路径中的大部分结构降低构造成本，但扰动强度、起始区域和参考路径切换仍需协调。本文在节点重定位式聚焦蚁群求解器上，以遗传编程学习有限动作集合的评分规则，对比单树联合评分与三树条件决策。两种表示共享状态反馈、总节点上限和评价预算，分别在TSP500上完成3个随机种子、128个体、50代训练。冻结选模后，在TSP500与TSP1000上各用128个实例和10个蚁群随机种子测试。TSP500的平均参考差距分别为0.14759\%和0.15007\%，均优于固定扰动强度8的GPU对照；相对原生FACO及强度16的对照，尚无统计证据支持稳定优势。TSP1000上，固定强度16的区域对照优于两种GP。决策回放表明，已选个体在所检查情境中均取最大扰动强度，反馈主要改变区域和重启动作。三树训练GPU时间增加约38.6\%，未带来明确质量收益。结果提示：学习结构控制的评价应包含强静态对照，并区分反馈敏感性与反馈带来的求解收益。
+\keywords{聚焦蚁群优化 \and 遗传编程 \and 结构控制 \and 旅行商问题 \and GPU并行}
+\end{abstract}
+\input{sections/introduction}
+\input{sections/method}
+\input{sections/design}
+\input{sections/results}
+\input{sections/discussion}
+\bibliographystyle{splncs04}
+\bibliography{references}
+\end{document}
