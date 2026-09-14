@@ -1,51 +1,59 @@
 % !TeX root = ../samplepaper.tex
 \section{Proposed Method}
 \subsection{Overview}
-方法包含离线进化和在线控制两个过程，如图\ref{fig:overview}所示。离线阶段，GP在多个训练实例上评价控制器：每个individual参与若干次完整FACO求解，所得平均路径质量作为fitness。Selection与genetic operators据此产生下一代。训练结束后，使用validation选择一个individual，作为冻结控制器。
+方法以local search为局部改进组件，由GP控制外层搜索为其提供的候选起点，如图\ref{fig:overview}所示。在每次ACO迭代开始时，GP策略读取搜索状态$S$并选择动作$a$，确定参考路径、扰动起始区域和强度。单只蚂蚁的候选生成与改进为
+\begin{equation}
+ (y,\mathcal C)=P(q,\tau,a;\xi),\qquad z=L(y;\mathcal C).
+ \label{eq:search-cycle}
+\end{equation}
+其中$q$和$\tau$是执行参考路径切换后的路径与信息素，$\xi$是该蚂蚁的随机流。聚焦构造$P$产生候选路径$y$和初始LS checklist $\mathcal C$；$L$以该检查表开始2-opt改进，得到$z$。动作由整个蚁群共享，各蚂蚁独立采样。改进结果用于更新最优路径、archive、信息素和搜索反馈，形成下一次控制的状态。
 
-在线阶段，控制器在每次ACO迭代开始时读取当前搜索状态，并选择一个动作。该动作确定本次迭代的参考路径、起点区域和MNE，由整个蚁群共享；各蚂蚁仍独立采样起点和后续节点。构造与local search完成后，求解器更新最优路径、信息素和反馈统计，再进入下一次决策。因此，一棵GP树的输出首先是候选优先级，经过解码得到控制动作，完整求解结束后才能得到fitness。
+GP在离线阶段学习上述搜索策略。每个individual在多个训练实例上执行完整FACO求解，平均终点质量作为fitness，selection与genetic operators据此产生下一代。训练结束后，通过validation选择并冻结一个individual。树的输出是候选动作的优先级，fitness则评价这些动作与固定local search共同形成的完整搜索过程。
 
 \begin{figure}[tb]
 \centering
 \begin{tikzpicture}[x=1mm,y=1mm,>=Stealth,
  every node/.style={font=\small},
- box/.style={draw,align=center,text width=29mm,minimum height=11mm}]
-\node[box] (pop) at (0,0) {GP population\\控制规则};
-\node[box] (eval) at (40,0) {FACO evaluation\\平均终点fitness};
-\node[box] (breed) at (80,0) {Selection\\Genetic operators};
+ box/.style={draw,align=center,text width=29mm,minimum height=11mm},
+ searchbox/.style={draw,align=center,text width=24mm,minimum height=15mm,font=\scriptsize}]
+\node[box] (pop) at (5,0) {GP population\\控制规则};
+\node[box] (eval) at (45,0) {FACO evaluation\\平均终点fitness};
+\node[box] (breed) at (85,0) {Selection\\Genetic operators};
 \draw[->] (pop)--(eval); \draw[->] (eval)--(breed);
 \draw[->] (breed.north)--++(0,5)-|node[pos=.25,above]{下一代}(pop.north);
-\node[box] (state) at (0,-29) {搜索状态\\候选动作特征};
-\node[box] (score) at (40,-29) {GP priority scores\\选择$(r,j,k)$};
-\node[box] (aco) at (80,-29) {Construction\\Local search};
-\draw[->] (state)--(score); \draw[->] (score)--(aco);
-\draw[->] (aco.south)--++(0,-7)-|node[pos=.25,below]{更新路径、信息素与反馈}(state.south);
-\draw[dashed,->] (eval.south)--node[right,font=\scriptsize]{一次评价中的迭代循环}(score.north);
+\node[searchbox] (control) at (0,-29) {GP control $\pi(S)$\\读取状态与特征\\选择$(r,j,k)$};
+\node[searchbox] (memory) at (30,-29) {参考路径$q$\\信息素$\tau$\\保留或切换};
+\node[searchbox] (construct) at (60,-29) {Focused\\construction $P$\\输出$(y,\mathcal C)$};
+\node[searchbox,fill=gray!12] (ls) at (90,-29) {Local search $L$\\按checklist改进\\路径$z$};
+\draw[->] (control)--(memory); \draw[->] (memory)--(construct); \draw[->] (construct)--(ls);
+\draw[->] (ls.south)--++(0,-7)-|(control.south);
+\node[anchor=north,font=\scriptsize] at (45,-44) {更新最优路径、archive与信息素；汇总local-search反馈};
+\draw[dashed,->] (eval.south)--node[right,font=\scriptsize]{一次评价中的迭代循环}(construct.north);
 \end{tikzpicture}
-\caption{GP学习FACO控制策略。每个individual在训练实例上执行下方循环，终点质量形成fitness。冻结控制器使用相同的在线循环；参考标签仅由外部评价器读取。}
+\caption{面向local search的FACO控制。上方为离线GP进化，下方为一次求解中的迭代循环。每只蚂蚁通过聚焦构造向local search提供路径和初始检查表，改进结果反馈至外层搜索。参考标签仅由外部fitness评价器读取。}
 \label{fig:overview}
 \end{figure}
 
 \subsection{Search Decisions and Actions}
 求解器维护活动参考路径、全局最优路径、阶段最优路径及容量为4的优质路径archive。Archive保留相对全局最优差距不超过2\%的不同路径。每次决策前，从中选择与活动路径采样边差异最大的合格路径作为备选，并为候选参考路径生成四个起点区域。
 
-动作记为$a=(r,j,k)$。$r\in\{0,1\}$决定保留活动参考路径或切换至备选路径；$j\in\{0,1,2,3\}$决定起点区域；$k\in\{0,1,2,3\}$对应MNE为$2,4,8,16$。区域0和1为参考路径上独立随机抽取的连续片段，区域2沿近邻图广度优先扩展，区域3为不放回随机节点集；每个区域最多16个节点。区域只限制构造的起点，后续修改可以涉及其他节点。
+动作记为$a=(r,j,k)$，分别控制围绕哪条路径搜索、从哪里开始扰动及主动修改的强度。$r\in\{0,1\}$决定保留活动参考路径或切换至备选路径；$j\in\{0,1,2,3\}$决定起点区域；$k\in\{0,1,2,3\}$对应MNE为$2,4,8,16$。区域0和1为参考路径上独立随机抽取的连续片段，区域2沿近邻图广度优先扩展，区域3为不放回随机节点集；每个区域最多16个节点。区域只限制构造的起点，后续修改可以涉及其他节点。
 
 每次迭代最多有32个完整动作。没有合格备选路径时，屏蔽$r=1$的动作。执行参考路径切换时，阶段最优改为备选路径，信息素重新初始化，阶段计数及回归率、local-search工作量的平滑统计清零；全局最优和全局停滞计数保留。当前控制接口没有重启冷却期。
 
-对选定动作，每只蚂蚁复制其参考路径，从所选区域采样起点，完成聚焦构造后执行检查表驱动的2-opt。每只蚂蚁的local search最多评价$10^5$个移动。随后更新archive和反馈，以0.01概率采用阶段最优、否则采用本次迭代最优，作为信息素沉积路径和下一次活动参考路径。完整在线过程见算法\ref{alg:solve}。
+对选定动作，每只蚂蚁复制参考路径，从所选区域采样起点，完成聚焦构造并记录变化相关节点。2-opt从这些节点开始检查，接受改进后将相关端点加入checklist，最多评价$10^5$个移动。因此，搜索可扩展到初始检查表之外，终态也不保证是完整2-opt邻域的局部最优。随后更新archive和反馈，以0.01概率采用阶段最优、否则采用本次迭代最优，作为信息素沉积路径和下一次活动参考路径。完整在线过程见算法\ref{alg:solve}。
 
 \begin{algorithm}[tb]
 \caption{FACO求解与GP控制}
 \label{alg:solve}
 \begin{algorithmic}[1]
-\Require 实例$I$，控制器$\pi$，ACO seed $\xi$，蚂蚁数$m$，迭代数$H$
+\Require 实例$I$，搜索策略$\pi$，ACO seed $\xi$，蚂蚁数$m$，迭代数$H$
 \State 初始化参考路径、信息素、最优路径与archive
 \For{$t=1,\ldots,H$}
  \State 读取状态$S_t$，生成合法动作$\mathcal A(S_t)$及特征$\phi(S_t,a)$
  \State $a_t\gets\pi(S_t)$ \Comment{由GP分数解码得到$(r,j,k)$}
  \State 执行参考路径切换，确定起点区域和MNE
- \State 并行构造$m$条候选路径，分别执行local search
+ \State 并行为$m$只蚂蚁生成$(y_i,\mathcal C_i)$，并求$z_i=L(y_i;\mathcal C_i)$
  \State 更新最优路径、archive、信息素及搜索反馈
 \EndFor
 \State \Return 全局最优路径
@@ -54,7 +62,7 @@
 
 \subsection{GP Representation and Decoding}
 \paragraph{Joint single-tree（\JS{}）.}
-一个individual包含一棵标量树$f$。对每个合法完整动作计算priority score，并选择最高分动作：
+一个GP个体（individual）包含一棵标量树$f$。对每个合法完整动作计算priority score，并选择最高分动作：
 \begin{equation}
  \pi_J(S)=\arg\max_{a\in\mathcal A(S)}f\bigl(\phi(S,a)\bigr).
 \end{equation}
@@ -69,73 +77,25 @@
 \end{align}
 各阶段的候选集合由合法完整动作投影得到；只要一个前缀存在合法补全，便可参与该阶段选择。三次选择读取同一个执行前状态，全部完成后才执行动作。$f_r$可见搜索状态及参考路径特征，$f_j$进一步读取区域特征，$f_k$读取全部输入。最多$2+4+4=10$次树求值即可得到动作。三棵树由同一个fitness共同评价，这与用multi-tree协同学习多个决策规则的GP框架一致\cite{zhang2018multitree,sun2024multicloud}。
 
-\subsection{Terminal Set and Function Set}
-表\ref{tab:features}列出12个归一化terminal及其可见性。搜索状态描述当前阶段的进展、停滞和计算反馈；参考路径及区域特征用于区分候选动作。回归率衡量local search后重新得到参考路径的蚂蚁比例，工作量反映搜索所消耗的局部移动评价数。这些反馈为GP提供选择扰动方式的依据。
+\paragraph{三项决策如何影响local search的起点.}
+图\ref{fig:control-mechanism}将三棵树对应到路径上的具体操作。参考路径选择确定搜索围绕的已有解；区域选择确定构造从哪些节点开始；强度选择决定主动构造新边的阈值。三者共同决定交给local search的候选路径，而不是直接指定2-opt移动。所选区域是一个可重叠的节点集合，不是将TSP划分后独立求解的子问题；强度也不等于最终路径与参考路径之间的边差异。
 
-\begin{table}[tb]
-\caption{Terminal set。$\checkmark$表示该角色可以读取；\JS{}读取全部terminal。代码字段及精确归一化公式见补充材料。}
-\label{tab:features}
-\small
-\begin{tabularx}{\textwidth}{@{}lYccc@{}}
-\toprule
-符号 & 含义 & $f_r$ & $f_j$ & $f_k$\\ \midrule
-\multicolumn{5}{l}{搜索状态（search state）}\\
-$p$ & Progress：已完成迭代比例$(t-1)/H$ & $\checkmark$ & $\checkmark$ & $\checkmark$\\
-$s$ & Stagnation：未改善全局最优的迭代数，按32缩放 & $\checkmark$ & $\checkmark$ & $\checkmark$\\
-$\rho$ & Return rate：返回参考路径的蚂蚁比例，平滑后使用 & $\checkmark$ & $\checkmark$ & $\checkmark$\\
-$w$ & LS work：每蚂蚁平均局部移动评价数，按$10^5$缩放并平滑 & $\checkmark$ & $\checkmark$ & $\checkmark$\\
-\midrule
-\multicolumn{5}{l}{参考路径与动作（reference and action）}\\
-$r$ & 候选动作的参考路径切换标记 & $\checkmark$ & $\checkmark$ & $\checkmark$\\
-$\delta_q$ & 候选参考路径相对全局最优的差距，按0.02缩放 & $\checkmark$ & $\checkmark$ & $\checkmark$\\
-$d_q$ & 候选与活动参考路径的采样边差异 & $\checkmark$ & $\checkmark$ & $\checkmark$\\
-$u$ & MNE level：$(k+1)/4$，即0.25、0.5、0.75、1 & & & $\checkmark$\\
-\midrule
-\multicolumn{5}{l}{候选区域（candidate region）}\\
-$e_R$ & Region excess：相邻边相对近邻距离的长度超额 & & $\checkmark$ & $\checkmark$\\
-$a_R$ & Archive disagreement：区域相邻边在archive中的缺失比例 & & $\checkmark$ & $\checkmark$\\
-$\tau_R$ & Pheromone strength：区域相邻边的归一化信息素 & & $\checkmark$ & $\checkmark$\\
-$d_R$ & Region dispersion：相邻端点落在区域外的比例 & & $\checkmark$ & $\checkmark$\\
-\bottomrule
-\end{tabularx}
-\end{table}
+\begin{figure}[p]
+\centering
+\input{generated/control_mechanism.tex}
+\caption{三棵GP树的控制位置与扰动示例。各图共用12个城市，起点集合缩减为4个节点。$q$是2-opt局部最优；弱扰动经LS返回$q$，较强扰动到达更短路径$z$。长度来自示意坐标，不代表实测FACO轨迹或指定MNE，也不说明强度越大越好。最终路径中橙色边由扰动保留，绿色边由LS引入。真实三树及评分见图\ref{fig:conditional-decoding}。}
+\label{fig:control-mechanism}
+\end{figure}
 
-两种表示使用相同的function set：$+$、$-$、$\times$、$\min$、$\max$、绝对值及analytic quotient，后者定义为$\AQ(a,b)=a/\sqrt{1+b^2}$。常量terminal包括$-1,0,1$及从$[-2,2]$均匀采样的ephemeral random constants（ERC）。比例特征裁剪至$[0,1]$，两个平滑反馈采用权重$1/16$的指数移动平均。
+图中的三项决策在同一个执行前状态上依次评分，选定整个动作后统一执行。一个蚁群的128只蚂蚁共享该动作，各自采样起点与状态转移，因此同一次控制仍可向local search提供不同的候选路径。
 
-实际树求值使用FP32，每个运算结果裁剪至$[-8,8]$。分数差不超过$10^{-6}$时，选择编号最小的合法候选；完整动作按$16r+4j+k$编号。这些规则确定近并列情况下的行为，解释表达式时同时保留其数学形式与实际解码结果。
+该示例的参考路径$q$长度为42.8424，枚举完整2-opt邻域后没有改进移动，但它并非全局最优。将城市8移至城市5之后得到较弱扰动候选，长度增至43.2642，随后一次改进2-opt又回到$q$。较强扰动依次将城市6移至5之后、城市9移至7之后，得到长度为44.4579的$y$；反转其中的连续片段$(12,8,7)$，便得到长度为39.9170的另一条2-opt局部最优路径$z$，相对$q$缩短6.83\%。这里扰动本身增加了路径长度，收益来自它使后续local search能够到达不同的、更短的路径。
 
-\subsection{Fitness Evaluation and Evolution}
-GP优化控制器在完整求解结束时的路径质量。设$\mathcal B_g$为第$g$代共享的实例--ACO seed面板，$T(I,\xi;\pi)$为算法\ref{alg:solve}返回的路径，$C_{\rm ref}(I)$为外部评价器读取的参考路径长度，则最小化
-\begin{equation}
- F_g(\pi)=\frac{1}{|\mathcal B_g|}\sum_{(I,\xi)\in\mathcal B_g}
- 100\left(\frac{C(T(I,\xi;\pi))}{C_{\rm ref}(I)}-1\right).
- \label{eq:fitness}
-\end{equation}
-该值以百分数表示，称为reference gap。参考路径未逐例独立认证最优性。参考标签不进入控制器输入或FACO求解。每代更换训练面板，同代所有individual及两种表示的运行共享面板，elites也重新评价。训练实例轮换在GP规则学习中已有应用\cite{mei2018orienteering,maclachlan2020}；本实验通过固定validation面板观察其学习表现。
+两种扰动对应不同的局部改进结果：返回参考路径，或找到更好的解。已有实验的回归率$\rho$描述前一种行为，终点fitness评价完整求解的最终质量。示例中的节点重定位与2-opt移动用于说明这一机制，并非冻结GP策略的FACO运行轨迹；不能由一个成功例推断增加MNE必然改善质量。
 
-初始化按目标高度2、3、4及full/grow方式分层采样；grow保留一条达到目标高度的分支。每棵树高度至多5，每个individual总节点数至多63，三树共享总节点限制。父本通过tournament selection选取。Crossover以0.9概率选择非terminal位置，并允许选择根；single-tree将第二父本的子树接入第一父本。Multi-tree先随机选择一个角色进行同角色subtree crossover，其余角色整树取自第二父本。该操作同时重组角色内部结构和角色间组合，与tree-swapping crossover属于相关设计\cite{zhang2018multitree}。
-
-Mutation替换一个随机角色中的子树；对单叶树采用生长变异。每代保留elites，并以crossover、mutation或reproduction产生其余individual。为维持搜索多样性，接受的程序须互异，在64个固定训练情境上产生相同动作向量的individual最多两个。超出结构限制或重复的候选重新生成，必要时采用随机移民。具体概率、重试范围与精确语义列于实验设置及补充材料。
-
-\begin{algorithm}[tb]
-\caption{GP控制器的离线学习}
-\label{alg:gp}
-\begin{algorithmic}[1]
-\Require 表示类型，GP seed，训练面板$\{\mathcal B_g\}_{g=1}^G$，validation面板
-\State 初始化$P$个满足结构和行为约束的individual
-\For{$g=1,\ldots,G$}
- \State 在$\mathcal B_g$上执行算法\ref{alg:solve}，按式\eqref{eq:fitness}评价整个种群
- \State 保存本代冠军，并按固定间隔在开发面板上监控
- \If{$g<G$}
-  \State 保留elites，通过selection与genetic operators补齐下一代
- \EndIf
-\EndFor
-\State 对历代冠军与末代种群执行两级validation，选择并冻结一个控制器
-\State \Return 冻结控制器
-\end{algorithmic}
-\end{algorithm}
+\input{sections/gp_details}
 
 \subsection{Parallel Fitness Evaluation}
-Fitness evaluation将individual、实例／ACO seed和ant三个维度展开至GPU。不同蚁群分别维护路径、信息素、archive和随机流；实例几何量复用，GP树编译为紧凑指令执行。不同GP seed和独立评价任务分配至空闲RTX A5000。路径几何、代价和local-search增益使用FP64。
+Fitness evaluation将individual、实例／ACO seed和ant三个维度展开至GPU。不同蚁群分别维护路径、信息素、archive和随机流；实例几何量复用，GP树编译为紧凑指令执行。不同GP seed和独立评价任务分配至空闲RTX A5000。路径几何、代价和local-search增益使用FP64。正式运行采用每block 2个warp，种群按64个个体分片；普通测试每批至多32个实例--ACO seed组合。这些并行设置影响计算布局，fitness及遗传算子保持上述定义。
 
 一次蚂蚁路径构造及其local search记为一次evaluation（FE），一次求解的预算为$mH$。此预算限制候选路径数；不同控制策略仍可能消耗不同数量的构造步和局部移动评价。因此，实验分别报告FE、搜索工作量及GPU时间。

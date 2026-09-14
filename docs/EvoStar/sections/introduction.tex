@@ -1,20 +1,20 @@
 % !TeX root = ../samplepaper.tex
 \section{Introduction}
-Focused Ant Colony Optimization（FACO）通过复用参考路径的大部分结构，减少旅行商问题（TSP）中重复构造完整路径的开销\cite{skinderowicz2022}。每只蚂蚁只主动引入有限数量的新连接，再由local search改善所得路径。该机制将搜索集中在已有优质解附近，也带来一个控制问题：搜索应从哪里开始、修改多少结构，以及何时转向另一条参考路径？这些决策共同决定了搜索范围和计算工作量。
+在ACO与local search结合的旅行商问题（TSP）求解器中，蚂蚁生成候选路径，local search通过局部移动改善这些路径，改进结果再用于更新搜索记忆\cite{stuetzle2000,skinderowicz2022}。本文从local search的作用出发研究这一混合过程：外层搜索应提供怎样的候选起点，才能使后续局部改进持续产生收益？因此，构造策略的价值需要结合local search之后的解、消耗的工作量及后续搜索表现来评价。
 
-本文研究利用Genetic Programming（GP）学习上述控制决策。其动机是，固定配置难以区分不同搜索状态：小幅修改可能反复返回参考路径，较大修改则可能增加无效搜索；更换参考路径提供了另一种探索方式，但也会改变可供利用的结构。GP能够以短表达式组合状态与候选动作的特征，形成可在求解过程中反复调用的priority function。离线进化根据完整FACO求解的质量评价这些规则，在线求解则由规则选择动作，蚁群继续负责路径构造与local search。
+这一视角在Focused Ant Colony Optimization（FACO）中尤为直接。FACO面向大规模TSP复用参考路径的大部分结构，仅对部分连接进行主动构造，并围绕变化位置组织local search，从而减少两者的计算开销\cite{skinderowicz2022}。参考路径提供已有结构，信息素与状态转移引导修改，所得路径成为local search的新起点。该过程可以理解为具有搜索记忆的结构化扰动，为围绕local search设计外层控制提供了具体接口。
 
-围绕这一问题，本文定义参考路径切换、起点区域和扰动强度的联合控制接口，并研究single-tree联合评分与multi-tree条件决策两种实现。实验在TSP500上学习策略，通过原生FACO及共享GPU底座的静态策略评价收益，再考察TSP1000迁移、进化规则和计算成本。强度较大的静态策略作为必要对照，用于判断学习所得规则是否超过了简单的参数选择。
+控制的困难在于如何保留可利用的结构，同时产生新的改进机会。小幅扰动可能在local search后反复返回参考路径；较大扰动可能改变搜索轨迹，也可能增加修复工作。切换参考路径则改变了后续搜索的中心及其记忆。固定配置不随这些搜索反馈调整，因而有必要研究扰动起始位置、强度和参考路径切换的状态相关选择。
+
+本文利用Genetic Programming（GP）联合学习这三项决策。GP将搜索状态与候选动作特征组合为priority function，并以完整FACO求解的终点质量评价规则。Single-tree联合评分与multi-tree条件决策作为两种表示进行比较。实验在TSP500上学习策略，以原生FACO及共享GPU底座的静态策略为对照，再考察规则行为、TSP1000迁移和计算成本。较强静态配置用于检验所学控制是否带来超过简单强度选择的收益。
 
 \section{Background and Related Work}
-\subsection{FACO中的结构复用与控制}
-蚁群优化通过信息素积累搜索经验，MAX--MIN Ant System以信息素上下界调节探索与利用\cite{stuetzle2000}。FACO进一步利用参考路径，只主动改变部分连接\cite{skinderowicz2022}。令$q$为参考路径，$P_a$为动作$a$控制的构造过程，$L$为local search，一次候选解生成可表示为
-\begin{equation}
- q\xrightarrow{P_a}y\xrightarrow{L}z.
-\end{equation}
-控制的作用体现在$P_a$生成什么样的候选路径，以及这些候选在$L$之后是否有助于继续改善解。参考路径切换改变$q$，区域选择影响修改起点，MNE（minimum number of new edges）控制主动引入新连接的目标数。MNE不等于最终路径与$q$的边差异数。
+\subsection{ACO、结构化扰动与Local Search}
+MAX--MIN Ant System通过信息素记忆积累优质解的结构，并用上下界调节探索与利用\cite{stuetzle2000}。在与local search结合时，构造过程提供候选起点，局部改进结果又影响后续的信息素与路径选择。因此，local-search-centred在本文中指围绕局部改进设计外层搜索的视角，不意味着所有ACO都与扰动算法等价，也不预设local search占据最多运行时间。
 
-后续自适应FACO研究了在线参数调节\cite{skinderowicz2024}。本文的GPU底座采用该后续实现的节点重定位式构造：复制参考路径后，依据候选邻域中的信息素与距离启发式选择节点，再将节点移动到当前节点之后。GP在此基础上学习三项控制的组合。2022原生FACO与该底座的构造和初始化不同，因此实验同时保留原生方法及共享底座的静态对照。
+2022 FACO在选择的新边数达到MNE（minimum number of new edges）后，沿参考路径补全剩余部分；闭合路径和补全过程仍可能产生额外新边。每只蚂蚁生成完整tour，而非分别求解若干独立子问题。构造中记录的变化用于初始化LS checklist，接受局部移动后再将相关端点加入检查表\cite{skinderowicz2022}。这种联系同时减少重复构造和局部搜索检查。原文的参数实验还观察到，加入2-opt后较小的MNE更有利，说明构造配置需要与local search配合选择。
+
+FACO已利用了扰动方法的结构复用思想，后续自适应FACO进一步研究了在线参数调节\cite{skinderowicz2022,skinderowicz2024}。本文的GPU底座采用后续实现的节点重定位式构造：复制参考路径后，依据信息素与距离启发式选择节点，再将其移动到当前节点之后。本文研究GP对三项外层决策的联合学习；基础状态转移、常规信息素更新和local search保持固定。2022原生FACO与该底座的构造和初始化不同，实验分别保留原生方法及共享底座的静态对照。
 
 \subsection{GP学习决策规则}
 GP hyper-heuristic以启发式规则为搜索对象\cite{burke2013}。一个individual表示priority function；求解过程使用该函数为合法候选评分，并执行排名最高的选择。其fitness来自应用该规则后生成的解。例如，orienteering中的GP对候选访问点评分\cite{mei2018orienteering}，UCARP中的GP学习车辆的任务选择规则\cite{maclachlan2020}。这类方法将规则学习与解的构造连接起来，也便于从表达式分析候选偏好。

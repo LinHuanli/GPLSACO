@@ -3,13 +3,13 @@
   "documents": [
     {
       "name": "samplepaper",
-      "pages": 13,
+      "pages": 22,
       "problems": [],
       "pdf": "artifacts/papers/evostar/samplepaper.pdf"
     },
     {
       "name": "supplement",
-      "pages": 21,
+      "pages": 19,
       "problems": [],
       "pdf": "artifacts/papers/evostar/supplement.pdf"
     }

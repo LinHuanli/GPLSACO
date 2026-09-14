@@ -10,7 +10,7 @@
 \institute{}
 \maketitle
 \begin{abstract}
-Focused Ant Colony Optimization（FACO）通过复用参考路径降低构造开销，其搜索表现取决于参考路径、修改起点和扰动强度的选择。本文利用Genetic Programming（GP）学习这些控制决策，将搜索状态与候选动作特征映射为priority scores，并以完整FACO求解的平均终点质量评价规则。研究采用single-tree联合评分和multi-tree条件决策两种表示，在TSP500上分别完成3个GP seed、128个individual、50代训练，再在TSP500和TSP1000上测试冻结策略。TSP500中，两种表示的平均reference gap为0.14759\%和0.15007\%，相对固定MNE=8的GPU对照分别改善0.02183和0.01936个百分点；相对原生FACO适配版及MNE=16对照，差异未达到统计显著。规则分析与决策回放显示，所检查情境中的控制器均选择MNE=16，反馈影响主要体现在区域和重启动作。TSP1000上，固定MNE=16的区域策略取得更低差距；multi-tree也未以较高训练成本换来明确质量收益。实验表明，GP可学习有效的FACO控制规则，而进一步的收益需要超过较强的静态配置，并改善跨规模泛化。
+在ACO与local search结合的求解器中，外层搜索决定局部改进的候选起点。本文从这一视角研究Focused Ant Colony Optimization（FACO），将其参考路径复用与聚焦构造视为具有信息素记忆的结构化扰动，利用Genetic Programming（GP）学习参考路径切换、扰动起始区域和强度选择。规则读取搜索状态及local-search反馈，输出候选动作的priority scores，以完整求解的平均终点质量作为fitness。研究采用single-tree联合评分和multi-tree条件决策两种表示，在TSP500上分别完成3个GP seed、128个individual、50代训练，再在TSP500和TSP1000上测试冻结策略。TSP500中，两种表示的平均reference gap为0.14759\%和0.15007\%，相对固定MNE=8的GPU对照分别改善0.02183和0.01936个百分点；相对原生FACO适配版及MNE=16对照，差异未达到统计显著。规则分析与决策回放显示，所检查情境中的GP策略均选择MNE=16，反馈影响主要体现在区域和重启动作。TSP1000上，固定MNE=16的区域策略取得更低差距；multi-tree也未以较高训练成本换来明确质量收益。现有结果支持学习外层控制改善默认配置，而动态控制相对较强静态配置的增量价值仍需验证。
 \keywords{Genetic Programming \and FACO \and Hyper-heuristic \and Search control \and TSP}
 \end{abstract}
 \input{sections/introduction}

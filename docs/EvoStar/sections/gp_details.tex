@@ -1,0 +1,174 @@
+% !TeX root = ../samplepaper.tex
+\subsection{Terminal Set}
+\label{sec:terminals}
+Terminal set包含12个描述搜索状态与候选动作的特征，以及常量terminal。特征按搜索反馈、参考路径与动作、候选区域三组组织（表\ref{tab:features}）。这些输入分别描述何时搜索、围绕什么结构搜索，以及从哪里、以多大强度开始扰动。Return rate与LS work提供局部改进的反馈；它们不直接替代完整求解的fitness。
+
+\begin{table}[tb]
+\caption{特征terminal的含义与范围。具体计算见本节；所有特征均在动作执行前读取。}
+\label{tab:features}
+\small
+\begin{tabularx}{\textwidth}{@{}l l Y l@{}}
+\toprule
+符号 & 名称 & 含义 & 范围\\ \midrule
+\multicolumn{4}{l}{搜索状态与反馈}\\
+$p$ & Progress & 已完成的ACO迭代比例 & $[0,1]$\\
+$s$ & Stagnation & 未改善全局最优的连续迭代数，按32归一化 & $[0,1]$\\
+$\rho$ & Return rate & LS后返回本次参考路径的蚂蚁比例，平滑后使用 & $[0,1]$\\
+$w$ & LS work & 每只蚂蚁的平均局部移动评价数，归一化并平滑 & $[0,1]$\\
+\midrule
+\multicolumn{4}{l}{参考路径与动作}\\
+$r$ & Reference switch & 保留活动参考路径或切换至备选路径 & $\{0,1\}$\\
+$\delta_q$ & Reference gap & 候选参考路径相对全局最优的差距 & $[0,1]$\\
+$d_q$ & Reference difference & 候选参考路径与活动路径的采样边差异 & $[0,1]$\\
+$u$ & MNE level & 四个扰动强度选项的归一化编号 & $\{\frac14,\frac12,\frac34,1\}$\\
+\midrule
+\multicolumn{4}{l}{候选起始区域}\\
+$e_R$ & Region excess & 区域相邻边相对局部近邻尺度的长度超额 & $[0,1]$\\
+$a_R$ & Archive disagreement & 区域相邻边在archive路径中的缺失比例 & $[0,1]$\\
+$\tau_R$ & Pheromone strength & 区域相邻边的归一化信息素强度 & $[0,1]$\\
+$d_R$ & Region dispersion & 区域相邻端点落在区域之外的比例 & $[0,1]$\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{搜索状态与局部搜索反馈.}
+记$\clip(x)=\min(1,\max(0,x))$。在第$t$次ACO迭代开始时，$p=(t-1)/H$；若已有$h$次连续迭代未改善全局最优，则$s=\clip(h/32)$。全局最优得到严格改善时$h$清零；参考路径切换不清除这一全局停滞计数。
+
+设第$t$次迭代中，第$i$只蚂蚁经过LS得到路径$z_{t,i}$，使用的参考路径为$q_t$，局部移动评价数为$\ell_{t,i}$。该迭代的返回比例与归一化工作量为
+\begin{equation}
+ R_t=\frac1m\sum_{i=1}^m\mathbf{1}[E(z_{t,i})=E(q_t)],\qquad
+ W_t=\clip\left(\frac{\sum_{i=1}^m\ell_{t,i}}{mL_{\max}}\right),
+\end{equation}
+其中$E(q)$是路径$q$的无向边集合，$L_{\max}=10^5$是每只蚂蚁的LS移动评价上限。两项统计采用指数移动平均：
+\begin{equation}
+ \bar R_t=\bar R_{t-1}+\frac{R_t-\bar R_{t-1}}{16},\qquad
+ \bar W_t=\bar W_{t-1}+\frac{W_t-\bar W_{t-1}}{16}.
+\end{equation}
+下一次决策读取$\rho=\bar R_t$和$w=\bar W_t$。初始化及执行参考路径切换时，两项平滑统计清零。Return rate感知重复搜索，LS work反映局部改进消耗的工作；较高返回率或工作量本身不决定完整搜索策略的优劣。
+
+\paragraph{参考路径与动作特征.}
+本节$q$指待评分动作对应的候选参考路径，$q_{\rm act}$为当前活动路径，$b$为全局最优路径。$r$直接取动作的切换标记，$u=(k+1)/4$，其中$k=0,1,2,3$分别对应MNE为$2,4,8,16$。因此$u$是强度选项的编码，不是MNE除以16。参考差距为
+\begin{equation}
+ \delta_q=\clip\left(\frac{C(q)/C(b)-1}{0.02}\right).
+\end{equation}
+以$U$表示64个采样节点，$N_q(v)$表示$v$在$q$上的两个相邻节点，则
+\begin{equation}
+ d_q=\frac{1}{2|U|}\sum_{v\in U}\sum_{x\in N_q(v)}
+ \mathbf{1}[\{v,x\}\notin E(q_{\rm act})].
+\end{equation}
+保留活动参考路径的动作取$d_q=0$。$\delta_q$描述备选结构的质量，$d_q$描述其与当前搜索中心的差异。
+
+\paragraph{候选区域特征.}
+设$R$为候选起始区域，$\mathcal Q$为当前archive。对$v\in R$，定义其参考路径相邻边的平均长度$e_v=\frac12\sum_{x\in N_q(v)}d(v,x)$，以$s_v$表示到最近8个邻居的平均距离。令$\epsilon=10^{-12}\max(\Delta x,\Delta y,1)$，其中$\Delta x,\Delta y$为实例坐标跨度，则
+\begin{align}
+ e_R&=\frac1{|R|}\sum_{v\in R}\clip\left(\frac{e_v/\max(s_v,\epsilon)-1}{3}\right),\\
+ a_R&=\frac{\displaystyle\sum_{v\in R}\sum_{x\in N_q(v)}\sum_{q'\in\mathcal Q}
+       \mathbf{1}[\{v,x\}\notin E(q')]}{2|R|\,|\mathcal Q|},\\
+ \tau_R&=\frac1{2|R|}\sum_{v\in R}\sum_{x\in N_q(v)}\widetilde\tau_{vx},\\
+ d_R&=\frac1{2|R|}\sum_{v\in R}\sum_{x\in N_q(v)}\mathbf{1}[x\notin R].
+\end{align}
+这里$\widetilde\tau_{vx}=\clip((\tau_{vx}-\tau_{\min})/(\tau_{\max}-\tau_{\min}))$；上下界相等时取1。信息素读取当前记忆，即使候选动作要求重启，也不使用尚未执行的重置后信息素。四个特征分别描述区域结构的长度超额、历史一致性、信息素支持和相邻端点分布；区域编号与城市编号均不作为terminal。
+
+\paragraph{常量与角色可见性.}
+所有树均可使用$-1,0,1$及ephemeral random constants（ERC）。每个ERC节点在创建时从$[-2,2]$均匀采样并量化为FP32，此后作为该节点的固定值，不在每次求值时重新采样。表\ref{tab:visibility}给出各树可用的特征。条件决策只传递已选的动作前缀，三个角色均读取同一执行前状态；不能把后两个角色的输入解释为已执行前一动作后的新反馈。
+
+\begin{table}[tb]
+\caption{各GP树的terminal可见性。$\checkmark$表示允许使用；常量terminal对全部角色开放。}
+\label{tab:visibility}
+\centering\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Terminal组 & \JS{}的$f$ & \CT{}的$f_r$ & \CT{}的$f_j$ & \CT{}的$f_k$\\ \midrule
+$p,s,\rho,w$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$\\
+$r,\delta_q,d_q$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$\\
+$e_R,a_R,\tau_R,d_R$ & $\checkmark$ & & $\checkmark$ & $\checkmark$\\
+$u$ & $\checkmark$ & & & $\checkmark$\\
+$-1,0,1,\mathrm{ERC}$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Function Set and Numerical Evaluation}
+\label{sec:functions}
+两种GP表示使用表\ref{tab:functions}中的七种实值函数。算术函数组合特征，min/max和绝对值支持分段关系；analytic quotient（AQ）的分母始终不小于1，避免普通除法在分母接近零时产生无界值。这里没有直接输出路径节点的函数，树只计算候选动作的priority score。
+
+\begin{table}[tb]
+\caption{Function set。数学表达式给出函数语义；实际执行还采用本节的FP32与裁剪规则。}
+\label{tab:functions}
+\centering
+\begin{tabular}{@{}llcl@{}}
+\toprule
+名称 & 符号 & 元数 & 定义\\ \midrule
+Addition & $+$ & 2 & $a+b$\\
+Subtraction & $-$ & 2 & $a-b$\\
+Multiplication & $\times$ & 2 & $ab$\\
+Minimum & $\min$ & 2 & $\min(a,b)$\\
+Maximum & $\max$ & 2 & $\max(a,b)$\\
+Absolute value & $\mathrm{abs}$ & 1 & $|a|$\\
+Analytic quotient & $\AQ$ & 2 & $a/\sqrt{1+b^2}$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+GP树的输入、常量和运算使用FP32，每个函数节点的结果裁剪至$[-8,8]$。GPU中的AQ通过$a\,\mathrm{rsqrt}(1+b^2)$实现，因此规则解释区分数学表达式与有限精度的实际评分。几何距离、路径代价和LS增益仍采用FP64。
+
+动作解码先求合法候选的最大分数，再在与最大值相差不超过$10^{-6}$的候选中选择编号最小者。联合评分按$16r+4j+k$编号；条件评分分别按当前角色的选项编号处理。只有存在合法补全的前缀参与条件选择。该规则确保同一状态中的近并列分数有确定的动作输出。
+
+\subsection{Fitness Evaluation and Validation}
+\label{sec:fitness}
+GP优化进化搜索策略在完整求解结束时的路径质量。一个GP个体表示一项策略$\pi$，每次ACO运行中反复调用它作决策。记$\mathcal B_g$为第$g$代的评价集，由TSP实例与ACO随机种子的组合构成；$T(I,\xi;\pi)$是算法\ref{alg:solve}返回的全局最优路径。最小化的fitness为
+\begin{equation}
+ F_g(\pi)=\frac{1}{|\mathcal B_g|}\sum_{(I,\xi)\in\mathcal B_g}
+ 100\left(\frac{C(T(I,\xi;\pi))}{C_{\rm ref}(I)}-1\right).
+ \label{eq:fitness}
+\end{equation}
+$C_{\rm ref}(I)$为数据提供的参考路径长度，仅由外部评价器读取。该值未逐例独立认证最优性，因此fitness称为reference gap；参考路径及其长度均不进入GP输入或FACO求解。该fitness仅评价终点质量，不加入树长或LS工作量惩罚。
+
+每代采用16个训练实例和1个ACO seed。同代所有个体共享评价集，两种表示的六次GP运行也使用相同的逐代评价安排；下一代更换训练实例与ACO seed，精英在新评价集上重新计算fitness。因此，跨代fitness变化同时受个体和实例难度影响。训练实例轮换在GP规则学习中已有应用\cite{mei2018orienteering,maclachlan2020}，本文另用固定验证实例监控学习过程。
+
+每5代在监控验证集上评价本代训练最优个体，这些分数不用于父本选择。50代进化结束后，收集历代训练最优个体与末代种群，按程序直接判等去重，再执行quick validation。排名前4的候选进入采用更长ACO预算的full validation，以其平均reference gap选出一个GP个体。选定策略在正式测试前固定，此后不再通过测试结果修改程序。评价集大小、随机种子和预算见实验设计。
+
+\subsection{Initialization and Genetic Operators}
+\label{sec:evolution}
+GP采用代际进化，population size为128，完成50个评价代。实现使用DEAP的树表示及相关工具\cite{fortin2012}。每个个体包含一棵联合评分树或三棵条件决策树；三棵树通过同一个完整求解fitness共同进化。
+
+\paragraph{分层full/grow初始化.}
+初始树的目标高度为2、3、4，根到最深叶子的边数定义为树高。初始化依次覆盖各目标高度与full/grow组合，三树表示的不同角色错开这些组合。Full生成恰好达到目标高度的树；grow保留一条随机分支到达目标高度，其他分支从深度2开始按terminal在可选符号中的比例提前终止。函数和terminal在各自合法集合中均匀选择。这一处理保证指定的初始高度，避免grow初始化大量退化成单叶树。
+
+每棵树的高度至多5，每个个体的总节点数至多63。三树表示共享63节点上限，而不是每个角色分别允许63个节点。初始化产生的个体还须满足下述程序与行为多样性约束。
+
+\paragraph{Selection与elitism.}
+每代保留4个精英，其余124个位置通过variation填充。父本采用大小为4的tournament selection：有放回抽取4个个体，以fitness最小者为优胜者，同分时随机选择。精英与报告中的稳定排序依次使用fitness、总节点数和程序表示；这一排序规则不改变tournament的同分随机选择。
+
+\paragraph{Crossover.}
+每次variation以0.80概率尝试交叉。交叉位置以0.90概率从非terminal节点中均匀选择，否则从terminal中选择；根节点允许参与，目标类型不存在时从全部节点中选择。单树交叉将第二父本的一棵子树接入第一父本。三树交叉先均匀选择一个角色，在两父本的同角色树之间执行subtree crossover，其余两个角色整树取自第二父本。该操作同时重组角色内部表达式和角色间的规则组合，与tree-swapping crossover的设计相关\cite{zhang2018multitree}。
+
+交叉的第二父本通过tournament抽取，要求它在固定训练情境上的动作向量与第一父本不同；最多尝试25次，仍未找到时改为mutation。交叉结果若与第一父本程序完全相同，或超过树高／总节点限制，则拒绝本次候选。
+
+\paragraph{Mutation与reproduction.}
+Mutation以0.15概率被选中，均匀选择一个树角色，并按与交叉相同的节点选择规则替换子树。普通树的新子树由full方法生成，目标高度从0、1、2中均匀选择；若被变异的树只有一个叶子，则改从1、2、3中选择，以允许重新生长。Reproduction以0.05概率复制一个tournament获胜个体。两者同样接受结构与多样性约束检查；mutation若未改变第一父本的程序则被拒绝。
+
+\paragraph{多样性约束与随机移民.}
+已接受的个体须具有不同的程序表示。另在64个固定训练情境上，用实际CUDA评分器记录每个个体的动作向量；一个种群中具有相同动作向量的个体最多两个。该向量用于限制重复行为，不作为fitness，也不使用测试实例。
+
+每个非精英位置最多尝试25次variation；若均未接受，则按初始化方法生成随机移民，最多尝试128次。移民仍不能满足约束时停止该次运行，不放宽限制。由此，0.80、0.15、0.05是算子的抽样尝试概率，不是最终后代的组成比例。例如，reproduction可能因复制了已接受的程序而被拒绝；交叉也可能因找不到行为不同的第二父本而转为mutation。算法\ref{alg:gp}总结完整进化过程。
+
+\begin{algorithm}[tb]
+\caption{GP搜索策略的离线进化与选择}
+\label{alg:gp}
+\begin{algorithmic}[1]
+\Require 表示类型，GP seed，逐代训练评价集$\{\mathcal B_g\}_{g=1}^G$，验证集
+\State 初始化$P$个满足结构和行为约束的GP个体
+\For{$g=1,\ldots,G$}
+ \State 在$\mathcal B_g$上执行算法\ref{alg:solve}，按式\eqref{eq:fitness}评价全部个体
+ \State 保存本代训练最优个体，每5代在监控验证集上评价一次
+ \If{$g<G$}
+  \State 保留4个精英，以selection与variation产生其余个体
+  \State 拒绝不合格候选，超过variation尝试上限时使用随机移民
+ \EndIf
+\EndFor
+\State 合并历代训练最优个体与末代种群，按程序直接判等去重
+\State 执行quick validation，再对前4个个体执行full validation
+\State \Return 经full validation选定并固定的GP策略
+\end{algorithmic}
+\end{algorithm}

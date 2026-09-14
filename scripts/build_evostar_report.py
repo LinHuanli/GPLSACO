@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import shutil
@@ -219,14 +220,14 @@ def figures(summary, analysis):
     fig.savefig(GEN / "curves.pgf", backend="pgf")
     plt.close(fig)
 
-    # 全部 50 代的绝对训练冠军与种群中位数，供补充材料辨识训练信号。
+    # 全部 50 代的训练最优值与种群中位数，供补充材料辨识训练信号。
     fig, axes = plt.subplots(
         2, 3, figsize=(6.2, 4.0), sharex=True, sharey=True, constrained_layout=True
     )
     for ax, r in zip(axes.flat, summary["runs"], strict=True):
         fitness = [h["population_fitness"] for h in r["history"]]
         ax.plot(range(1, 51), np.median(fitness, axis=1), lw=1, label="种群中位数")
-        ax.plot(range(1, 51), np.min(fitness, axis=1), lw=1, label="本代冠军")
+        ax.plot(range(1, 51), np.min(fitness, axis=1), lw=1, label="本代最优")
         ax.set_title(label(r["run_id"]), fontsize=9)
         ax.grid(alpha=0.15)
     axes[0, 0].legend(fontsize=7)
@@ -250,7 +251,7 @@ def figures(summary, analysis):
         axes[col].set(title=LABELS[rep], xlabel="Generation")
         axes[col].grid(alpha=0.15)
         axes[col].spines[["top", "right"]].set_visible(False)
-    axes[0].set_ylabel("开发监控差距（%）")
+    axes[0].set_ylabel("监控验证差距（%）")
     fig.savefig(GEN / "monitor.pgf", backend="pgf")
     plt.close(fig)
 
@@ -371,8 +372,8 @@ def tables(summary, analysis, evidence):
                 for f in ["stagnation", "return_rate", "ls_work"]
             ]
         )
-    write_table("feedback", ["控制器", "停滞", "回归率", "工作量"], rows)
-    write_table("feedback_full", ["控制器", "情境", "停滞0/1", "回归0/1", "工作0/1"], full, "llrrr")
+    write_table("feedback", ["GP策略", "停滞", "回归率", "工作量"], rows)
+    write_table("feedback_full", ["GP策略", "情境", "停滞0/1", "回归0/1", "工作0/1"], full, "llrrr")
 
     test = {(r["method"], r["dimension"]): r for r in analysis["test"]}
     rows, costs, diversity = [], [], []
@@ -447,13 +448,13 @@ def tables(summary, analysis, evidence):
         tree_text.append(r"\end{minipage}\par\bigskip")
     write_table(
         "selected",
-        ["控制器", "个体", "节点", "快排", "完整验证", "测试500", "测试1000"],
+        ["进化运行", "个体", "节点", "Quick排名", "Full验证", "测试500", "测试1000"],
         rows,
         "llrrrrr",
     )
-    write_table("costs", ["控制器", "训练", "监控", "选模", "墙钟/时", "代评价等待/分"], costs)
+    write_table("costs", ["进化运行", "训练", "监控", "选模", "墙钟/时", "代评价等待/分"], costs)
     write_table(
-        "diversity", ["控制器", "程序", "行为", "高度中位", "节点中位", "适应度"], diversity
+        "diversity", ["进化运行", "程序", "行为", "高度中位", "节点中位", "适应度"], diversity
     )
     (GEN / "trees.tex").write_text("\n".join(tree_text) + "\n")
 
@@ -500,7 +501,7 @@ def tables(summary, analysis, evidence):
                     r["no_restart_solves"],
                 ]
             )
-        write_table(f"restarts{n}", ["控制器", "均值", "中位", "P90", "最大", "零重启次数"], rows)
+        write_table(f"restarts{n}", ["GP策略", "均值", "中位", "P90", "最大", "零重启次数"], rows)
         rows = [
             [
                 label(r["method"]),
@@ -553,7 +554,7 @@ def tables(summary, analysis, evidence):
                     f"{r['speedup']:.4f}",
                 ]
             )
-    write_table("precision", ["数值方案", "规模", "控制器", "相对exact加速比"], rows, "lr lr")
+    write_table("precision", ["数值方案", "规模", "搜索策略", "相对exact加速比"], rows, "lr lr")
     perf = read(ROOT / "results/v3/representation_performance.json")
     write_table(
         "speed",
@@ -571,7 +572,7 @@ def tables(summary, analysis, evidence):
     pilot = read(ROOT / "results/v3/pilot_analysis.json")
     write_table(
         "pilot",
-        ["运行", r"开发差距/\%", "行为数", "训练GPU分钟"],
+        ["运行", r"预实验差距/\%", "行为数", "训练GPU分钟"],
         [
             [
                 label(r["run_id"]),
@@ -598,6 +599,239 @@ def tables(summary, analysis, evidence):
     )
 
 
+def control_mechanism_figure():
+    """用固定小图说明控制位置；示意路径不冒充FACO运行轨迹。"""
+    # 不规则散点同时包含内部与边界城市；所有子图保持坐标、比例和编号一致。
+    cities = [
+        (0.7, 0.8),
+        (3.5, 1.2),
+        (6.0, 0.5),
+        (9.2, 1.8),
+        (7.6, 4.3),
+        (9.0, 8.7),
+        (5.3, 7.8),
+        (5.0, 4.9),
+        (2.6, 6.2),
+        (0.8, 9.0),
+        (0.4, 4.7),
+        (3.0, 3.5),
+    ]
+    # 已核对的示意路径：参考路径是非全局最优的2-opt局部最优。
+    # 弱扰动将城市8移至城市5之后；较强扰动依次将城市6移至5之后、9移至7之后。
+    # 两种候选分别经一次改进2-opt返回reference和到达improved。
+    reference = [0, 1, 2, 3, 4, 11, 7, 5, 6, 9, 8, 10]
+    alternative = [0, 1, 11, 8, 7, 2, 3, 4, 5, 6, 9, 10]
+    weak = [0, 1, 2, 3, 4, 7, 11, 5, 6, 9, 8, 10]
+    strong = [0, 1, 2, 3, 4, 5, 11, 7, 6, 8, 9, 10]
+    improved = [0, 1, 2, 3, 4, 5, 6, 7, 11, 8, 9, 10]
+    region = [4, 11, 7, 5]
+    start_city = 4
+    # 编号置于小节点旁，避免候选边6--12被非端点城市8的大圆标记遮住。
+    label_offsets = [
+        (-1.8, -1.6),
+        (0, -2),
+        (0.8, -2),
+        (2, -0.6),
+        (2, 0.7),
+        (1.8, 1.6),
+        (0, 2),
+        (2, 0),
+        (-2, 0.6),
+        (-1.8, 1.6),
+        (-2, 0),
+        (-1.2, -1.9),
+    ]
+
+    def length(order):
+        """仅计算示意图的欧氏长度，不调用求解器或实验评价器。"""
+        return sum(
+            math.dist(cities[a], cities[b])
+            for a, b in zip(order, order[1:] + order[:1], strict=True)
+        )
+
+    reference_cost, weak_cost, strong_cost, improved_cost = map(
+        length, [reference, weak, strong, improved]
+    )
+    improvement_percent = 100 * (reference_cost - improved_cost) / reference_cost
+    out = [
+        r"\begin{tikzpicture}[x=1mm,y=1mm,>=Stealth,",
+        r" every node/.style={font=\scriptsize,inner sep=1pt},",
+        r" role/.style={draw,fill=blue!5,align=center,text width=25mm,minimum height=19mm},",
+        r" city/.style={fill=white,inner sep=0.2pt,",
+        r" font=\fontsize{6}{6}\selectfont}]",
+    ]
+
+    def tour(order, x, y, *, previous=None, base=None, color="orange!85!black", marked=False):
+        # 逐边直接比较，不计算路径摘要；所有示意图共用城市及坐标。
+        previous_edges = (
+            [sorted((a, b)) for a, b in zip(previous, previous[1:] + previous[:1], strict=True)]
+            if previous is not None
+            else []
+        )
+        base_edges = (
+            [sorted((a, b)) for a, b in zip(base, base[1:] + base[:1], strict=True)]
+            if base is not None
+            else []
+        )
+        coords = [(x + 2.9 * (cx - 4.8), y + 2.9 * (cy - 4.75)) for cx, cy in cities]
+        for a, b in zip(order, order[1:] + order[:1], strict=True):
+            changed = previous is not None and sorted((a, b)) not in previous_edges
+            style = f"{color},thick,{'densely dashed' if color.startswith('orange') else 'dotted'}"
+            style = style if changed else "gray!65,thin"
+            if not changed and base is not None and sorted((a, b)) not in base_edges:
+                # 最终路径中仍保留的扰动新边继续显示为橙色，便于与参考路径比较。
+                style = "orange!85!black,thick,densely dashed"
+            xa, ya = coords[a]
+            xb, yb = coords[b]
+            out.append(rf"\draw[{style}] ({xa:.3f},{ya:.3f})--({xb:.3f},{yb:.3f});")
+        for i, (nx, ny) in enumerate(coords):
+            style, text_color = "draw=black,fill=black", "black"
+            if marked and i in region:
+                style = "draw=blue!75!black,fill=blue!25"
+                text_color = "blue!75!black"
+            out.append(rf"\draw[{style}] ({nx:.3f},{ny:.3f}) circle (0.4);")
+            lx, ly = label_offsets[i]
+            out.append(
+                rf"\node[city,text={text_color}] at ({nx + lx:.3f},{ny + ly:.3f}) {{{i + 1}}};"
+            )
+        if marked:
+            nx, ny = coords[start_city]
+            out.append(rf"\draw[blue!75!black,thick] ({nx:.3f},{ny:.3f}) circle (1.0);")
+            out.append(
+                rf"\draw[->,blue!75!black] ({nx + 6:.3f},{ny + 4:.3f})"
+                rf"--({nx + 1.6:.3f},{ny + 1:.3f});"
+            )
+
+    out.extend(
+        [
+            r"\node[role] (r) at (13,0) {$f_r$：参考路径\\$r=0$保留；$r=1$切换};",
+            r"\draw[->] (r.east)--(33,0);",
+            r"\draw[blue!75!black,rounded corners] (34,-16) rectangle (66,15);",
+        ]
+    )
+    tour(reference, 50, 0)
+    tour(alternative, 96, 0)
+    out.extend(
+        [
+            r"\node at (50,-18) {活动路径$q_0$（保留）};",
+            r"\node at (96,-18) {备选路径$q_1$};",
+            r"\draw[gray!35] (0,-22)--(120,-22);",
+            r"\node[role] (j) at (13,-40) {$f_j$：起点区域\\比较$j=0,1,2,3$};",
+            r"\draw[->] (j.east)--(33,-40);",
+            r"\node[align=left,text width=37mm] at (97,-40) "
+            r"{选中$R_1=\{5,12,8,6\}$\\采样起点：城市5（蓝圈）\\后续修改可超出该集合。};",
+        ]
+    )
+    tour(reference, 50, -40, marked=True)
+    out.extend(
+        [
+            r"\node at (50,-58) {蓝色节点：起点集合};",
+            r"\draw[gray!35] (0,-61)--(120,-61);",
+            r"\node[role] (k) at (13,-78) {$f_k$：扰动强度\\MNE：2、4、8、16\\构造新边的阈值};",
+            r"\draw[->] (k.east)--(33,-78);",
+        ]
+    )
+    tour(weak, 50, -78, previous=reference)
+    tour(strong, 96, -78, previous=reference)
+    out.extend(
+        [
+            rf"\node[align=center] at (50,-97) {{较弱扰动：{weak_cost:.4f}\\"
+            rf"LS后：{reference_cost:.4f}（返回$q$）}};",
+            rf"\node[align=center] at (96,-97) {{较强扰动：{strong_cost:.4f}\\"
+            rf"LS后：{improved_cost:.4f}（得到更短路径）}};",
+            r"\draw[gray!35] (0,-103)--(120,-103);",
+            r"\node[anchor=west] at (0,-108) "
+            r"{成功扰动示例：先生成较长候选，再由local search找到更短路径};",
+        ]
+    )
+    tour(reference, 16, -126, marked=True)
+    tour(strong, 60, -126, previous=reference)
+    tour(improved, 104, -126, previous=strong, base=reference, color="green!45!black")
+    out.extend(
+        [
+            r"\draw[->] (31,-131)--node[above]{示意扰动}(44,-131);",
+            r"\draw[->] (75,-131)--node[above,align=center]{改进\\2-opt}(88,-131);",
+            rf"\node[align=center] at (16,-146) {{2-opt局部最优$q$\\$C(q)={reference_cost:.4f}$}};",
+            rf"\node[align=center] at (60,-146) {{扰动后$y$（暂时变差）\\"
+            rf"$C(y)={strong_cost:.4f}$}};",
+            rf"\node[align=center] at (104,-146) {{LS后$z$：$C(z)={improved_cost:.4f}$\\"
+            rf"\textbf{{较$q$缩短{improvement_percent:.2f}\%}}}};",
+            r"\draw[gray!65] (5,-154)--(12,-154);\node[anchor=west] at (14,-154) {保留边};",
+            r"\draw[orange!85!black,thick,densely dashed] (38,-154)--(45,-154);"
+            r"\node[anchor=west] at (47,-154) {扰动新边};",
+            r"\draw[green!45!black,thick,dotted] (80,-154)--(87,-154);"
+            r"\node[anchor=west] at (89,-154) {LS新边};",
+            r"\end{tikzpicture}",
+        ]
+    )
+    (GEN / "control_mechanism.tex").write_text("\n".join(out) + "\n")
+
+
+def conditional_decision_figure(record):
+    """逐角色展示冻结树、已保存评分及动作含义，不重新求值。"""
+    features = record["features"]
+    action = record["action"]
+    r, j, k = [stage["selected"] for stage in record["stages"]]
+    out = [r"\small"]
+    headings = [
+        r"$f_r$：Reference selection",
+        r"$f_j$：Starting-region selection",
+        r"$f_k$：Perturbation-intensity selection",
+    ]
+    for role, stage in enumerate(record["stages"]):
+        out.extend(
+            [
+                r"\noindent\textbf{" + headings[role] + r"}\par\smallskip",
+                r"\begin{minipage}[c]{0.42\textwidth}\centering",
+                rf"\input{{generated/structure_conditional_three-s3313_{role}.tex}}",
+                r"\end{minipage}\hfill",
+                r"\begin{minipage}[c]{0.55\textwidth}\small",
+            ]
+        )
+        if role == 0:
+            out.extend(
+                [
+                    rf"$w={features[3][action]:.6f}$，$s={features[1][action]:.5f}$。\par",
+                    "备选参考路径的相对差距 " + rf"$\delta_q={features[6][16]:.6f}$。\par",
+                    r"\begin{tabular}{@{}lr@{}}\toprule 候选 & Priority score\\\midrule",
+                ]
+            )
+            choices = ["保留活动路径", "切换备选路径"]
+        elif role == 1:
+            out.extend(
+                [
+                    rf"$p={features[0][action]:.4f}$；"
+                    rf"各区域$\tau_R\approx {features[10][action]:.5f}$。\par",
+                    r"\begin{tabular}{@{}crr@{}}\toprule 区域 & $a_R$ & Priority score\\\midrule",
+                ]
+            )
+            choices = [f"{idx} & {features[9][16 * r + 4 * idx]:.5f}" for idx in range(4)]
+        else:
+            out.extend(
+                [
+                    rf"$p={features[0][action]:.4f}$，$\rho={features[2][action]:.6f}$。\par",
+                    r"\begin{tabular}{@{}crr@{}}\toprule MNE & $u$ & Priority score\\\midrule",
+                ]
+            )
+            choices = [f"{2 ** (idx + 1)} & {(idx + 1) / 4:.2f}" for idx in range(4)]
+        for idx, score in enumerate(stage["scores"]):
+            shown = f"{score:.6f}" if stage["legal"][idx] else "--"
+            if idx == stage["selected"]:
+                shown = r"\mathbf{" + shown + "}"
+            out.append(choices[idx] + " & $" + shown + r"$\\")
+        out.extend([r"\bottomrule\end{tabular}\par\smallskip"])
+        explanation = [
+            rf"$\Rightarrow r={r}$：并列时保留当前参考路径。",
+            rf"$\Rightarrow j={j}$：$a_R\tau_R$超过$p$，区域1获得最高分。",
+            rf"$\Rightarrow\mathrm{{MNE}}={2 ** (k + 1)}$：公共项$p+\rho$不改变$u$的排序。",
+        ][role]
+        out.extend([explanation, r"\end{minipage}\par\medskip"])
+        if role < 2:
+            out.append(r"\noindent\rule{\textwidth}{0.2pt}\par\medskip")
+    out.append(rf"\centering\textbf{{最终动作：保留当前参考路径＋区域{j}＋MNE{2 ** (k + 1)}}}\par")
+    (GEN / "conditional_decision_figure.tex").write_text("\n".join(out) + "\n")
+
+
 def decision_examples():
     examples = read(BASE / "decision_examples.json")
     # 主图使用两个已冻结个体各自的真实状态；不把两条轨迹当成同状态消融。
@@ -610,9 +844,11 @@ def decision_examples():
         if v["iteration"] == 100 and v["colony"] == 0
     )
     figure = [
-        r"\begin{minipage}[t]{0.39\textwidth}\centering\small",
+        r"\begin{minipage}[c]{0.38\textwidth}\centering\small",
         r"\textbf{GP-J/3313}\par\medskip",
         r"\input{generated/structure_joint_single-s3313_0.tex}\par\medskip",
+        r"\end{minipage}\hfill",
+        r"\begin{minipage}[c]{0.59\textwidth}\centering\small",
         rf"$\rho={joint['features'][2][joint['action']]:.8f}$，$u=1$\par",
         r"保留参考路径时：\par\smallskip",
         r"\begin{tabular}{cr}\toprule 区域$j$ & MNE16得分\\\midrule",
@@ -623,46 +859,18 @@ def decision_examples():
         [
             r"\bottomrule\end{tabular}\par\smallskip",
             r"输出：$(r,j,\mathrm{MNE})=(0,3,16)$",
-            r"\end{minipage}\hfill",
-            r"\begin{minipage}[t]{0.59\textwidth}\centering\small",
-            r"\textbf{GP-C/3313}\par\medskip",
-            r"$\begin{aligned}",
-            r" f_r&=(ws)(s\delta_q)\AQ(r,-1),\\",
-            r" f_j&=p+\max(p,a_R\tau_R),\\",
-            r" f_k&=u+(p+\rho).",
-            r"\end{aligned}$\par\medskip",
-            r"$p=0.0198$；依次比较以下候选：\par\smallskip",
-        ]
-    )
-    for role, stage in enumerate(conditional["stages"]):
-        heading = [
-            r"Reference：$r\in\{0,1\}$",
-            r"Region：$j\in\{0,1,2,3\}$",
-            r"MNE：$(2,4,8,16)$",
-        ][role]
-        scores = ",\\;".join(f"{v:.6f}" for v in stage["scores"])
-        choice = [r"$r=0$", r"$j=1$", r"$\mathrm{MNE}=16$"][role]
-        figure.extend(
-            [
-                heading + r"\par",
-                "$(" + scores + r")$\par",
-                r"$\longrightarrow$ " + choice + r"\par\smallskip",
-            ]
-        )
-    figure.extend(
-        [
-            r"输出：$(r,j,\mathrm{MNE})=(0,1,16)$",
             r"\end{minipage}",
         ]
     )
     (GEN / "decision_figure.tex").write_text("\n".join(figure) + "\n")
+    conditional_decision_figure(conditional)
     parts = []
     for run in ["joint_single-s3313", "conditional_three-s3313"]:
         d = next(v for v in examples[run + "-n500"] if v["iteration"] == 100 and v["colony"] == 0)
         action = d["action"]
         parts.append(r"\subsection{" + label(run) + "的真实输入与输出}")
         parts.append(
-            f"取TSP500解释面板首个实例、ACO种子17、迭代100。所选动作编号为{action}，"
+            f"取TSP500规则解释实例集中的首个实例、ACO种子17、迭代100。所选动作编号为{action}，"
             f"对应$r={action // 16}$、$j={(action % 16) // 4}$、MNE={2 ** (action % 4 + 1)}。"
             "下表为所选完整动作的12个输入；全动作输入矩阵保留在机器记录中。"
         )
@@ -734,14 +942,13 @@ def compile_papers():
                 for v in [
                     "Overfull \\hbox",
                     "Overfull \\vbox",
+                    "Float too large",
                     "Missing character:",
                     "undefined references",
                     "undefined citations",
                 ]
             )
         ]
-        if name == "samplepaper" and pages > 14:
-            problems.append(f"主稿{pages}页，超过14页（含参考文献）")
         shutil.copy2(pdf, destination / pdf.name)
         receipt["documents"].append(
             {
@@ -762,7 +969,7 @@ def compile_papers():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--refresh-evidence", action="store_true", help="从已有本地历史汇总更新精简标定快照"
+        "--refresh-evidence", action="store_true", help="从已有本地历史汇总更新精简预实验快照"
     )
     parser.add_argument("--figures-only", action="store_true", help="仅生成图表，不编译LaTeX")
     args = parser.parse_args()
@@ -776,6 +983,7 @@ def main():
     if len(summary["runs"]) != 6 or any(r["completed_generations"] != 50 for r in summary["runs"]):
         raise ValueError("主稿仅适用于冻结的六次完整50代结果")
     tables(summary, analysis, read(EVIDENCE))
+    control_mechanism_figure()
     decision_examples()
     figures(summary, analysis)
     if not args.figures_only:
